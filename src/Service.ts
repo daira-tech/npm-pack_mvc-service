@@ -1,14 +1,33 @@
 import { Request, Response } from 'express';
 import { Pool, type PoolClient } from 'pg';
-import MaintenanceException from './exception/MaintenanceException';
-import ForbiddenException from './exception/ForbiddenException';
-import AuthException from './exception/AuthException';
-import InputErrorException from './exception/InputErrorException';
+import { MaintenanceException, AuthException, InputErrorException, ForbiddenException } from './Exception';
 import { RequestType, ResponseType } from 'api-interface-type';
 
 export type MethodType = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
 
-export default class Service {
+export class ServiceRequestType extends RequestType {
+
+    public readonly INVALID_PATH_PARAM_UUID_ERROR_MESSAGE = 'urlの{property}はUUIDを受け付けています。({value})';
+    public readonly REQUIRED_ERROR_MESSAGE = '{property}は必須です。'; 
+    public readonly UNNECESSARY_INPUT_ERROR_MESSAGE = "{property} : {value}は不要なINPUTです。`"
+
+    public readonly INVALID_OBJECT_ERROR_MESSAGE = '{property}はObject型を受け付けています。({value})';
+    public readonly INVALID_ARRAY_ERROR_MESSAGE = "{property}はArray型を受け付けています。({value})";
+    public readonly INVALID_NUMBER_ERROR_MESSAGE = '{property}はnumber型を受け付けています。({value})';
+    public readonly INVALID_BOOL_ERROR_MESSAGE = '{property}はbool型または文字列でtrue,falseまたは数値で0,1のみを受け付けています。({value})';
+    public readonly INVALID_STRING_ERROR_MESSAGE = '{property}はstring型を受け付けています。({value})';
+    public readonly INVALID_UUID_ERROR_MESSAGE = '{property}はUUIDを受け付けています。({value})';
+    public readonly INVALID_MAIL_ERROR_MESSAGE = '{property}はメールを受け付けています。({value})';
+    public readonly INVALID_DATE_ERROR_MESSAGE = '{property}は"YYYY-MM-DD"の文字列かつ存在する日付のみ受け付けています。({value})';
+    public readonly INVALID_TIME_ERROR_MESSAGE = '{property}は"hh:mi"の文字列かつ存在する時間のみ受け付けています。({value})';
+    public readonly INVALID_DATETIME_ERROR_MESSAGE = '{property}は"YYYY-MM-DD hh:mi:ss"または"YYYY-MM-DDThh:mi:ss"かつ存在する日時、時間のみ受け付けています。({value})';
+
+    protected throwException(code: string, message: string): never {
+        throw new InputErrorException(code, message);
+    }
+}
+
+export class Service {
     protected readonly method: MethodType = 'GET';
     get Method(): MethodType { return this.method; }
     protected readonly endpoint: string = '';
@@ -19,9 +38,11 @@ export default class Service {
     get Summary(): string { return `${this.ApiCode !== '' ? this.apiCode + ': ' : ''}${this.summary}`; }
     protected readonly apiUserAvailable: string = '';
     get ApiUserAvailable(): string { return this.apiUserAvailable; }
-    protected readonly request: RequestType = new RequestType();
+    protected readonly request: ServiceRequestType = new ServiceRequestType();
+    get Request(): ServiceRequestType { return this.request };
     get AuthToken(): string { return this.request.Authorization ?? ''; }
     protected readonly response: ResponseType = new ResponseType();
+    get Response(): ResponseType { return this.response };
     protected readonly isTest: boolean = process.env.NODE_ENV === 'test';
 
     private res: Response;
@@ -49,14 +70,14 @@ export default class Service {
             } : false
         });
     }
-    private async checkMaintenance(): Promise<void> { }
-    private async middleware(): Promise<void>{ }
-    private async outputErrorLog(ex: any): Promise<void>{ }
+    protected async checkMaintenance(): Promise<void> { }
+    protected async middleware(): Promise<void>{ }
 
     public resSuccess(): void {
         this.res.status(200).json(this.response.ResponseData);
     }
 
+    protected async outputErrorLog(ex: any): Promise<void>{ }
     public handleException(ex: any): void {
         // To avoid slowing down the response, make this asynchronous
         this.outputErrorLog(ex).catch((ex) => {

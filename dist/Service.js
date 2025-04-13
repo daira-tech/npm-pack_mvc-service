@@ -8,30 +8,51 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.Service = exports.ServiceRequestType = void 0;
 const pg_1 = require("pg");
-const MaintenanceException_1 = __importDefault(require("./exception/MaintenanceException"));
-const ForbiddenException_1 = __importDefault(require("./exception/ForbiddenException"));
-const AuthException_1 = __importDefault(require("./exception/AuthException"));
-const InputErrorException_1 = __importDefault(require("./exception/InputErrorException"));
+const Exception_1 = require("./Exception");
 const api_interface_type_1 = require("api-interface-type");
+class ServiceRequestType extends api_interface_type_1.RequestType {
+    constructor() {
+        super(...arguments);
+        this.INVALID_PATH_PARAM_UUID_ERROR_MESSAGE = 'urlの{property}はUUIDを受け付けています。({value})';
+        this.REQUIRED_ERROR_MESSAGE = '{property}は必須です。';
+        this.UNNECESSARY_INPUT_ERROR_MESSAGE = "{property} : {value}は不要なINPUTです。`";
+        this.INVALID_OBJECT_ERROR_MESSAGE = '{property}はObject型を受け付けています。({value})';
+        this.INVALID_ARRAY_ERROR_MESSAGE = "{property}はArray型を受け付けています。({value})";
+        this.INVALID_NUMBER_ERROR_MESSAGE = '{property}はnumber型を受け付けています。({value})';
+        this.INVALID_BOOL_ERROR_MESSAGE = '{property}はbool型または文字列でtrue,falseまたは数値で0,1のみを受け付けています。({value})';
+        this.INVALID_STRING_ERROR_MESSAGE = '{property}はstring型を受け付けています。({value})';
+        this.INVALID_UUID_ERROR_MESSAGE = '{property}はUUIDを受け付けています。({value})';
+        this.INVALID_MAIL_ERROR_MESSAGE = '{property}はメールを受け付けています。({value})';
+        this.INVALID_DATE_ERROR_MESSAGE = '{property}は"YYYY-MM-DD"の文字列かつ存在する日付のみ受け付けています。({value})';
+        this.INVALID_TIME_ERROR_MESSAGE = '{property}は"hh:mi"の文字列かつ存在する時間のみ受け付けています。({value})';
+        this.INVALID_DATETIME_ERROR_MESSAGE = '{property}は"YYYY-MM-DD hh:mi:ss"または"YYYY-MM-DDThh:mi:ss"かつ存在する日時、時間のみ受け付けています。({value})';
+    }
+    throwException(code, message) {
+        throw new Exception_1.InputErrorException(code, message);
+    }
+}
+exports.ServiceRequestType = ServiceRequestType;
 class Service {
     get Method() { return this.method; }
     get Endpoint() { return this.endpoint; }
     get ApiCode() { return this.apiCode; }
     get Summary() { return `${this.ApiCode !== '' ? this.apiCode + ': ' : ''}${this.summary}`; }
     get ApiUserAvailable() { return this.apiUserAvailable; }
+    get Request() { return this.request; }
+    ;
     get AuthToken() { var _a; return (_a = this.request.Authorization) !== null && _a !== void 0 ? _a : ''; }
+    get Response() { return this.response; }
+    ;
     constructor(response) {
         this.method = 'GET';
         this.endpoint = '';
         this.apiCode = '';
         this.summary = '';
         this.apiUserAvailable = '';
-        this.request = new api_interface_type_1.RequestType();
+        this.request = new ServiceRequestType();
         this.response = new api_interface_type_1.ResponseType();
         this.isTest = process.env.NODE_ENV === 'test';
         this.isExecuteRollback = false;
@@ -65,37 +86,37 @@ class Service {
     middleware() {
         return __awaiter(this, void 0, void 0, function* () { });
     }
-    outputErrorLog(ex) {
-        return __awaiter(this, void 0, void 0, function* () { });
-    }
     resSuccess() {
         this.res.status(200).json(this.response.ResponseData);
+    }
+    outputErrorLog(ex) {
+        return __awaiter(this, void 0, void 0, function* () { });
     }
     handleException(ex) {
         // To avoid slowing down the response, make this asynchronous
         this.outputErrorLog(ex).catch((ex) => {
             console.error(ex);
         });
-        if (ex instanceof AuthException_1.default) {
+        if (ex instanceof Exception_1.AuthException) {
             this.res.status(401).json({
                 message: "Authentication expired. Please login again."
             });
             return;
         }
-        else if (ex instanceof ForbiddenException_1.default) {
+        else if (ex instanceof Exception_1.ForbiddenException) {
             this.res.status(403).json({
                 message: 'Forbidden error'
             });
             return;
         }
-        else if (ex instanceof InputErrorException_1.default) {
+        else if (ex instanceof Exception_1.InputErrorException) {
             this.res.status(400).json({
                 errorCode: `${this.apiCode}-${ex.ErrorId}`,
                 errorMessage: ex.message
             });
             return;
         }
-        else if (ex instanceof MaintenanceException_1.default) {
+        else if (ex instanceof Exception_1.MaintenanceException) {
             this.res.status(503).json({
                 errorMessage: ex.message
             });
@@ -147,4 +168,4 @@ class Service {
         });
     }
 }
-exports.default = Service;
+exports.Service = Service;

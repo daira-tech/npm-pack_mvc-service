@@ -2,10 +2,13 @@ import { RequestType, ResponseType } from "api-interface-type";
 import { Request, Response } from 'express';
 import { Pool, PoolClient } from 'pg';
 
-declare module 'pg-model-controller-service' {
+declare module 'mvc-service' {
     export type MethodType = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
 
-    export class TableModel {
+    export class ServiceRequestType extends RequestType {
+    }
+
+    export class Service {
         protected readonly method: MethodType;
         get Method(): MethodType;
         protected readonly endpoint: string;
@@ -16,7 +19,7 @@ declare module 'pg-model-controller-service' {
         get Summary(): string;
         protected readonly apiUserAvailable: string;
         get ApiUserAvailable(): string;
-        protected readonly request: RequestType;
+        protected readonly request: ServiceRequestType;
         get AuthToken(): string;
         protected readonly response: ResponseType;
         protected readonly isTest: boolean;
@@ -25,12 +28,12 @@ declare module 'pg-model-controller-service' {
 
         public inintialize(request: Request): Promise<void>;
         protected setPool(): Pool;
-        private checkMaintenance(): Promise<void>;
-        private middleware(): Promise<void>;
+        protected checkMaintenance(): Promise<void>;
+        protected middleware(): Promise<void>;
 
         public resSuccess(): void;
         public handleException(ex: any): void;
-        private outputErrorLog(ex: any): Promise<void>;
+        protected outputErrorLog(ex: any): Promise<void>;
 
         get Pool(): Pool;
         get Client(): PoolClient;
@@ -39,5 +42,28 @@ declare module 'pg-model-controller-service' {
         public commit(): Promise<void>;
         public rollback(): Promise<void>;
         public release(): Promise<void>;
+    }
+
+    export function createSwagger(services: Service[], name: string, url: string, tagApi: {[key: string]: string}): string;
+
+    export class AuthException extends Error {
+        private id: string;
+        get Id(): string;
+        constructor(id: string, message?: string);
+    }
+
+    export class ForbiddenException extends Error {
+    }
+
+    export class InputErrorException extends Error {
+        private errorId: string;
+        get ErrorId(): string;
+        private errorLog: string;
+        get ErrorLog(): string;
+        constructor(errorId: string, message?: string, errorLog?: string);
+    }
+
+    export class MaintenanceException extends Error {
+        constructor(message?: string);
     }
 }
