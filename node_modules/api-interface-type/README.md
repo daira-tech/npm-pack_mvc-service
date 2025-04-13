@@ -1,0 +1,1 @@
+# npm_pack_interface_definition
