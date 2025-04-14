@@ -1,6 +1,6 @@
 {
   "name": "mvc-service",
-  "version": "1.0.11",
+  "version": "1.0.18",
   "description": "",
   "homepage": "https://github.com/n-daira/npm-pack_mvc-service#readme",
   "bugs": {
@@ -27,6 +27,6 @@
   },
   "dependencies": {
     "@types/express": "5.0.1",
-    "api-interface-type": "2.0.1"
+    "api-interface-type": "2.0.2"
   }
 }

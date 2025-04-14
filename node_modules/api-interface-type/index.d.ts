@@ -37,7 +37,7 @@ declare module 'api-interface-type' {
     }
 
     export class ResponseType {
-        protected Data: { [key: string]: any };
+        public Data: { [key: string]: any };
 
         protected properties: { [key: string]: PropertyType; };
         get ResponseData(): { [key: string]: any };

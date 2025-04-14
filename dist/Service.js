@@ -9,32 +9,10 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.Service = exports.ServiceRequestType = void 0;
+exports.Service = void 0;
 const pg_1 = require("pg");
 const Exception_1 = require("./Exception");
 const api_interface_type_1 = require("api-interface-type");
-class ServiceRequestType extends api_interface_type_1.RequestType {
-    constructor() {
-        super(...arguments);
-        this.INVALID_PATH_PARAM_UUID_ERROR_MESSAGE = 'urlの{property}はUUIDを受け付けています。({value})';
-        this.REQUIRED_ERROR_MESSAGE = '{property}は必須です。';
-        this.UNNECESSARY_INPUT_ERROR_MESSAGE = "{property} : {value}は不要なINPUTです。`";
-        this.INVALID_OBJECT_ERROR_MESSAGE = '{property}はObject型を受け付けています。({value})';
-        this.INVALID_ARRAY_ERROR_MESSAGE = "{property}はArray型を受け付けています。({value})";
-        this.INVALID_NUMBER_ERROR_MESSAGE = '{property}はnumber型を受け付けています。({value})';
-        this.INVALID_BOOL_ERROR_MESSAGE = '{property}はbool型または文字列でtrue,falseまたは数値で0,1のみを受け付けています。({value})';
-        this.INVALID_STRING_ERROR_MESSAGE = '{property}はstring型を受け付けています。({value})';
-        this.INVALID_UUID_ERROR_MESSAGE = '{property}はUUIDを受け付けています。({value})';
-        this.INVALID_MAIL_ERROR_MESSAGE = '{property}はメールを受け付けています。({value})';
-        this.INVALID_DATE_ERROR_MESSAGE = '{property}は"YYYY-MM-DD"の文字列かつ存在する日付のみ受け付けています。({value})';
-        this.INVALID_TIME_ERROR_MESSAGE = '{property}は"hh:mi"の文字列かつ存在する時間のみ受け付けています。({value})';
-        this.INVALID_DATETIME_ERROR_MESSAGE = '{property}は"YYYY-MM-DD hh:mi:ss"または"YYYY-MM-DDThh:mi:ss"かつ存在する日時、時間のみ受け付けています。({value})';
-    }
-    throwException(code, message) {
-        throw new Exception_1.InputErrorException(code, message);
-    }
-}
-exports.ServiceRequestType = ServiceRequestType;
 class Service {
     get Method() { return this.method; }
     get Endpoint() { return this.endpoint; }
@@ -42,42 +20,45 @@ class Service {
     get Summary() { return `${this.ApiCode !== '' ? this.apiCode + ': ' : ''}${this.summary}`; }
     get ApiUserAvailable() { return this.apiUserAvailable; }
     get Request() { return this.request; }
-    ;
+    ; // swaggerで必要なので、ここだけ宣言
     get AuthToken() { var _a; return (_a = this.request.Authorization) !== null && _a !== void 0 ? _a : ''; }
     get Response() { return this.response; }
-    ;
-    constructor(response) {
+    ; // swaggerで必要なので、ここだけ宣言
+    constructor(request, response) {
         this.method = 'GET';
         this.endpoint = '';
         this.apiCode = '';
         this.summary = '';
         this.apiUserAvailable = '';
-        this.request = new ServiceRequestType();
+        this.request = new api_interface_type_1.RequestType();
         this.response = new api_interface_type_1.ResponseType();
         this.isTest = process.env.NODE_ENV === 'test';
         this.isExecuteRollback = false;
-        this.pool = this.setPool();
+        this.req = request;
         this.res = response;
     }
-    inintialize(request) {
+    inintialize() {
         return __awaiter(this, void 0, void 0, function* () {
             var _a;
-            this.request.setRequest(request);
+            this.pool = yield this.setPool();
+            this.request.setRequest(this.req);
             yield this.checkMaintenance();
-            this.pool.query(`SET TIME ZONE '${(_a = process.env.TZ) !== null && _a !== void 0 ? _a : 'Asia/Tokyo'}';`);
+            this.Pool.query(`SET TIME ZONE '${(_a = process.env.TZ) !== null && _a !== void 0 ? _a : 'Asia/Tokyo'}';`);
             yield this.middleware();
         });
     }
     setPool() {
-        return new pg_1.Pool({
-            user: this.isTest ? process.env.TEST_DB_USER : process.env.DB_USER,
-            host: this.isTest ? process.env.TEST_DB_HOST : process.env.DB_HOST,
-            database: this.isTest ? process.env.TEST_DB_DATABASE : process.env.DB_DATABASE,
-            password: this.isTest ? process.env.TEST_DB_PASSWORD : process.env.DB_PASSWORD,
-            port: this.isTest ? Number(process.env.TEST_DB_PORT) : Number(process.env.DB_PORT),
-            ssl: (this.isTest ? process.env.TEST_DB_IS_SSL : process.env.DB_IS_SSL) === 'true' ? {
-                rejectUnauthorized: false
-            } : false
+        return __awaiter(this, void 0, void 0, function* () {
+            return new pg_1.Pool({
+                user: this.isTest ? process.env.TEST_DB_USER : process.env.DB_USER,
+                host: this.isTest ? process.env.TEST_DB_HOST : process.env.DB_HOST,
+                database: this.isTest ? process.env.TEST_DB_DATABASE : process.env.DB_DATABASE,
+                password: this.isTest ? process.env.TEST_DB_PASSWORD : process.env.DB_PASSWORD,
+                port: this.isTest ? Number(process.env.TEST_DB_PORT) : Number(process.env.DB_PORT),
+                ssl: (this.isTest ? process.env.TEST_DB_IS_SSL : process.env.DB_IS_SSL) === 'true' ? {
+                    rejectUnauthorized: false
+                } : false
+            });
         });
     }
     checkMaintenance() {
@@ -127,16 +108,21 @@ class Service {
         });
         return;
     }
-    get Pool() { return this.pool; }
+    get Pool() {
+        if (this.pool === undefined) {
+            throw new Error("Please call this.Pool after using the inintialize method.");
+        }
+        return this.pool;
+    }
     get Client() {
         if (this.client === undefined) {
-            throw new Error("Please call this after using the startConnect method.");
+            throw new Error("Please call this.PoolClient after using the startConnect method.");
         }
         return this.client;
     }
     startConnect() {
         return __awaiter(this, void 0, void 0, function* () {
-            this.client = yield this.pool.connect();
+            this.client = yield this.Pool.connect();
             yield this.Client.query('BEGIN');
             this.isExecuteRollback = true;
         });
@@ -163,7 +149,7 @@ class Service {
             }
             if (this.isTest) {
                 // In tests, the connection is terminated because it is shut down every time
-                yield this.pool.end();
+                yield this.Pool.end();
             }
         });
     }

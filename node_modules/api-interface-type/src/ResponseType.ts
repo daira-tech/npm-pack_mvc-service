@@ -6,7 +6,7 @@ export class ResponseType extends ReqResType {
      * Property to store response data
      * レスポンスデータを格納するためのプロパティ
      */
-    protected Data: {[key: string]: any} = {};
+    public Data: {[key: string]: any} = {};
 
     /**
      * Convert and retrieve data according to the type definition

@@ -5,9 +5,6 @@ import { Pool, PoolClient } from 'pg';
 declare module 'mvc-service' {
     export type MethodType = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
 
-    export class ServiceRequestType extends RequestType {
-    }
-
     export class Service {
         protected readonly method: MethodType;
         get Method(): MethodType;
@@ -19,15 +16,17 @@ declare module 'mvc-service' {
         get Summary(): string;
         protected readonly apiUserAvailable: string;
         get ApiUserAvailable(): string;
-        protected readonly request: ServiceRequestType;
+        protected readonly request: RequestType;
         get AuthToken(): string;
         protected readonly response: ResponseType;
         protected readonly isTest: boolean;
 
-        constructor(response: Response);
+        protected readonly req: Request;
+        protected readonly res: Response;
+        constructor(request: Request, response: Response);
 
-        public inintialize(request: Request): Promise<void>;
-        protected setPool(): Pool;
+        public inintialize(): Promise<void>;
+        protected setPool(): Promise<Pool>;
         protected checkMaintenance(): Promise<void>;
         protected middleware(): Promise<void>;
 

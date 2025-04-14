@@ -5,28 +5,6 @@ import { RequestType, ResponseType } from 'api-interface-type';
 
 export type MethodType = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
 
-export class ServiceRequestType extends RequestType {
-
-    public readonly INVALID_PATH_PARAM_UUID_ERROR_MESSAGE = 'urlの{property}はUUIDを受け付けています。({value})';
-    public readonly REQUIRED_ERROR_MESSAGE = '{property}は必須です。'; 
-    public readonly UNNECESSARY_INPUT_ERROR_MESSAGE = "{property} : {value}は不要なINPUTです。`"
-
-    public readonly INVALID_OBJECT_ERROR_MESSAGE = '{property}はObject型を受け付けています。({value})';
-    public readonly INVALID_ARRAY_ERROR_MESSAGE = "{property}はArray型を受け付けています。({value})";
-    public readonly INVALID_NUMBER_ERROR_MESSAGE = '{property}はnumber型を受け付けています。({value})';
-    public readonly INVALID_BOOL_ERROR_MESSAGE = '{property}はbool型または文字列でtrue,falseまたは数値で0,1のみを受け付けています。({value})';
-    public readonly INVALID_STRING_ERROR_MESSAGE = '{property}はstring型を受け付けています。({value})';
-    public readonly INVALID_UUID_ERROR_MESSAGE = '{property}はUUIDを受け付けています。({value})';
-    public readonly INVALID_MAIL_ERROR_MESSAGE = '{property}はメールを受け付けています。({value})';
-    public readonly INVALID_DATE_ERROR_MESSAGE = '{property}は"YYYY-MM-DD"の文字列かつ存在する日付のみ受け付けています。({value})';
-    public readonly INVALID_TIME_ERROR_MESSAGE = '{property}は"hh:mi"の文字列かつ存在する時間のみ受け付けています。({value})';
-    public readonly INVALID_DATETIME_ERROR_MESSAGE = '{property}は"YYYY-MM-DD hh:mi:ss"または"YYYY-MM-DDThh:mi:ss"かつ存在する日時、時間のみ受け付けています。({value})';
-
-    protected throwException(code: string, message: string): never {
-        throw new InputErrorException(code, message);
-    }
-}
-
 export class Service {
     protected readonly method: MethodType = 'GET';
     get Method(): MethodType { return this.method; }
@@ -38,27 +16,29 @@ export class Service {
     get Summary(): string { return `${this.ApiCode !== '' ? this.apiCode + ': ' : ''}${this.summary}`; }
     protected readonly apiUserAvailable: string = '';
     get ApiUserAvailable(): string { return this.apiUserAvailable; }
-    protected readonly request: ServiceRequestType = new ServiceRequestType();
-    get Request(): ServiceRequestType { return this.request };
+    protected readonly request: RequestType = new RequestType();
+    get Request(): RequestType { return this.request }; // swaggerで必要なので、ここだけ宣言
     get AuthToken(): string { return this.request.Authorization ?? ''; }
     protected readonly response: ResponseType = new ResponseType();
-    get Response(): ResponseType { return this.response };
+    get Response(): ResponseType { return this.response }; // swaggerで必要なので、ここだけ宣言
     protected readonly isTest: boolean = process.env.NODE_ENV === 'test';
 
-    private res: Response;
-    constructor(response: Response) {
-        this.pool = this.setPool();
+    protected readonly req: Request;
+    protected readonly res: Response;
+    constructor(request: Request, response: Response) {
+        this.req = request;
         this.res = response;
     }
 
-    public async inintialize(request: Request): Promise<void> {
-        this.request.setRequest(request);
+    public async inintialize(): Promise<void> {
+        this.pool = await this.setPool();
+        this.request.setRequest(this.req);
         await this.checkMaintenance();
-        this.pool.query(`SET TIME ZONE '${process.env.TZ ?? 'Asia/Tokyo'}';`);
+        this.Pool.query(`SET TIME ZONE '${process.env.TZ ?? 'Asia/Tokyo'}';`);
         await this.middleware();
     }
 
-    protected setPool(): Pool {
+    protected async setPool(): Promise<Pool> {
         return new Pool({
             user: this.isTest ? process.env.TEST_DB_USER : process.env.DB_USER,
             host: this.isTest ? process.env.TEST_DB_HOST : process.env.DB_HOST,
@@ -113,19 +93,24 @@ export class Service {
         return;
     }
 
-    private pool: Pool;
-    get Pool(): Pool { return this.pool; }
+    private pool?: Pool;
+    get Pool(): Pool {
+        if (this.pool === undefined) {
+            throw new Error("Please call this.Pool after using the inintialize method.");
+        }
+        return this.pool; 
+    }
     private client?: PoolClient;
     private isExecuteRollback: boolean = false;
     get Client(): PoolClient { 
         if (this.client === undefined) {
-            throw new Error("Please call this after using the startConnect method.");
+            throw new Error("Please call this.PoolClient after using the startConnect method.");
         }
         return this.client;
     }
 
     public async startConnect(): Promise<void> {
-        this.client = await this.pool.connect();
+        this.client = await this.Pool.connect();
         await this.Client.query('BEGIN');
         this.isExecuteRollback = true;
     }
@@ -150,7 +135,7 @@ export class Service {
 
         if (this.isTest) {
             // In tests, the connection is terminated because it is shut down every time
-            await this.pool.end();
+            await this.Pool.end();
         }
     }
 }
