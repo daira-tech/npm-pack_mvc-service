@@ -29,10 +29,66 @@ export const createSwagger = (services: Service[], name: string, url: string, ta
         }
     
         const tag = `${tagName} ${tagApi[service.ApiUserAvailable] ?? ''}`;
-        tags.push(tag);
+        if (tags.includes(tag) === false) {
+            tags.push(tag);
+        }
         yml += `      tags:\n`;
         yml += `        - ${tag}\n`;
         yml += `      summary: ${service.Summary}\n`;
+
+        const params: Array<{in: string, name: string, require: boolean, description: string, example: string}> = [];
+        params.push({
+            in: 'header',
+            name: 'Authorization',
+            require: false,
+            description: '認証のために必要なヘッダー情報です。トークンを入力してください。',
+            example: 'Bearer 123e4567-e89b-12d3-a456-426614174000'
+        });
+        
+        params.push({
+            in: 'header',
+            name: 'User-Id',
+            require: false,
+            description: '開発環境のみヘッダーにUserIdを入れればそのユーザで使用することができます。',
+            example: '',
+        });
+
+        params.push({
+            in: 'header',
+            name: 'Api-Key',
+            require: false,
+            description: 'API-KEYで認証処理を飛ばすことができます。',
+            example: '',
+        });
+
+        for (const path of service.Endpoint.split('/')) {
+            if (path.includes('{') && path.includes('}')) {
+                const key = path.replace('{', '').replace('}', '');
+                params.push({
+                    in: 'path',
+                    name: key,
+                    require: true,
+                    description: key,
+                    example: '',
+                });
+            }
+        }
+
+        if (params.length > 0) {
+            yml += `      parameters:\n`;
+            for (const param of params) {
+                yml += `        - in: ${param.in}\n`;
+                yml += `          name: ${param.name}\n`;
+                yml += `          required: ${param.require}\n`;
+                yml += `          description: ${param.description}\n`;
+                if (param.example !== '') {
+                    yml += `          example: ${param.example}\n`;
+                }
+                yml += `          schema:\n`;
+                yml += `            type: string\n`;
+            }
+        }
+
         yml += service.Request.createSwagger(service.Method);
         yml += service.Response.createSwagger();
     
