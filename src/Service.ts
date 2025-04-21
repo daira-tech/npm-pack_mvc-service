@@ -1,7 +1,8 @@
 import { Request, Response } from 'express';
 import { Pool, type PoolClient } from 'pg';
 import { MaintenanceException, AuthException, InputErrorException, ForbiddenException } from './Exception';
-import { RequestType, ResponseType } from 'api-interface-type';
+import { RequestType } from './RequestType';
+import { ResponseType } from './ResponseType';
 
 export type MethodType = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
 
@@ -22,6 +23,8 @@ export class Service {
     protected readonly response: ResponseType = new ResponseType();
     get Response(): ResponseType { return this.response }; // swaggerで必要なので、ここだけ宣言
     protected readonly isTest: boolean = process.env.NODE_ENV === 'test';
+    protected readonly tags: Array<string> = [];
+    get Tags(): Array<string> { return this.tags; }
 
     protected readonly req: Request;
     protected readonly res: Response;

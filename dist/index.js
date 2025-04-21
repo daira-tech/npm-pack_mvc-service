@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.createSwagger = exports.ForbiddenException = exports.InputErrorException = exports.AuthException = exports.MaintenanceException = exports.Service = void 0;
+exports.ResponseType = exports.RequestType = exports.createSwagger = exports.ForbiddenException = exports.InputErrorException = exports.AuthException = exports.MaintenanceException = exports.Service = void 0;
 var Service_1 = require("./Service");
 Object.defineProperty(exports, "Service", { enumerable: true, get: function () { return Service_1.Service; } });
 var Exception_1 = require("./Exception");
@@ -10,3 +10,7 @@ Object.defineProperty(exports, "InputErrorException", { enumerable: true, get: f
 Object.defineProperty(exports, "ForbiddenException", { enumerable: true, get: function () { return Exception_1.ForbiddenException; } });
 var Swagger_1 = require("./Swagger");
 Object.defineProperty(exports, "createSwagger", { enumerable: true, get: function () { return Swagger_1.createSwagger; } });
+var RequestType_1 = require("./RequestType");
+Object.defineProperty(exports, "RequestType", { enumerable: true, get: function () { return RequestType_1.RequestType; } });
+var ResponseType_1 = require("./ResponseType");
+Object.defineProperty(exports, "ResponseType", { enumerable: true, get: function () { return ResponseType_1.ResponseType; } });

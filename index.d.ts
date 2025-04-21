@@ -1,6 +1,7 @@
-import { RequestType, ResponseType } from "api-interface-type";
 import { Request, Response } from 'express';
 import { Pool, PoolClient } from 'pg';
+import { IncomingHttpHeaders } from './src/RequestType';
+import { ArrayType, ObjectType, PrimitiveType } from './src/ReqResType';
 
 declare module 'mvc-service' {
     export type MethodType = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
@@ -20,6 +21,8 @@ declare module 'mvc-service' {
         get AuthToken(): string;
         protected readonly response: ResponseType;
         protected readonly isTest: boolean;
+        protected readonly tags: Array<string>;
+        get Tags(): Array<string>;
 
         protected readonly req: Request;
         protected readonly res: Response;
@@ -43,7 +46,51 @@ declare module 'mvc-service' {
         public release(): Promise<void>;
     }
 
-    export function createSwagger(services: Service[], name: string, url: string, tagApi: {[key: string]: string}): string;
+    export interface IParams {
+        in: 'header' | 'path',
+        name: string,
+        require?: boolean,
+        description?: string,
+        example?: string
+    }
+    export function createSwagger(services: Service[], name: string, url: string, params: Array<IParams>): string;
+
+    export type PropertyType =  PrimitiveType | ObjectType | ArrayType;
+
+    export class RequestType {
+        constructor();
+
+        protected properties: { [key: string]: PropertyType; };
+
+        public readonly INVALID_PATH_PARAM_UUID_ERROR_MESSAGE: string;
+        public readonly REQUIRED_ERROR_MESSAGE: string;
+        public readonly UNNECESSARY_INPUT_ERROR_MESSAGE: string;
+        public readonly INVALID_OBJECT_ERROR_MESSAGE: string;
+        public readonly INVALID_ARRAY_ERROR_MESSAGE: string;
+        public readonly INVALID_NUMBER_ERROR_MESSAGE: string;
+        public readonly INVALID_BOOL_ERROR_MESSAGE: string;
+        public readonly INVALID_STRING_ERROR_MESSAGE: string;
+        public readonly INVALID_UUID_ERROR_MESSAGE: string;
+        public readonly INVALID_MAIL_ERROR_MESSAGE: string;
+        public readonly INVALID_DATE_ERROR_MESSAGE: string;
+        public readonly INVALID_TIME_ERROR_MESSAGE: string;
+        public readonly INVALID_DATETIME_ERROR_MESSAGE: string;
+        protected throwException(code: string, message: string): never;
+
+        public setRequest(request: Request): void;
+        get Data(): { [key: string]: any };
+        get Headers(): IncomingHttpHeaders;
+        get Params(): { [key: string]: any };
+        get RemoteAddress(): string | undefined;
+        get Authorization(): string | null;
+    }
+
+    export class ResponseType {
+        public Data: { [key: string]: any };
+
+        protected properties: { [key: string]: PropertyType; };
+        get ResponseData(): { [key: string]: any };
+    }
 
     export class AuthException extends Error {
         private id: string;

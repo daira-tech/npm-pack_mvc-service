@@ -1,6 +1,15 @@
 import { Service } from './Service';
 
-export const createSwagger = (services: Service[], name: string, url: string, tagApi: {[key: string]: string} = {}): string => {
+
+export interface IParams {
+    in: 'header' | 'path',
+    name: string,
+    require?: boolean,
+    description?: string,
+    example?: string
+}
+
+export const createSwagger = (services: Service[], name: string, url: string, params: Array<IParams> = []): string => {
     // *****************************************
     // Internal method definitions
     // *****************************************
@@ -14,7 +23,7 @@ export const createSwagger = (services: Service[], name: string, url: string, ta
     // Execution part
     // *****************************************
     const endpontSwaggerYml: {[keyEndpoint: string]: {[keyMethod: string]: string}} = {};
-    const tags: Array<string> = [];
+    let tags: Array<string> = [];
 
     for (const service of services) {
         if (service.Endpoint in endpontSwaggerYml === false) {
@@ -28,38 +37,15 @@ export const createSwagger = (services: Service[], name: string, url: string, ta
             tagName = splitEndpont[1];;
         }
     
-        const tag = `${tagName} ${tagApi[service.ApiUserAvailable] ?? ''}`;
-        if (tags.includes(tag) === false) {
-            tags.push(tag);
+        const apiTags = service.Tags;
+        if (apiTags.length > 0) {
+            tags = [ ...tags, ...apiTags];
+            yml += `      tags:\n`;
+            for (const tag of apiTags) {
+                yml += `        - ${tag}\n`;
+            }
         }
-        yml += `      tags:\n`;
-        yml += `        - ${tag}\n`;
         yml += `      summary: ${service.Summary}\n`;
-
-        const params: Array<{in: string, name: string, require: boolean, description: string, example: string}> = [];
-        params.push({
-            in: 'header',
-            name: 'Authorization',
-            require: false,
-            description: '認証のために必要なヘッダー情報です。トークンを入力してください。',
-            example: 'Bearer 123e4567-e89b-12d3-a456-426614174000'
-        });
-        
-        params.push({
-            in: 'header',
-            name: 'User-Id',
-            require: false,
-            description: '開発環境のみヘッダーにUserIdを入れればそのユーザで使用することができます。',
-            example: '',
-        });
-
-        params.push({
-            in: 'header',
-            name: 'Api-Key',
-            require: false,
-            description: 'API-KEYで認証処理を飛ばすことができます。',
-            example: '',
-        });
 
         for (const path of service.Endpoint.split('/')) {
             if (path.includes('{') && path.includes('}')) {
@@ -69,7 +55,6 @@ export const createSwagger = (services: Service[], name: string, url: string, ta
                     name: key,
                     require: true,
                     description: key,
-                    example: '',
                 });
             }
         }
@@ -79,9 +64,11 @@ export const createSwagger = (services: Service[], name: string, url: string, ta
             for (const param of params) {
                 yml += `        - in: ${param.in}\n`;
                 yml += `          name: ${param.name}\n`;
-                yml += `          required: ${param.require}\n`;
-                yml += `          description: ${param.description}\n`;
-                if (param.example !== '') {
+                yml += `          required: ${param.require === true ? 'true' : 'false'}\n`;
+                if (param.description !== undefined) {
+                    yml += `          description: ${param.description}\n`;
+                }
+                if (param.example !== undefined) {
                     yml += `          example: ${param.example}\n`;
                 }
                 yml += `          schema:\n`;

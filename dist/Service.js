@@ -12,7 +12,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.Service = void 0;
 const pg_1 = require("pg");
 const Exception_1 = require("./Exception");
-const api_interface_type_1 = require("api-interface-type");
+const RequestType_1 = require("./RequestType");
+const ResponseType_1 = require("./ResponseType");
 class Service {
     get Method() { return this.method; }
     get Endpoint() { return this.endpoint; }
@@ -24,15 +25,17 @@ class Service {
     get AuthToken() { var _a; return (_a = this.request.Authorization) !== null && _a !== void 0 ? _a : ''; }
     get Response() { return this.response; }
     ; // swaggerで必要なので、ここだけ宣言
+    get Tags() { return this.tags; }
     constructor(request, response) {
         this.method = 'GET';
         this.endpoint = '';
         this.apiCode = '';
         this.summary = '';
         this.apiUserAvailable = '';
-        this.request = new api_interface_type_1.RequestType();
-        this.response = new api_interface_type_1.ResponseType();
+        this.request = new RequestType_1.RequestType();
+        this.response = new ResponseType_1.ResponseType();
         this.isTest = process.env.NODE_ENV === 'test';
+        this.tags = [];
         this.isExecuteRollback = false;
         this.req = request;
         this.res = response;
