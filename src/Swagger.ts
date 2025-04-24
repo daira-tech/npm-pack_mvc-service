@@ -47,10 +47,11 @@ export const createSwagger = (services: Service[], name: string, url: string, pa
         }
         yml += `      summary: ${service.Summary}\n`;
 
+        const croneParams = [...params];
         for (const path of service.Endpoint.split('/')) {
             if (path.includes('{') && path.includes('}')) {
                 const key = path.replace('{', '').replace('}', '');
-                params.push({
+                croneParams.push({
                     in: 'path',
                     name: key,
                     require: true,
@@ -59,9 +60,9 @@ export const createSwagger = (services: Service[], name: string, url: string, pa
             }
         }
 
-        if (params.length > 0) {
+        if (croneParams.length > 0) {
             yml += `      parameters:\n`;
-            for (const param of params) {
+            for (const param of croneParams) {
                 yml += `        - in: ${param.in}\n`;
                 yml += `          name: ${param.name}\n`;
                 yml += `          required: ${param.require === true ? 'true' : 'false'}\n`;
