@@ -166,7 +166,7 @@ export default class ReqResType {
             return false;
         }
 
-        const urlPattern = new RegExp('^(https?:\/\/[^\s/$.?#].[^\s]*)$');
+        const urlPattern = new RegExp('^(https?:\\/\\/[^\\s/$.?#].[^\\s]*)$');
         return urlPattern.test(value);
     }
 

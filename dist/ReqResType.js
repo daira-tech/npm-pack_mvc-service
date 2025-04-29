@@ -131,7 +131,7 @@ class ReqResType {
         if (typeof value !== 'string') {
             return false;
         }
-        const urlPattern = new RegExp('^(https?:\/\/[^\s/$.?#].[^\s]*)$');
+        const urlPattern = new RegExp('^(https?:\\/\\/[^\\s/$.?#].[^\\s]*)$');
         return urlPattern.test(value);
     }
     /**
