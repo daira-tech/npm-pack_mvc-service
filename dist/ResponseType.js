@@ -249,6 +249,12 @@ class ResponseType extends ReqResType_1.default {
                     return value.replace('T', ' ');
                 }
                 return undefined;
+            case 'https':
+            case 'https?':
+                if (this.isHttps(value)) {
+                    return value;
+                }
+                return undefined;
             default:
                 return undefined;
         }

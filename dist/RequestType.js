@@ -25,6 +25,7 @@ class RequestType extends ReqResType_1.default {
         this.INVALID_STRING_ERROR_MESSAGE = '{property} must be of type string. ({value})';
         this.INVALID_UUID_ERROR_MESSAGE = '{property} must be a UUID. ({value})';
         this.INVALID_MAIL_ERROR_MESSAGE = '{property} must be an email. ({value})';
+        this.INVALID_HTTPS_ERROR_MESSAGE = '{property} must be an https or http URL. ({value})';
         this.INVALID_DATE_ERROR_MESSAGE = '{property} must be a string in "YYYY-MM-DD" format and a valid date. ({value})';
         this.INVALID_TIME_ERROR_MESSAGE = '{property} must be a string in "hh:mi" format and a valid time. ({value})';
         this.INVALID_DATETIME_ERROR_MESSAGE = '{property} must be a string in "YYYY-MM-DD hh:mi:ss" or "YYYY-MM-DDThh:mi:ss" format and a valid date and time. ({value})';
@@ -107,6 +108,7 @@ class RequestType extends ReqResType_1.default {
             "261": this.INVALID_TIME_ERROR_MESSAGE,
             "271": this.INVALID_DATETIME_ERROR_MESSAGE,
             "272": this.INVALID_DATETIME_ERROR_MESSAGE,
+            "281": this.INVALID_HTTPS_ERROR_MESSAGE,
         };
         return list[code].replace("{property}", keys.join('.')).replace("{value}", value);
     }
@@ -444,6 +446,12 @@ class RequestType extends ReqResType_1.default {
                     throw new Exception_1.InputErrorException("272", this.ErrorMessage("272", keys, value));
                 }
                 return value.replace('T', ' ');
+            case 'https':
+            case 'https?':
+                if (this.isHttps(value)) {
+                    return value;
+                }
+                throw new Exception_1.InputErrorException("281", this.ErrorMessage("281", keys, value));
         }
         return value;
     }

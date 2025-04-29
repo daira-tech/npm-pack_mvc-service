@@ -20,6 +20,7 @@ export class RequestType extends ReqResType {
     public readonly INVALID_STRING_ERROR_MESSAGE = '{property} must be of type string. ({value})';
     public readonly INVALID_UUID_ERROR_MESSAGE = '{property} must be a UUID. ({value})';
     public readonly INVALID_MAIL_ERROR_MESSAGE = '{property} must be an email. ({value})';
+    public readonly INVALID_HTTPS_ERROR_MESSAGE = '{property} must be an https or http URL. ({value})';
     public readonly INVALID_DATE_ERROR_MESSAGE = '{property} must be a string in "YYYY-MM-DD" format and a valid date. ({value})';
     public readonly INVALID_TIME_ERROR_MESSAGE = '{property} must be a string in "hh:mi" format and a valid time. ({value})';
     public readonly INVALID_DATETIME_ERROR_MESSAGE = '{property} must be a string in "YYYY-MM-DD hh:mi:ss" or "YYYY-MM-DDThh:mi:ss" format and a valid date and time. ({value})';
@@ -82,7 +83,7 @@ export class RequestType extends ReqResType {
      */
     private ErrorMessage(code: "990" | "000" | "001" | "002" | "003" | "004" | "101" | "102" | "103" | "104" |
         "201" | "211" | "212" | "213" | "221" | "231" | "241" | "251" | "252" |
-        "261" | "271" | "272" | "301", keys: Array<string | number>, value: any): string {
+        "261" | "271" | "272" | "281" | "301", keys: Array<string | number>, value: any): string {
         const list = {
             "990": this.INVALID_PATH_PARAM_UUID_ERROR_MESSAGE,
             "000": this.REQUIRED_ERROR_MESSAGE,
@@ -107,6 +108,7 @@ export class RequestType extends ReqResType {
             "261": this.INVALID_TIME_ERROR_MESSAGE,
             "271": this.INVALID_DATETIME_ERROR_MESSAGE,
             "272": this.INVALID_DATETIME_ERROR_MESSAGE,
+            "281": this.INVALID_HTTPS_ERROR_MESSAGE,
         }
         return list[code].replace("{property}", keys.join('.')).replace("{value}", value);
     }
@@ -454,6 +456,12 @@ export class RequestType extends ReqResType {
                     throw new InputErrorException("272", this.ErrorMessage("272", keys, value));
                 }
                 return value.replace('T', ' ');
+            case 'https':
+            case 'https?':
+                if (this.isHttps(value)) {
+                    return value;
+                }
+                throw new InputErrorException("281", this.ErrorMessage("281", keys, value));
         }
 
         return value;

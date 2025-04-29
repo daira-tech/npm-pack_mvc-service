@@ -271,6 +271,12 @@ export class ResponseType extends ReqResType {
                 }
 
                 return undefined;
+            case 'https':
+            case 'https?':
+                if (this.isHttps(value)) {
+                    return value;
+                }
+                return undefined;
             default:
                 return undefined;
         }

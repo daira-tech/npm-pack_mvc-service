@@ -127,6 +127,13 @@ class ReqResType {
         const pattern = new RegExp('^[a-zA-Z0-9_%+-]+([.][a-zA-Z0-9_%+-]+)*@[a-zA-Z0-9]+([-.]?[a-zA-Z0-9]+)*\\.[a-zA-Z]{2,}$');
         return pattern.test(value);
     }
+    isHttps(value) {
+        if (typeof value !== 'string') {
+            return false;
+        }
+        const urlPattern = new RegExp('^(https?:\/\/[^\s/$.?#].[^\s]*)$');
+        return urlPattern.test(value);
+    }
     /**
      * プロパティの型をSwagger形式に変換します
      * Converts the property type to Swagger format
@@ -136,7 +143,7 @@ class ReqResType {
     replaceFromPropertyTypeToSwagger(value) {
         value = value.replace('?', '');
         value = value.replace('number', 'integer');
-        value = value.replace(/datetime|date|time|uuid|mail/g, 'string');
+        value = value.replace(/datetime|date|time|uuid|mail|https/g, 'string');
         return value;
     }
 }

@@ -1,7 +1,7 @@
 export type PrimitiveType = {
     type: 
-        'string' | 'number' | 'boolean' | 'date' | 'datetime' | 'time' | 'uuid' | 'mail' |
-        'string?' | 'number?' | 'boolean?' | 'date?' | 'datetime?' | 'time?' | 'uuid?' | 'mail?';
+        'string' | 'number' | 'boolean' | 'date' | 'datetime' | 'time' | 'uuid' | 'mail' | 'https' |
+        'string?' | 'number?' | 'boolean?' | 'date?' | 'datetime?' | 'time?' | 'uuid?' | 'mail?' | 'https?';
     description?: string;
 };
 
@@ -161,6 +161,15 @@ export default class ReqResType {
         return pattern.test(value);
     }
 
+    protected isHttps(value: any) {
+        if (typeof value !== 'string') {
+            return false;
+        }
+
+        const urlPattern = new RegExp('^(https?:\/\/[^\s/$.?#].[^\s]*)$');
+        return urlPattern.test(value);
+    }
+
     /**
      * プロパティの型をSwagger形式に変換します
      * Converts the property type to Swagger format
@@ -170,7 +179,7 @@ export default class ReqResType {
     protected replaceFromPropertyTypeToSwagger(value: string): string {
         value = value.replace('?', '');
         value = value.replace('number', 'integer');
-        value = value.replace(/datetime|date|time|uuid|mail/g, 'string');
+        value = value.replace(/datetime|date|time|uuid|mail|https/g, 'string');
         
         return value;
     }
