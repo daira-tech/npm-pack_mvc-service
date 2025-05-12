@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import { Pool, PoolClient } from 'pg';
 import { IncomingHttpHeaders } from './src/RequestType';
-import { ArrayType, ObjectType, PrimitiveType } from './src/ReqResType';
+import { ArrayType, EnumType, ObjectType, PrimitiveType } from './src/ReqResType';
 
 declare module 'mvc-service' {
     export type MethodType = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
@@ -55,7 +55,7 @@ declare module 'mvc-service' {
     }
     export function createSwagger(services: Service[], name: string, url: string, params: Array<IParams>): string;
 
-    export type PropertyType =  PrimitiveType | ObjectType | ArrayType;
+    export type PropertyType =  PrimitiveType | ObjectType | ArrayType | EnumType;
 
     export class RequestType {
         constructor();
@@ -75,6 +75,9 @@ declare module 'mvc-service' {
         public readonly INVALID_DATE_ERROR_MESSAGE: string;
         public readonly INVALID_TIME_ERROR_MESSAGE: string;
         public readonly INVALID_DATETIME_ERROR_MESSAGE: string;
+        public readonly INVALID_BASE64_ERROR_MESSAGE: string;
+        public readonly INVALID_ENUM_ERROR_MESSAGE: string;
+
         protected throwException(code: string, message: string): never;
 
         public setRequest(request: Request): void;

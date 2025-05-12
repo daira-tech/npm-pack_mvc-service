@@ -1,7 +1,7 @@
 export type PrimitiveType = {
     type: 
-        'string' | 'number' | 'boolean' | 'date' | 'datetime' | 'time' | 'uuid' | 'mail' | 'https' |
-        'string?' | 'number?' | 'boolean?' | 'date?' | 'datetime?' | 'time?' | 'uuid?' | 'mail?' | 'https?';
+        'string' | 'number' | 'boolean' | 'date' | 'datetime' | 'time' | 'uuid' | 'mail' | 'https' | 'base64' |
+        'string?' | 'number?' | 'boolean?' | 'date?' | 'datetime?' | 'time?' | 'uuid?' | 'mail?' | 'https?' | 'base64?';
     description?: string;
 };
 
@@ -17,8 +17,14 @@ export type ArrayType = {
     description?: string;
     properties: PropertyType;
 };
+export type EnumType = {
+    type: 'enum' | 'enum?';
+    description?: string;
+    enumType: 'string' | 'number' | 'string?' | 'number?';
+    enums: {[key: string | number]: string};
+};
 
-export type PropertyType = PrimitiveType | ObjectType | ArrayType;
+export type PropertyType = PrimitiveType | ObjectType | ArrayType | EnumType;
 
 export default class ReqResType {
 
@@ -78,6 +84,21 @@ export default class ReqResType {
         }
 
         const pattern = new RegExp('^\\d{4}-\\d{2}-\\d{2}[ T]\\d{2}:\\d{2}:\\d{2}$');
+        return pattern.test(value);
+    }
+
+    /**
+     * Validates if the given value is in the format YYYY-MM-DD hh:mm
+     * 与えられた値がYYYY-MM-DD hh:mm形式であるかどうかを検証します
+     * @param value - The value to be validated, 検証する値
+     * @returns {boolean} - Whether the value is in the format YYYY-MM-DD hh:mm, 値がYYYY-MM-DD hh:mm形式であるかどうか
+     */
+    protected isYYYYMMDDhhmi(value: any) {
+        if (typeof value !== 'string') {
+            return false;
+        }
+
+        const pattern = new RegExp('^\\d{4}-\\d{2}-\\d{2}[ T]\\d{2}:\\d{2}$');
         return pattern.test(value);
     }
 
@@ -161,6 +182,12 @@ export default class ReqResType {
         return pattern.test(value);
     }
 
+    /**
+     * 値がHTTPS URLであるかどうかを検証します
+     * Validates if the given value is an HTTPS URL
+     * @param value - 検証する値, The value to be validated
+     * @returns {boolean} - 値がHTTPS URLであるかどうか, Whether the value is an HTTPS URL
+     */
     protected isHttps(value: any) {
         if (typeof value !== 'string') {
             return false;
@@ -171,16 +198,45 @@ export default class ReqResType {
     }
 
     /**
+     * 値がBase64形式であるかどうかを検証します
+     * Validates if the given value is in Base64 format
+     * @param value - 検証する値, The value to be validated
+     * @returns {boolean} - 値がBase64形式であるかどうか, Whether the value is in Base64 format
+     */
+    protected isBase64(value: any) {
+        if (typeof value !== 'string') {
+            return false;
+        }
+        
+        // base64は4倍の長さである必要がある
+        if (value.length % 4 !== 0) {
+            return false;
+        }
+        
+        // 基本的なbase64パターン
+        // 使用可能な文字
+        // ・ アルファベット（A-Z, a-z）
+        // ・ 数字（0-9）
+        // ・ +と/（基本文字）
+        // ・ =（パディング文字）
+        const base64Pattern = /^[A-Za-z0-9+/]*={0,2}$/;
+        return base64Pattern.test(value);
+    }
+
+    /**
      * プロパティの型をSwagger形式に変換します
      * Converts the property type to Swagger format
      * @param {string} value - 変換する値, The value to be converted
      * @returns {string} - Swagger形式の値, The value in Swagger format
      */
-    protected replaceFromPropertyTypeToSwagger(value: string): string {
-        value = value.replace('?', '');
-        value = value.replace('number', 'integer');
-        value = value.replace(/datetime|date|time|uuid|mail|https/g, 'string');
-        
-        return value;
+    protected replaceFromPropertyTypeToSwagger(property: PropertyType): string {
+        let propertyType: string = property.type;
+        if (property.type === 'enum' || property.type === 'enum?') {
+            propertyType = property.enumType;
+        }
+        propertyType = propertyType.replace('?', '');
+        propertyType = propertyType.replace('number', 'integer');
+        propertyType = propertyType.replace(/datetime|date|time|uuid|mail|https/g, 'string');
+        return propertyType;
     }
 }

@@ -255,6 +255,18 @@ class ResponseType extends ReqResType_1.default {
                     return value;
                 }
                 return undefined;
+            case 'base64':
+            case 'base64?':
+                if (this.isBase64(value)) {
+                    return value;
+                }
+                return undefined;
+            case 'enum':
+            case 'enum?':
+                if (Object.keys(property.enums).includes(value)) {
+                    return value;
+                }
+                return undefined;
             default:
                 return undefined;
         }
@@ -286,7 +298,7 @@ class ResponseType extends ReqResType_1.default {
         const space = '  '.repeat(tabCount);
         for (const [key, property] of Object.entries(this.properties)) {
             ymlString += `${space}${key}:\n`;
-            ymlString += `${space}  type: ${this.replaceFromPropertyTypeToSwagger(property.type)}\n`;
+            ymlString += `${space}  type: ${this.replaceFromPropertyTypeToSwagger(property)}\n`;
             if (property.description !== undefined) {
                 ymlString += `${space}  description: ${property.description}\n`;
             }
@@ -318,7 +330,7 @@ class ResponseType extends ReqResType_1.default {
         for (const key of Object.keys(properties)) {
             const property = properties[key];
             ymlString += `${space}  ${key}:\n`;
-            ymlString += `${space}    type: ${this.replaceFromPropertyTypeToSwagger(property.type)}\n`;
+            ymlString += `${space}    type: ${this.replaceFromPropertyTypeToSwagger(property)}\n`;
             if (property.description !== undefined) {
                 ymlString += `${space}    description: ${property.description}\n`;
             }
@@ -345,7 +357,7 @@ class ResponseType extends ReqResType_1.default {
         const property = this.getProperty(keys).properties;
         const space = '  '.repeat(tabCount);
         let ymlString = `${space}items:\n`;
-        ymlString += `${space}  type: ${this.replaceFromPropertyTypeToSwagger(property.type)}\n`;
+        ymlString += `${space}  type: ${this.replaceFromPropertyTypeToSwagger(property)}\n`;
         if (property.description !== undefined) {
             ymlString += `${space}  description: ${property.description}\n`;
         }

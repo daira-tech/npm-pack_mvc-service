@@ -29,6 +29,8 @@ class RequestType extends ReqResType_1.default {
         this.INVALID_DATE_ERROR_MESSAGE = '{property} must be a string in "YYYY-MM-DD" format and a valid date. ({value})';
         this.INVALID_TIME_ERROR_MESSAGE = '{property} must be a string in "hh:mi" format and a valid time. ({value})';
         this.INVALID_DATETIME_ERROR_MESSAGE = '{property} must be a string in "YYYY-MM-DD hh:mi:ss" or "YYYY-MM-DDThh:mi:ss" format and a valid date and time. ({value})';
+        this.INVALID_BASE64_ERROR_MESSAGE = '{property} must be in Base64 format. ({value})';
+        this.INVALID_ENUM_ERROR_MESSAGE = '{property} must be in {enums}. ({value})';
     }
     get Params() {
         var _a;
@@ -109,8 +111,23 @@ class RequestType extends ReqResType_1.default {
             "271": this.INVALID_DATETIME_ERROR_MESSAGE,
             "272": this.INVALID_DATETIME_ERROR_MESSAGE,
             "281": this.INVALID_HTTPS_ERROR_MESSAGE,
+            "291": this.INVALID_BASE64_ERROR_MESSAGE,
+            "411": this.INVALID_NUMBER_ERROR_MESSAGE,
+            "421": this.INVALID_BOOL_ERROR_MESSAGE,
+            "422": this.INVALID_BOOL_ERROR_MESSAGE,
+            "423": this.INVALID_BOOL_ERROR_MESSAGE,
+            "431": this.INVALID_STRING_ERROR_MESSAGE,
         };
-        return list[code].replace("{property}", keys.join('.')).replace("{value}", value);
+        let errorMessage = '';
+        if (code === "401" || code === "402") {
+            const property = this.getProperty(keys);
+            errorMessage = this.INVALID_ENUM_ERROR_MESSAGE.replace('{enums}', Object.keys(property.enums).join(','));
+        }
+        else {
+            errorMessage = list[code];
+        }
+        errorMessage = errorMessage.replace("{property}", keys.join('.')).replace("{value}", value);
+        return errorMessage;
     }
     /**
      * Sets the values of the request body to the class properties.
@@ -199,6 +216,10 @@ class RequestType extends ReqResType_1.default {
                         }
                     }
                     break;
+                case 'enum':
+                case 'enum?':
+                    this.setEnum([key], value);
+                    break;
                 default:
                     this.convertInput([key], value);
                     break;
@@ -210,6 +231,52 @@ class RequestType extends ReqResType_1.default {
                 throw new Exception_1.InputErrorException("004", this.ErrorMessage("004", [key], value));
             }
         }
+    }
+    /**
+     * Sets the value for an enum type based on the specified keys.
+     * 指定されたキーに基づいて列挙型の値を設定します。
+     * @param {Array<string | number>} keys - Path to the target (array of strings or index numbers)
+     * 処理対象のパス（文字列またはインデックス番号の配列）
+     * @param {any} value - Value to be set
+     * 設定する値
+     * @throws {InputErrorException} Thrown when the type does not match
+     * 型が一致しない場合にスローされます
+     */
+    setEnum(keys, value) {
+        const property = this.getProperty(keys);
+        const enumType = property.enumType;
+        if (value === undefined || value === null || (typeof value === 'string' && value === '')) {
+            if (enumType.endsWith('?')) {
+                this.changeBody(keys, null);
+            }
+            else {
+                throw new Exception_1.InputErrorException("401", this.ErrorMessage("401", keys, value));
+            }
+        }
+        switch (enumType) {
+            case 'number':
+            case 'number?':
+                if (this.isNumber(value) === false) {
+                    throw new Exception_1.InputErrorException("411", this.ErrorMessage("411", keys, value));
+                }
+                value = Number(value);
+            case 'string':
+            case 'string?':
+                switch (typeof value) {
+                    case 'number':
+                        value = value.toString();
+                        break;
+                    case 'string':
+                        value = value;
+                        break;
+                    default:
+                        throw new Exception_1.InputErrorException("431", this.ErrorMessage("431", keys, value));
+                }
+        }
+        if (Object.keys(property.enums).includes(value) === false) {
+            throw new Exception_1.InputErrorException("402", this.ErrorMessage("402", keys, value));
+        }
+        this.changeBody(keys, value);
     }
     /**
      * Recursively processes array type values.
@@ -245,6 +312,12 @@ class RequestType extends ReqResType_1.default {
                 case 'array':
                 case 'array?':
                     this.setArray([...keys, i], values[i]);
+                    break;
+                case 'enum':
+                case 'enum?':
+                    for (const value of values) {
+                        this.setEnum([...keys, i], value);
+                    }
                     break;
                 default:
                     this.convertInput([...keys, i], values[i]);
@@ -347,6 +420,10 @@ class RequestType extends ReqResType_1.default {
                         throw new Exception_1.InputErrorException("103", this.ErrorMessage("103", [...keys, key], value));
                     }
                     break;
+                case 'enum':
+                case 'enum?':
+                    this.setEnum([...keys, key], value);
+                    break;
                 default:
                     this.convertInput([...keys, key], value);
                     break;
@@ -439,6 +516,9 @@ class RequestType extends ReqResType_1.default {
                 throw new Exception_1.InputErrorException("261", this.ErrorMessage("261", keys, value));
             case 'datetime':
             case 'datetime?':
+                if (this.isYYYYMMDDhhmi(value)) {
+                    value += ':00';
+                }
                 if (this.isYYYYMMDDhhmiss(value) === false) {
                     throw new Exception_1.InputErrorException("271", this.ErrorMessage("271", keys, value));
                 }
@@ -452,6 +532,12 @@ class RequestType extends ReqResType_1.default {
                     return value;
                 }
                 throw new Exception_1.InputErrorException("281", this.ErrorMessage("281", keys, value));
+            case 'base64':
+            case 'base64?':
+                if (this.isBase64(value)) {
+                    return value;
+                }
+                throw new Exception_1.InputErrorException("291", this.ErrorMessage("291", keys, value));
         }
         return value;
     }
@@ -488,12 +574,28 @@ class RequestType extends ReqResType_1.default {
             for (const [key, property] of Object.entries(this.properties)) {
                 ymlString += `${space}- name: ${key}\n`;
                 ymlString += `${space}  in: query\n`;
-                if (property.description !== undefined) {
-                    ymlString += `${space}  description: ${property.description}\n`;
+                if (property.type === 'enum' || property.type === 'enum?') {
+                    const descJoin = `\n${space}    `;
+                    ymlString += `${space}  description: |${property.description === undefined ? '' : `${descJoin}${property.description}`}`;
+                    ymlString += `${descJoin}enum list`;
+                    ymlString += `${Object.entries(property.enums).map(([key, value]) => `${descJoin}- ${key}: ${value}`)}\n`;
+                }
+                else if (property.description !== undefined) {
+                    ymlString += `${space}  description: |\n${space}    ${property.description}\n`;
                 }
                 ymlString += `${space}  required: ${property.type.endsWith('?') ? 'false' : 'true'}\n`;
                 ymlString += `${space}  schema:\n`;
-                ymlString += `${space}    type: ${this.replaceFromPropertyTypeToSwagger(property.type)}\n`;
+                ymlString += `${space}    type: ${this.replaceFromPropertyTypeToSwagger(property)}\n`;
+                if (property.type === 'enum' || property.type === 'enum?') {
+                    ymlString += `${space}  nullable: ${property.enumType.endsWith('?')}\n`;
+                    ymlString += `${space}  enum:\n`;
+                    for (const type of Object.keys(property.enumType)) {
+                        ymlString += `${space}    - ${type}\n`;
+                    }
+                    if (property.enumType.endsWith('?')) {
+                        ymlString += `${space}    - null\n`;
+                    }
+                }
             }
             return ymlString;
         }
@@ -507,9 +609,25 @@ class RequestType extends ReqResType_1.default {
                     requiredList.push(key);
                 }
                 componentYml += `${space}${key}:\n`;
-                componentYml += `  ${space}type: ${this.replaceFromPropertyTypeToSwagger(property.type)}\n`;
-                if (property.description !== undefined) {
-                    componentYml += `  ${space}description: ${property.description}\n`;
+                componentYml += `  ${space}type: ${this.replaceFromPropertyTypeToSwagger(property)}\n`;
+                if (property.type === 'enum' || property.type === 'enum?') {
+                    const descJoin = `\n${space}    `;
+                    componentYml += `${space}  description: |${property.description === undefined ? '' : `${descJoin}${property.description}`}`;
+                    componentYml += `${descJoin}enum list`;
+                    componentYml += `${Object.entries(property.enums).map(([key, value]) => `${descJoin}- ${key}: ${value}`)}\n`;
+                }
+                else if (property.description !== undefined) {
+                    componentYml += `${space}  description: |\n${space}    ${property.description}\n`;
+                }
+                if (property.type === 'enum' || property.type === 'enum?') {
+                    componentYml += `${space}  nullable: ${property.enumType.endsWith('?')}\n`;
+                    componentYml += `${space}  enum:\n`;
+                    for (const type of Object.keys(property.enums)) {
+                        componentYml += `${space}    - ${type}\n`;
+                    }
+                    if (property.enumType.endsWith('?')) {
+                        componentYml += `${space}    - null\n`;
+                    }
                 }
                 switch (property.type) {
                     case 'object':
@@ -554,9 +672,25 @@ class RequestType extends ReqResType_1.default {
         for (const key of Object.keys(properties)) {
             const property = properties[key];
             ymlString += `${space}  ${key}:\n`;
-            ymlString += `${space}    type: ${this.replaceFromPropertyTypeToSwagger(property.type)}\n`;
-            if (property.description !== undefined) {
-                ymlString += `${space}    description: ${property.description}\n`;
+            ymlString += `${space}    type: ${this.replaceFromPropertyTypeToSwagger(property)}\n`;
+            if (property.type === 'enum' || property.type === 'enum?') {
+                const descJoin = `\n${space}      `;
+                ymlString += `${space}    description: |${property.description === undefined ? '' : `${descJoin}${property.description}`}`;
+                ymlString += `${descJoin}enum list`;
+                ymlString += `${Object.entries(property.enums).map(([key, value]) => `${descJoin}- ${key}: ${value}`)}\n`;
+            }
+            else if (property.description !== undefined) {
+                ymlString += `${space}    description: |\n${space}    ${property.description}\n`;
+            }
+            if (property.type === 'enum' || property.type === 'enum?') {
+                ymlString += `${space}    nullable: ${property.enumType.endsWith('?')}\n`;
+                ymlString += `${space}    enum:\n`;
+                for (const type of Object.keys(property.enumType)) {
+                    ymlString += `${space}    - ${type}\n`;
+                }
+                if (property.enumType.endsWith('?')) {
+                    ymlString += `${space}    - null\n`;
+                }
             }
             switch (property.type) {
                 case 'object':
@@ -583,7 +717,7 @@ class RequestType extends ReqResType_1.default {
         const property = this.getProperty(keys).properties;
         const space = '  '.repeat(tabCount);
         let ymlString = `${space}items:\n`;
-        ymlString += `${space}  type: ${this.replaceFromPropertyTypeToSwagger(property.type)}\n`;
+        ymlString += `${space}  type: ${this.replaceFromPropertyTypeToSwagger(property)}\n`;
         ymlString += `${space}  description: ${property.description}\n`;
         switch (property.type) {
             case 'object':

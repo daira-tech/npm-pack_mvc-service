@@ -24,6 +24,8 @@ export class RequestType extends ReqResType {
     public readonly INVALID_DATE_ERROR_MESSAGE = '{property} must be a string in "YYYY-MM-DD" format and a valid date. ({value})';
     public readonly INVALID_TIME_ERROR_MESSAGE = '{property} must be a string in "hh:mi" format and a valid time. ({value})';
     public readonly INVALID_DATETIME_ERROR_MESSAGE = '{property} must be a string in "YYYY-MM-DD hh:mi:ss" or "YYYY-MM-DDThh:mi:ss" format and a valid date and time. ({value})';
+    public readonly INVALID_BASE64_ERROR_MESSAGE = '{property} must be in Base64 format. ({value})';
+    public readonly INVALID_ENUM_ERROR_MESSAGE = '{property} must be in {enums}. ({value})';
 
     private params?: {[key: string]: any};
     get Params():  {[key: string]: any} {
@@ -83,7 +85,7 @@ export class RequestType extends ReqResType {
      */
     private ErrorMessage(code: "990" | "000" | "001" | "002" | "003" | "004" | "101" | "102" | "103" | "104" |
         "201" | "211" | "212" | "213" | "221" | "231" | "241" | "251" | "252" |
-        "261" | "271" | "272" | "281" | "301", keys: Array<string | number>, value: any): string {
+        "261" | "271" | "272" | "281" | "291" | "301" | "401" | "402" | "411" | "421" | "422" | "423" | "431", keys: Array<string | number>, value: any): string {
         const list = {
             "990": this.INVALID_PATH_PARAM_UUID_ERROR_MESSAGE,
             "000": this.REQUIRED_ERROR_MESSAGE,
@@ -109,8 +111,23 @@ export class RequestType extends ReqResType {
             "271": this.INVALID_DATETIME_ERROR_MESSAGE,
             "272": this.INVALID_DATETIME_ERROR_MESSAGE,
             "281": this.INVALID_HTTPS_ERROR_MESSAGE,
+            "291": this.INVALID_BASE64_ERROR_MESSAGE,
+            "411": this.INVALID_NUMBER_ERROR_MESSAGE,
+            "421": this.INVALID_BOOL_ERROR_MESSAGE,
+            "422": this.INVALID_BOOL_ERROR_MESSAGE,
+            "423": this.INVALID_BOOL_ERROR_MESSAGE,
+            "431": this.INVALID_STRING_ERROR_MESSAGE,
         }
-        return list[code].replace("{property}", keys.join('.')).replace("{value}", value);
+
+        let errorMessage = '';
+        if (code === "401" || code === "402") {
+            const property = this.getProperty(keys);
+            errorMessage = this.INVALID_ENUM_ERROR_MESSAGE.replace('{enums}', Object.keys(property.enums).join(','));
+        } else {
+            errorMessage = list[code];
+        }
+        errorMessage = errorMessage.replace("{property}", keys.join('.')).replace("{value}", value)
+        return errorMessage;
     }
 
     /**
@@ -196,6 +213,10 @@ export class RequestType extends ReqResType {
                         }
                     }
                     break;
+                case 'enum':
+                case 'enum?':
+                    this.setEnum([key], value);
+                    break;
                 default:
                     this.convertInput([key], value);
                     break;
@@ -208,6 +229,56 @@ export class RequestType extends ReqResType {
                 throw new InputErrorException("004", this.ErrorMessage("004", [key], value));
             }
         }
+    }
+
+    /**
+     * Sets the value for an enum type based on the specified keys.
+     * 指定されたキーに基づいて列挙型の値を設定します。
+     * @param {Array<string | number>} keys - Path to the target (array of strings or index numbers)
+     * 処理対象のパス（文字列またはインデックス番号の配列）
+     * @param {any} value - Value to be set
+     * 設定する値
+     * @throws {InputErrorException} Thrown when the type does not match
+     * 型が一致しない場合にスローされます
+     */
+    private setEnum(keys: Array<string | number>, value: any) {
+        const property = this.getProperty(keys);
+
+        const enumType = property.enumType;
+        if (value === undefined || value === null || (typeof value === 'string' && value === '')) {
+            if (enumType.endsWith('?')) {
+                this.changeBody(keys, null);
+            } else {
+                throw new InputErrorException("401", this.ErrorMessage("401", keys, value));
+            }
+        }
+
+        switch (enumType) {
+            case 'number':
+            case 'number?':
+                if (this.isNumber(value) === false) {
+                    throw new InputErrorException("411", this.ErrorMessage("411", keys, value));
+                }
+                value = Number(value);
+            case 'string':
+            case 'string?':
+                switch (typeof value) {
+                    case 'number':
+                        value = value.toString();
+                        break;
+                    case 'string':
+                        value = value;
+                        break;
+                    default:
+                        throw new InputErrorException("431", this.ErrorMessage("431", keys, value));
+                }
+        }
+
+        if (Object.keys(property.enums).includes(value) === false) {
+            throw new InputErrorException("402", this.ErrorMessage("402", keys, value));
+        }
+
+        this.changeBody(keys, value);
     }
 
     /**
@@ -245,6 +316,12 @@ export class RequestType extends ReqResType {
                 case 'array':
                 case 'array?':
                     this.setArray([...keys, i], values[i]);
+                    break;
+                case 'enum':
+                case 'enum?':
+                    for (const value of values) {
+                        this.setEnum([...keys, i], value);
+                    }
                     break;
                 default:
                     this.convertInput([...keys, i], values[i]);
@@ -352,6 +429,10 @@ export class RequestType extends ReqResType {
                         throw new InputErrorException("103", this.ErrorMessage("103", [...keys, key], value));
                     }
                     break;
+                case 'enum':
+                case 'enum?':
+                    this.setEnum([...keys, key], value);
+                    break;
                 default:
                     this.convertInput([...keys, key], value);
                     break;
@@ -448,6 +529,10 @@ export class RequestType extends ReqResType {
                 throw new InputErrorException("261", this.ErrorMessage("261", keys, value));
             case 'datetime':
             case 'datetime?':
+                if (this.isYYYYMMDDhhmi(value)) {
+                    value += ':00';
+                }
+
                 if (this.isYYYYMMDDhhmiss(value) === false) {
                     throw new InputErrorException("271", this.ErrorMessage("271", keys, value));
                 }
@@ -462,6 +547,12 @@ export class RequestType extends ReqResType {
                     return value;
                 }
                 throw new InputErrorException("281", this.ErrorMessage("281", keys, value));
+            case 'base64':
+            case 'base64?':
+                if (this.isBase64(value)) {
+                    return value;
+                }
+                throw new InputErrorException("291", this.ErrorMessage("291", keys, value));
         }
 
         return value;
@@ -507,12 +598,27 @@ export class RequestType extends ReqResType {
             for (const [key, property] of Object.entries(this.properties)) {
                 ymlString += `${space}- name: ${key}\n`;
                 ymlString += `${space}  in: query\n`;
-                if (property.description !== undefined) {
-                    ymlString += `${space}  description: ${property.description}\n`;
+                if (property.type === 'enum' || property.type === 'enum?') {
+                    const descJoin = `\n${space}    `;
+                    ymlString += `${space}  description: |${property.description === undefined ? '' : `${descJoin}${property.description}`}`;
+                    ymlString += `${descJoin}enum list`;
+                    ymlString += `${Object.entries(property.enums).map(([key, value]) => `${descJoin}- ${key}: ${value}`)}\n`;
+                } else if (property.description !== undefined) {
+                    ymlString += `${space}  description: |\n${space}    ${property.description}\n`;
                 }
                 ymlString += `${space}  required: ${property.type.endsWith('?') ? 'false' : 'true'}\n`;
                 ymlString += `${space}  schema:\n`;
-                ymlString += `${space}    type: ${this.replaceFromPropertyTypeToSwagger(property.type)}\n`;
+                ymlString += `${space}    type: ${this.replaceFromPropertyTypeToSwagger(property)}\n`;
+                if (property.type === 'enum' || property.type === 'enum?') {
+                    ymlString += `${space}  nullable: ${property.enumType.endsWith('?')}\n`;
+                    ymlString += `${space}  enum:\n`;
+                    for (const type of Object.keys(property.enumType)) {
+                        ymlString += `${space}    - ${type}\n`;
+                    }
+                    if (property.enumType.endsWith('?')) {
+                        ymlString += `${space}    - null\n`;
+                    }
+                }
             }
 
             return ymlString;
@@ -522,16 +628,32 @@ export class RequestType extends ReqResType {
             let componentYml = '\n';
             let requiredList: Array<string> = [];
             for (const [key, property] of Object.entries(this.properties)) {
-    
                 if (property.type.endsWith('?') === false) {
                     requiredList.push(key);
                 }
     
                 componentYml += `${space}${key}:\n`;
-                componentYml += `  ${space}type: ${this.replaceFromPropertyTypeToSwagger(property.type)}\n`;
-                if (property.description !== undefined) {
-                    componentYml += `  ${space}description: ${property.description}\n`;
+                componentYml += `  ${space}type: ${this.replaceFromPropertyTypeToSwagger(property)}\n`;
+                if (property.type === 'enum' || property.type === 'enum?') {
+                    const descJoin = `\n${space}    `;
+                    componentYml += `${space}  description: |${property.description === undefined ? '' : `${descJoin}${property.description}`}`;
+                    componentYml += `${descJoin}enum list`;
+                    componentYml += `${Object.entries(property.enums).map(([key, value]) => `${descJoin}- ${key}: ${value}`)}\n`;
+                } else if (property.description !== undefined) {
+                    componentYml += `${space}  description: |\n${space}    ${property.description}\n`;
                 }
+
+                if (property.type === 'enum' || property.type === 'enum?') {
+                    componentYml += `${space}  nullable: ${property.enumType.endsWith('?')}\n`;
+                    componentYml += `${space}  enum:\n`;
+                    for (const type of Object.keys(property.enums)) {
+                        componentYml += `${space}    - ${type}\n`;
+                    }
+                    if (property.enumType.endsWith('?')) {
+                        componentYml += `${space}    - null\n`;
+                    }
+                }
+
                 switch (property.type) {
                     case 'object':
                     case 'object?':
@@ -585,9 +707,25 @@ export class RequestType extends ReqResType {
 
             
             ymlString += `${space}  ${key}:\n`;
-            ymlString += `${space}    type: ${this.replaceFromPropertyTypeToSwagger(property.type)}\n`;
-            if (property.description !== undefined) {
-                ymlString += `${space}    description: ${property.description}\n`;
+            ymlString += `${space}    type: ${this.replaceFromPropertyTypeToSwagger(property)}\n`;
+            if (property.type === 'enum' || property.type === 'enum?') {
+                const descJoin = `\n${space}      `;
+                ymlString += `${space}    description: |${property.description === undefined ? '' : `${descJoin}${property.description}`}`;
+                ymlString += `${descJoin}enum list`;
+                ymlString += `${Object.entries(property.enums).map(([key, value]) => `${descJoin}- ${key}: ${value}`)}\n`;
+            } else if (property.description !== undefined) {
+                ymlString += `${space}    description: |\n${space}    ${property.description}\n`;
+            }
+
+            if (property.type === 'enum' || property.type === 'enum?') {
+                ymlString += `${space}    nullable: ${property.enumType.endsWith('?')}\n`;
+                ymlString += `${space}    enum:\n`;
+                for (const type of Object.keys(property.enumType)) {
+                    ymlString += `${space}    - ${type}\n`;
+                }
+                if (property.enumType.endsWith('?')) {
+                    ymlString += `${space}    - null\n`;
+                }
             }
 
             switch (property.type) {
@@ -620,7 +758,7 @@ export class RequestType extends ReqResType {
         const space = '  '.repeat(tabCount);
 
         let ymlString = `${space}items:\n`;
-        ymlString += `${space}  type: ${this.replaceFromPropertyTypeToSwagger(property.type)}\n`;
+        ymlString += `${space}  type: ${this.replaceFromPropertyTypeToSwagger(property)}\n`;
         ymlString += `${space}  description: ${property.description}\n`;
 
         switch (property.type) {

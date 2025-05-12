@@ -277,6 +277,18 @@ export class ResponseType extends ReqResType {
                     return value;
                 }
                 return undefined;
+            case 'base64':
+            case 'base64?':
+                if (this.isBase64(value)) {
+                    return value;
+                }
+                return undefined;
+            case 'enum':
+            case 'enum?':
+                if (Object.keys(property.enums).includes(value)) {
+                    return value;
+                }
+                return undefined;
             default:
                 return undefined;
         }
@@ -315,7 +327,7 @@ export class ResponseType extends ReqResType {
         for (const [key, property] of Object.entries(this.properties)) {
 
             ymlString += `${space}${key}:\n`;
-            ymlString += `${space}  type: ${this.replaceFromPropertyTypeToSwagger(property.type)}\n`;
+            ymlString += `${space}  type: ${this.replaceFromPropertyTypeToSwagger(property)}\n`;
             if (property.description !== undefined) {
                 ymlString += `${space}  description: ${property.description}\n`;
             }
@@ -352,7 +364,7 @@ export class ResponseType extends ReqResType {
             const property = properties[key];
 
             ymlString += `${space}  ${key}:\n`;
-            ymlString += `${space}    type: ${this.replaceFromPropertyTypeToSwagger(property.type)}\n`;
+            ymlString += `${space}    type: ${this.replaceFromPropertyTypeToSwagger(property)}\n`;
             if (property.description !== undefined) {
                 ymlString += `${space}    description: ${property.description}\n`;
             }
@@ -383,7 +395,7 @@ export class ResponseType extends ReqResType {
         const space = '  '.repeat(tabCount);
 
         let ymlString = `${space}items:\n`;
-        ymlString += `${space}  type: ${this.replaceFromPropertyTypeToSwagger(property.type)}\n`;
+        ymlString += `${space}  type: ${this.replaceFromPropertyTypeToSwagger(property)}\n`;
         if (property.description !== undefined) {
             ymlString += `${space}  description: ${property.description}\n`;
         }
