@@ -38,7 +38,7 @@ export default class ReqResType {
      */
     protected isErrorDateTime(value: string): boolean {
         try {
-            const [datePart, timePart] = value.split(' ');
+            const [datePart, timePart] = value.split(/[ T]/);
             const [year, month, day] = datePart.split('-').map(Number);
             let [hour, minute, sec] = [0, 0, 0];
             if (timePart !== undefined) {
