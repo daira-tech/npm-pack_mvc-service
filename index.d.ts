@@ -2,6 +2,8 @@ import { Request, Response } from 'express';
 import { Pool, PoolClient } from 'pg';
 import { IncomingHttpHeaders } from './src/RequestType';
 import { ArrayType, EnumType, ObjectType, PrimitiveType } from './src/ReqResType';
+import S3Client from './src/S3Client';
+import Base64Client from './src/Base64Client';
 
 declare module 'mvc-service' {
     export type MethodType = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
@@ -44,6 +46,9 @@ declare module 'mvc-service' {
         public commit(): Promise<void>;
         public rollback(): Promise<void>;
         public release(): Promise<void>;
+
+        get S3Client(): S3Client;
+        get Base64Client(): Base64Client;
     }
 
     export interface IParams {

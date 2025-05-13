@@ -8,12 +8,17 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Service = void 0;
 const pg_1 = require("pg");
 const Exception_1 = require("./Exception");
 const RequestType_1 = require("./RequestType");
 const ResponseType_1 = require("./ResponseType");
+const S3Client_1 = __importDefault(require("./S3Client"));
+const Base64Client_1 = __importDefault(require("./Base64Client"));
 class Service {
     get Method() { return this.method; }
     get Endpoint() { return this.endpoint; }
@@ -155,6 +160,18 @@ class Service {
                 yield this.Pool.end();
             }
         });
+    }
+    get S3Client() {
+        if (this.s3Client === undefined) {
+            this.s3Client = new S3Client_1.default();
+        }
+        return this.s3Client;
+    }
+    get Base64Client() {
+        if (this.base64Client === undefined) {
+            this.base64Client = new Base64Client_1.default();
+        }
+        return this.base64Client;
     }
 }
 exports.Service = Service;

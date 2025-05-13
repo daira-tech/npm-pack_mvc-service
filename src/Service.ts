@@ -3,6 +3,8 @@ import { Pool, type PoolClient } from 'pg';
 import { MaintenanceException, AuthException, InputErrorException, ForbiddenException } from './Exception';
 import { RequestType } from './RequestType';
 import { ResponseType } from './ResponseType';
+import S3Client from './S3Client';
+import Base64Client from './Base64Client';
 
 export type MethodType = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
 
@@ -140,5 +142,21 @@ export class Service {
             // In tests, the connection is terminated because it is shut down every time
             await this.Pool.end();
         }
+    }
+
+    private s3Client?: S3Client;
+    get S3Client(): S3Client {
+        if (this.s3Client === undefined) {
+            this.s3Client = new S3Client();
+        }
+        return this.s3Client;
+    }
+
+    private base64Client? : Base64Client;
+    get Base64Client(): Base64Client {
+        if (this.base64Client === undefined) {
+            this.base64Client = new Base64Client();
+        }
+        return this.base64Client;
     }
 }
