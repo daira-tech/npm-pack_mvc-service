@@ -21,6 +21,15 @@ class Base64Client {
     // }
     tryDecode(base64) {
         try {
+            // Data URLのパターンをチェック
+            if (base64.startsWith('data:')) {
+                const matches = base64.match(/^data:([A-Za-z-+/]+);base64,(.+)$/);
+                if (!matches || matches.length !== 3) {
+                    return false;
+                }
+                // base64部分のみを取得
+                base64 = matches[2];
+            }
             if (base64.length % 4 !== 0) {
                 return false;
             }
@@ -38,16 +47,23 @@ class Base64Client {
         try {
             let buffer;
             if (typeof data === 'string') {
+                // Data URLのパターンをチェック
+                if (data.startsWith('data:')) {
+                    const matches = data.match(/^data:([A-Za-z-+/]+);base64,(.+)$/);
+                    if (!matches || matches.length !== 3) {
+                        throw new Error('Invalid Data URL format');
+                    }
+                    // base64部分のみを取得
+                    data = matches[2];
+                }
                 buffer = this.tryDecode(data);
             }
             else {
                 buffer = data;
             }
-            console.log('buffer', buffer);
             if (buffer === false) {
                 throw new Error('Cannot getMineType because the input is not in base64 format.');
             }
-            // const header = buffer.slice(0, 4);
             const header = buffer.subarray(0, 4);
             console.log('header', header);
             if (header[0] === 0x25 && header[1] === 0x50 && header[2] === 0x44 && header[3] === 0x46) {
@@ -66,7 +82,7 @@ class Base64Client {
             throw new Error('Cannot getMimeType because the file type is not PDF, PNG, JPEG, or GIF.');
         }
         catch (_a) {
-            throw new Error('Cannot getMimeType because the input is not in base64 format.');
+            throw new Error('Cannot getMineType because the input is not in base64 format.');
         }
     }
     mergeToPdfBase64(datas) {
