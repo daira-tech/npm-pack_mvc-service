@@ -260,6 +260,7 @@ export class RequestType extends ReqResType {
                     throw new InputErrorException("411", this.ErrorMessage("411", keys, value));
                 }
                 value = Number(value);
+                break;
             case 'string':
             case 'string?':
                 switch (typeof value) {
@@ -272,9 +273,10 @@ export class RequestType extends ReqResType {
                     default:
                         throw new InputErrorException("431", this.ErrorMessage("431", keys, value));
                 }
+                break;
         }
 
-        if (Object.keys(property.enums).includes(value) === false) {
+        if (Object.keys(property.enums).includes(value.toString()) === false) {
             throw new InputErrorException("402", this.ErrorMessage("402", keys, value));
         }
 
