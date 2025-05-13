@@ -15,16 +15,31 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const aws_sdk_1 = __importDefault(require("aws-sdk"));
 const Base64Client_1 = __importDefault(require("./Base64Client"));
 class S3Client {
+    get urlPrefix() {
+        return `https://${this.bucketName}.${this.region}`;
+    }
     constructor() {
         this.bucketName = process.env.S3_BUCKET_NAME;
+        this.region = process.env.S3_REGION;
         this.client = this.setClient();
     }
     setClient() {
         return new aws_sdk_1.default.S3({
             accessKeyId: process.env.S3_ACCESS_KEY_ID,
             secretAccessKey: process.env.S3_SECRET_ACCESS_KEY,
-            region: process.env.S3_REGION
+            region: this.region
         });
+    }
+    url(path, fileName = '') {
+        path = path.replace(/^\/|\/$/g, '');
+        let url = `${this.urlPrefix}`;
+        if (path !== '') {
+            url += '/' + path;
+        }
+        if (fileName !== '') {
+            url += '/' + fileName;
+        }
+        return url;
     }
     uploadJson(path, fileName, data) {
         return __awaiter(this, void 0, void 0, function* () {
@@ -37,10 +52,10 @@ class S3Client {
             }).promise();
         });
     }
-    uploadToPdf(path, fileName, datas) {
+    uploadToPdf(path, fileName, base64Datas) {
         return __awaiter(this, void 0, void 0, function* () {
             const base64Client = new Base64Client_1.default();
-            const mergedPdfBase64 = yield base64Client.mergeToPdfBase64(datas);
+            const mergedPdfBase64 = yield base64Client.mergeToPdfBase64(base64Datas);
             path = path.replace(/^\/|\/$/g, '');
             yield this.client.putObject({
                 Bucket: this.bucketName,

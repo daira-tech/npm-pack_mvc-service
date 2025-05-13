@@ -4,6 +4,10 @@ import Base64Client from './Base64Client';
 export default class S3Client {
     private client: AWS.S3;
     private readonly bucketName = process.env.S3_BUCKET_NAME as string;
+    private readonly region = process.env.S3_REGION as string;
+    get urlPrefix(): string {
+        return `https://${this.bucketName}.${this.region}`;
+    }
 
     constructor() {
         this.client = this.setClient();
@@ -13,8 +17,21 @@ export default class S3Client {
         return new AWS.S3({
             accessKeyId: process.env.S3_ACCESS_KEY_ID,
             secretAccessKey: process.env.S3_SECRET_ACCESS_KEY,
-            region: process.env.S3_REGION
+            region: this.region
         });
+    }
+
+    public url(path: string, fileName: string = '') {
+        path = path.replace(/^\/|\/$/g, '');
+        let url = `${this.urlPrefix}`;
+        if (path !== '') {
+            url += '/' + path;
+        }
+
+        if (fileName !== '') {
+            url += '/' + fileName;
+        }
+        return url;
     }
 
     public async uploadJson(path: string, fileName: string, data: {[key: string]: any}) {
