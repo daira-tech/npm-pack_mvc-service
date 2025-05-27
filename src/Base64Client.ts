@@ -59,7 +59,6 @@ export default class Base64Client {
             }
 
             const header = buffer.subarray(0, 4);
-            console.log('header', header);
             if (header[0] === 0x25 && header[1] === 0x50 && header[2] === 0x44 && header[3] === 0x46) {
                 return 'application/pdf';
             } else if (header[0] === 0x89 && header[1] === 0x50 && header[2] === 0x4E && header[3] === 0x47) {
@@ -69,8 +68,6 @@ export default class Base64Client {
             } else if (header[0] === 0x47 && header[1] === 0x49 && header[2] === 0x46 && header[3] === 0x38) {
                 return 'image/gif';
             }
-
-            console.log('getMimeType ERROR');
 
             throw new Error('Cannot getMimeType because the file type is not PDF, PNG, JPEG, or GIF.');
         } catch {

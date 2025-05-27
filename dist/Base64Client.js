@@ -65,7 +65,6 @@ class Base64Client {
                 throw new Error('Cannot getMineType because the input is not in base64 format.');
             }
             const header = buffer.subarray(0, 4);
-            console.log('header', header);
             if (header[0] === 0x25 && header[1] === 0x50 && header[2] === 0x44 && header[3] === 0x46) {
                 return 'application/pdf';
             }
@@ -78,7 +77,6 @@ class Base64Client {
             else if (header[0] === 0x47 && header[1] === 0x49 && header[2] === 0x46 && header[3] === 0x38) {
                 return 'image/gif';
             }
-            console.log('getMimeType ERROR');
             throw new Error('Cannot getMimeType because the file type is not PDF, PNG, JPEG, or GIF.');
         }
         catch (_a) {

@@ -12,22 +12,21 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const aws_sdk_1 = __importDefault(require("aws-sdk"));
+const client_s3_1 = require("@aws-sdk/client-s3");
 const Base64Client_1 = __importDefault(require("./Base64Client"));
-class S3Client {
+class S3Clienta {
     get urlPrefix() {
         return `https://${this.bucketName}.s3.${this.region}.amazonaws.com`;
     }
     constructor() {
         this.bucketName = process.env.S3_BUCKET_NAME;
         this.region = process.env.S3_REGION;
-        this.client = this.setClient();
-    }
-    setClient() {
-        return new aws_sdk_1.default.S3({
-            accessKeyId: process.env.S3_ACCESS_KEY_ID,
-            secretAccessKey: process.env.S3_SECRET_ACCESS_KEY,
-            region: this.region
+        this.client = new client_s3_1.S3Client({
+            region: this.region,
+            credentials: {
+                accessKeyId: process.env.S3_ACCESS_KEY_ID,
+                secretAccessKey: process.env.S3_SECRET_ACCESS_KEY
+            }
         });
     }
     makeKey(path, fileName) {
@@ -46,34 +45,63 @@ class S3Client {
     }
     uploadJson(path, fileName, data) {
         return __awaiter(this, void 0, void 0, function* () {
-            yield this.client.putObject({
+            const command = new client_s3_1.PutObjectCommand({
                 Bucket: this.bucketName,
                 Key: this.makeKey(path, fileName),
                 Body: JSON.stringify(data),
-                ContentType: 'application/json',
-            }).promise();
+                ContentType: 'text/plain; charset=utf-8'
+            });
+            yield this.client.send(command);
         });
     }
     uploadToPdf(path, fileName, base64Datas) {
         return __awaiter(this, void 0, void 0, function* () {
             const base64Client = new Base64Client_1.default();
             const mergedPdfBase64 = yield base64Client.mergeToPdfBase64(base64Datas);
-            yield this.client.putObject({
+            const command = new client_s3_1.PutObjectCommand({
                 Bucket: this.bucketName,
                 Key: this.makeKey(path, fileName),
                 Body: Buffer.from(mergedPdfBase64, 'base64'),
-                ContentType: 'application/pdf',
-            }).promise();
+                ContentEncoding: 'base64',
+                ContentType: 'application/pdf'
+            });
+            yield this.client.send(command);
         });
     }
     uploadText(path, fileName, text) {
         return __awaiter(this, void 0, void 0, function* () {
-            yield this.client.putObject({
+            const command = new client_s3_1.PutObjectCommand({
                 Bucket: this.bucketName,
                 Key: this.makeKey(path, fileName),
                 Body: text,
-                ContentType: 'text/plain',
-            }).promise();
+                ContentType: 'text/plain; charset=utf-8'
+            });
+            yield this.client.send(command);
+        });
+    }
+    uploadBase64Data(path, fileName, base64Data) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const base64Client = new Base64Client_1.default();
+            const type = base64Client.getMimeType(base64Data);
+            const extension = {
+                'image/png': '.png',
+                'image/jpeg': '.jpeg',
+                'image/gif': '.gif',
+                'application/pdf': '.pdf'
+            }[type];
+            if (fileName.endsWith(extension) === false) {
+                fileName += extension;
+            }
+            const key = this.makeKey(path, fileName);
+            const command = new client_s3_1.PutObjectCommand({
+                Bucket: this.bucketName,
+                Key: key,
+                Body: Buffer.from(base64Data, 'base64'),
+                ContentEncoding: 'base64',
+                ContentType: type
+            });
+            yield this.client.send(command);
+            return `${this.urlPrefix}/${key}`;
         });
     }
     uploadStackText(path, fileName, text) {
@@ -89,17 +117,29 @@ class S3Client {
         return __awaiter(this, void 0, void 0, function* () {
             var _a;
             try {
-                const res = yield this.client.getObject({
+                const command = new client_s3_1.GetObjectCommand({
                     Bucket: this.bucketName,
                     Key: this.makeKey(path, fileName),
-                }).promise();
+                });
+                const res = yield this.client.send(command);
                 if (res.Body === undefined) {
                     throw new Error(`Failed to get text data. Response body is undefined.`);
                 }
                 if (((_a = res.ContentType) === null || _a === void 0 ? void 0 : _a.startsWith('text/')) === false) {
                     throw new Error(`Cannot get text data from non-text file. ContentType: ${res.ContentType}`);
                 }
-                return res.Body.toString('utf-8');
+                // v3ではBodyがReadableStreamなので、変換が必要
+                const stream = res.Body;
+                const reader = stream.getReader();
+                const chunks = [];
+                while (true) {
+                    const { done, value } = yield reader.read();
+                    if (done)
+                        break;
+                    chunks.push(value);
+                }
+                const buffer = Buffer.concat(chunks);
+                return buffer.toString('utf-8');
             }
             catch (ex) {
                 if (ex instanceof Error && ex.name === 'NoSuchKey') {
@@ -110,4 +150,4 @@ class S3Client {
         });
     }
 }
-exports.default = S3Client;
+exports.default = S3Clienta;

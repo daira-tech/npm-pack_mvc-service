@@ -19,6 +19,7 @@ const RequestType_1 = require("./RequestType");
 const ResponseType_1 = require("./ResponseType");
 const S3Client_1 = __importDefault(require("./S3Client"));
 const Base64Client_1 = __importDefault(require("./Base64Client"));
+const StringClient_1 = __importDefault(require("./StringClient"));
 class Service {
     get Method() { return this.method; }
     get Endpoint() { return this.endpoint; }
@@ -172,6 +173,12 @@ class Service {
             this.base64Client = new Base64Client_1.default();
         }
         return this.base64Client;
+    }
+    get StringClient() {
+        if (this.stringClient === undefined) {
+            this.stringClient = new StringClient_1.default();
+        }
+        return this.stringClient;
     }
 }
 exports.Service = Service;

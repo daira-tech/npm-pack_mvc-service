@@ -4,6 +4,7 @@ import { IncomingHttpHeaders } from './src/RequestType';
 import { ArrayType, EnumType, ObjectType, PrimitiveType } from './src/ReqResType';
 import S3Client from './src/S3Client';
 import Base64Client from './src/Base64Client';
+import StringClient from './src/StringClient';
 
 declare module 'mvc-service' {
     export type MethodType = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
@@ -49,6 +50,7 @@ declare module 'mvc-service' {
 
         get S3Client(): S3Client;
         get Base64Client(): Base64Client;
+        get StringClient(): StringClient;
     }
 
     export interface IParams {

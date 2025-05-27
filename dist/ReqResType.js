@@ -189,7 +189,7 @@ class ReqResType {
         }
         propertyType = propertyType.replace('?', '');
         propertyType = propertyType.replace('number', 'integer');
-        propertyType = propertyType.replace(/datetime|date|time|uuid|mail|https/g, 'string');
+        propertyType = propertyType.replace(/datetime|date|time|uuid|mail|https|base64/g, 'string');
         return propertyType;
     }
 }

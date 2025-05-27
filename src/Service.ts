@@ -5,6 +5,7 @@ import { RequestType } from './RequestType';
 import { ResponseType } from './ResponseType';
 import S3Client from './S3Client';
 import Base64Client from './Base64Client';
+import StringClient from './StringClient';
 
 export type MethodType = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
 
@@ -158,5 +159,13 @@ export class Service {
             this.base64Client = new Base64Client();
         }
         return this.base64Client;
+    }
+
+    private stringClient? : StringClient;
+    get StringClient(): StringClient {
+        if (this.stringClient === undefined) {
+            this.stringClient = new StringClient();
+        }
+        return this.stringClient;
     }
 }
