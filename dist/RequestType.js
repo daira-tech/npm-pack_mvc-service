@@ -668,6 +668,7 @@ class RequestType extends ReqResType_1.default {
      * Swagger形式のプロパティ定義
      */
     makeSwaggerProperyFromObject(keys, tabCount) {
+        var _a;
         const space = '  '.repeat(tabCount);
         let ymlString = `${space}properties:\n`;
         const properties = this.getProperty(keys).properties;
@@ -681,8 +682,8 @@ class RequestType extends ReqResType_1.default {
                 ymlString += `${descJoin}enum list`;
                 ymlString += `${Object.entries(property.enums).map(([key, value]) => `${descJoin}- ${key}: ${value}`)}\n`;
             }
-            else if (property.description !== undefined) {
-                ymlString += `${space}    description: |\n${space}    ${property.description}\n`;
+            else if (((_a = property.description) !== null && _a !== void 0 ? _a : '') !== '') {
+                ymlString += `${space}    description: ${property.description}\n`;
             }
             if (property.type === 'enum' || property.type === 'enum?') {
                 ymlString += `${space}    nullable: ${property.enumType.endsWith('?')}\n`;
@@ -716,11 +717,14 @@ class RequestType extends ReqResType_1.default {
      * Swagger形式のプロパティ定義
      */
     makeSwaggerPropertyFromArray(keys, tabCount) {
+        var _a;
         const property = this.getProperty(keys).properties;
         const space = '  '.repeat(tabCount);
         let ymlString = `${space}items:\n`;
         ymlString += `${space}  type: ${this.replaceFromPropertyTypeToSwagger(property)}\n`;
-        ymlString += `${space}  description: ${property.description}\n`;
+        if (((_a = property.description) !== null && _a !== void 0 ? _a : '') !== '') {
+            ymlString += `${space}  description: ${property.description}\n`;
+        }
         switch (property.type) {
             case 'object':
             case 'object?':

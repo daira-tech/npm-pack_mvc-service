@@ -715,8 +715,8 @@ export class RequestType extends ReqResType {
                 ymlString += `${space}    description: |${property.description === undefined ? '' : `${descJoin}${property.description}`}`;
                 ymlString += `${descJoin}enum list`;
                 ymlString += `${Object.entries(property.enums).map(([key, value]) => `${descJoin}- ${key}: ${value}`)}\n`;
-            } else if (property.description !== undefined) {
-                ymlString += `${space}    description: |\n${space}    ${property.description}\n`;
+            } else if ((property.description ?? '') !== '') {
+                ymlString += `${space}    description: ${property.description}\n`;
             }
 
             if (property.type === 'enum' || property.type === 'enum?') {
@@ -761,7 +761,10 @@ export class RequestType extends ReqResType {
 
         let ymlString = `${space}items:\n`;
         ymlString += `${space}  type: ${this.replaceFromPropertyTypeToSwagger(property)}\n`;
-        ymlString += `${space}  description: ${property.description}\n`;
+        if ((property.description ?? '') !== '') {
+            ymlString += `${space}  description: ${property.description}\n`;
+        }
+
 
         switch (property.type) {
             case 'object':
