@@ -30,7 +30,11 @@ class S3Clienta {
         });
     }
     makeKey(path, fileName) {
-        return `${path.replace(/^\/|\/$/g, '')}/${fileName}`;
+        path = path.replace(/^\/|\/$/g, '');
+        if ((fileName !== null && fileName !== void 0 ? fileName : '').trim().length > 0) {
+            path += '/' + fileName;
+        }
+        return path;
     }
     url(path, fileName = '') {
         path = path.replace(/^\/|\/$/g, '');
@@ -38,7 +42,7 @@ class S3Clienta {
         if (path !== '') {
             url += '/' + path;
         }
-        if (fileName !== '') {
+        if (fileName.trim().length > 0) {
             url += '/' + fileName;
         }
         return url;
@@ -146,6 +150,43 @@ class S3Clienta {
                     return null;
                 }
                 throw ex;
+            }
+        });
+    }
+    getFilesInDir(path) {
+        return __awaiter(this, void 0, void 0, function* () {
+            var _a;
+            const listCommand = new client_s3_1.ListObjectsV2Command({
+                Bucket: this.bucketName,
+                Prefix: this.makeKey(path),
+            });
+            const data = yield this.client.send(listCommand);
+            return (_a = data.Contents) !== null && _a !== void 0 ? _a : [];
+        });
+    }
+    deleteFile(path, fileName) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const key = this.makeKey(path, fileName);
+            const command = new client_s3_1.DeleteObjectsCommand({
+                Bucket: this.bucketName,
+                Delete: {
+                    Objects: [{ Key: key }]
+                }
+            });
+            yield this.client.send(command);
+        });
+    }
+    deleteDir(path) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const files = yield this.getFilesInDir(path);
+            if (files.length > 0) {
+                const deleteCommand = new client_s3_1.DeleteObjectsCommand({
+                    Bucket: this.bucketName,
+                    Delete: {
+                        Objects: files.map((file) => ({ Key: file.Key })),
+                    },
+                });
+                yield this.client.send(deleteCommand);
             }
         });
     }

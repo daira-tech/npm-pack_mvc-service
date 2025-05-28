@@ -1,4 +1,4 @@
-import { GetObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import { _Object, DeleteObjectsCommand, GetObjectCommand, ListObjectsV2Command, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import Base64Client from './Base64Client';
 
 export default class S3Clienta {
@@ -20,8 +20,12 @@ export default class S3Clienta {
         });
     }
 
-    private makeKey(path: string, fileName: string): string {
-        return `${path.replace(/^\/|\/$/g, '')}/${fileName}`;
+    private makeKey(path: string, fileName?: string): string {
+        path = path.replace(/^\/|\/$/g, '');
+        if ((fileName ?? '').trim().length > 0) {
+            path += '/' + fileName;
+        }
+        return path;
     }
 
     public url(path: string, fileName: string = '') {
@@ -31,7 +35,7 @@ export default class S3Clienta {
             url += '/' + path;
         }
 
-        if (fileName !== '') {
+        if (fileName.trim().length > 0) {
             url += '/' + fileName;
         }
         return url;
@@ -141,6 +145,40 @@ export default class S3Clienta {
                 return null;
             }
             throw ex;
+        }
+    }
+
+    public async getFilesInDir(path: string): Promise<Array<_Object>> {
+        const listCommand = new ListObjectsV2Command({
+            Bucket: this.bucketName,
+            Prefix: this.makeKey(path),
+        });
+
+        const data = await this.client.send(listCommand);
+        return data.Contents ?? [];
+    }
+
+    public async deleteFile(path: string, fileName: string): Promise<void> {
+        const key = this.makeKey(path, fileName);
+        const command = new DeleteObjectsCommand({
+            Bucket: this.bucketName,
+            Delete: {
+                Objects: [{ Key: key }]
+            }
+        });
+        await this.client.send(command);
+    }
+
+    public async deleteDir(path: string): Promise<void> {
+        const files = await this.getFilesInDir(path);
+        if (files.length > 0) {
+            const deleteCommand = new DeleteObjectsCommand({
+                Bucket: this.bucketName,
+                Delete: {
+                    Objects: files.map((file) => ({ Key: file.Key })),
+                },
+            });
+            await this.client.send(deleteCommand);
         }
     }
 }
