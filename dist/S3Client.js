@@ -8,6 +8,13 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+var __asyncValues = (this && this.__asyncValues) || function (o) {
+    if (!Symbol.asyncIterator) throw new TypeError("Symbol.asyncIterator is not defined.");
+    var m = o[Symbol.asyncIterator], i;
+    return m ? m.call(o) : (o = typeof __values === "function" ? __values(o) : o[Symbol.iterator](), i = {}, verb("next"), verb("throw"), verb("return"), i[Symbol.asyncIterator] = function () { return this; }, i);
+    function verb(n) { i[n] = o[n] && function (v) { return new Promise(function (resolve, reject) { v = o[n](v), settle(resolve, reject, v.done, v.value); }); }; }
+    function settle(resolve, reject, d, v) { Promise.resolve(v).then(function(v) { resolve({ value: v, done: d }); }, reject); }
+};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
@@ -162,6 +169,42 @@ class S3Clienta {
             });
             const data = yield this.client.send(listCommand);
             return (_a = data.Contents) !== null && _a !== void 0 ? _a : [];
+        });
+    }
+    getDataFronJson(path, fileName) {
+        return __awaiter(this, void 0, void 0, function* () {
+            var _a, e_1, _b, _c;
+            const command = new client_s3_1.GetObjectCommand({
+                Bucket: this.bucketName,
+                Key: this.makeKey(path, fileName),
+            });
+            const res = yield this.client.send(command);
+            if (res.Body === undefined) {
+                throw new Error(`Failed to get JSON data. Response body is undefined.`);
+            }
+            if (res.ContentType !== 'application/json') {
+                throw new Error(`Cannot get JSON data from non-JSON file. ContentType: ${res.ContentType}`);
+            }
+            // v3ではBodyがReadableなので、変換が必要
+            const chunks = [];
+            try {
+                for (var _d = true, _e = __asyncValues(res.Body), _f; _f = yield _e.next(), _a = _f.done, !_a; _d = true) {
+                    _c = _f.value;
+                    _d = false;
+                    const chunk = _c;
+                    chunks.push(chunk);
+                }
+            }
+            catch (e_1_1) { e_1 = { error: e_1_1 }; }
+            finally {
+                try {
+                    if (!_d && !_a && (_b = _e.return)) yield _b.call(_e);
+                }
+                finally { if (e_1) throw e_1.error; }
+            }
+            const buffer = Buffer.concat(chunks);
+            const jsonString = buffer.toString('utf-8');
+            return JSON.parse(jsonString);
         });
     }
     deleteFile(path, fileName) {

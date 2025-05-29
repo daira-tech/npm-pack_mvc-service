@@ -158,6 +158,32 @@ export default class S3Clienta {
         return data.Contents ?? [];
     }
 
+    public async getDataFronJson<T = any>(path: string, fileName: string): Promise<T> {
+        const command = new GetObjectCommand({
+            Bucket: this.bucketName,
+            Key: this.makeKey(path, fileName),
+        });
+        const res = await this.client.send(command);
+
+        if (res.Body === undefined) {
+            throw new Error(`Failed to get JSON data. Response body is undefined.`);
+        }
+
+        if (res.ContentType !== 'application/json') {
+            throw new Error(`Cannot get JSON data from non-JSON file. ContentType: ${res.ContentType}`);
+        }
+
+        // v3ではBodyがReadableなので、変換が必要
+        const chunks: Uint8Array[] = [];
+        for await (const chunk of res.Body as any) {
+            chunks.push(chunk);
+        }
+        
+        const buffer = Buffer.concat(chunks);
+        const jsonString = buffer.toString('utf-8');
+        return JSON.parse(jsonString) as T;
+    }
+
     public async deleteFile(path: string, fileName: string): Promise<void> {
         const key = this.makeKey(path, fileName);
         const command = new DeleteObjectsCommand({
