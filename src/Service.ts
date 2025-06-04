@@ -6,6 +6,7 @@ import { ResponseType } from './ResponseType';
 import S3Client from './S3Client';
 import Base64Client from './Base64Client';
 import StringClient from './StringClient';
+import EncryptClient from './EncryptClient';
 
 export type MethodType = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
 
@@ -148,7 +149,12 @@ export class Service {
     private s3Client?: S3Client;
     get S3Client(): S3Client {
         if (this.s3Client === undefined) {
-            this.s3Client = new S3Client();
+            this.s3Client = new S3Client({
+                bucketName: process.env.S3_BUCKET_NAME,
+                region: process.env.S3_REGION,
+                accessKeyId: process.env.S3_ACCESS_KEY_ID,
+                secretAccessKey: process.env.S3_SECRET_ACCESS_KEY
+            });
         }
         return this.s3Client;
     }
@@ -167,5 +173,17 @@ export class Service {
             this.stringClient = new StringClient();
         }
         return this.stringClient;
+    }
+
+    private encryptClient?: EncryptClient;
+    get EncryptClient(): EncryptClient {
+        if (this.encryptClient === undefined) {
+            this.encryptClient = new EncryptClient({
+                secretKeyHex: process.env.SECRET_KEY_HEX,
+                hmacKeyBase64: process.env.HMAC_KEY_BASE64
+            });
+        }
+
+        return this.encryptClient;
     }
 }

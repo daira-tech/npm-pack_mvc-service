@@ -1,23 +1,42 @@
-import { _Object, DeleteObjectsCommand, GetObjectCommand, ListObjectsV2Command, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import { _Object, DeleteObjectsCommand, GetObjectCommand, ListObjectsV2Command, PutObjectCommand, S3Client, ScanRange } from '@aws-sdk/client-s3';
 import Base64Client from './Base64Client';
 
 export default class S3Clienta {
     private client: S3Client;
-    
-    private readonly bucketName = process.env.S3_BUCKET_NAME as string;
-    private readonly region = process.env.S3_REGION as string;
+
+    private readonly bucketName;
+    private readonly region;
     get urlPrefix(): string {
         return `https://${this.bucketName}.s3.${this.region}.amazonaws.com`;
     }
 
-    constructor() {
+    constructor(params: {bucketName?: string, region?: string; accessKeyId?: string, secretAccessKey?: string}) {
+        if (params.bucketName === undefined) {
+            throw new Error("Please specify the bucketName.");
+        }
+
+        if (params.region === undefined) {
+            throw new Error("Please specify the region.");
+        }
+
+        if (params.accessKeyId === undefined) {
+            throw new Error("Please specify the accessKeyId.");
+        }
+
+        if (params.secretAccessKey === undefined) {
+            throw new Error("Please specify the secretAccessKey.");
+        }
+
         this.client = new S3Client({
-            region: this.region,
+            region: params.region,
             credentials: {
-                accessKeyId: process.env.S3_ACCESS_KEY_ID as string,
-                secretAccessKey: process.env.S3_SECRET_ACCESS_KEY as string
+                accessKeyId: params.accessKeyId,
+                secretAccessKey: params.secretAccessKey
             }
         });
+
+        this.region = params.region;
+        this.bucketName = params.bucketName;
     }
 
     private makeKey(path: string, fileName?: string): string {

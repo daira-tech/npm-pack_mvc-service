@@ -25,16 +25,28 @@ class S3Clienta {
     get urlPrefix() {
         return `https://${this.bucketName}.s3.${this.region}.amazonaws.com`;
     }
-    constructor() {
-        this.bucketName = process.env.S3_BUCKET_NAME;
-        this.region = process.env.S3_REGION;
+    constructor(params) {
+        if (params.bucketName === undefined) {
+            throw new Error("Please specify the bucketName.");
+        }
+        if (params.region === undefined) {
+            throw new Error("Please specify the region.");
+        }
+        if (params.accessKeyId === undefined) {
+            throw new Error("Please specify the accessKeyId.");
+        }
+        if (params.secretAccessKey === undefined) {
+            throw new Error("Please specify the secretAccessKey.");
+        }
         this.client = new client_s3_1.S3Client({
-            region: this.region,
+            region: params.region,
             credentials: {
-                accessKeyId: process.env.S3_ACCESS_KEY_ID,
-                secretAccessKey: process.env.S3_SECRET_ACCESS_KEY
+                accessKeyId: params.accessKeyId,
+                secretAccessKey: params.secretAccessKey
             }
         });
+        this.region = params.region;
+        this.bucketName = params.bucketName;
     }
     makeKey(path, fileName) {
         path = path.replace(/^\/|\/$/g, '');

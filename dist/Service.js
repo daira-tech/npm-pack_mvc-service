@@ -20,6 +20,7 @@ const ResponseType_1 = require("./ResponseType");
 const S3Client_1 = __importDefault(require("./S3Client"));
 const Base64Client_1 = __importDefault(require("./Base64Client"));
 const StringClient_1 = __importDefault(require("./StringClient"));
+const EncryptClient_1 = __importDefault(require("./EncryptClient"));
 class Service {
     get Method() { return this.method; }
     get Endpoint() { return this.endpoint; }
@@ -164,7 +165,12 @@ class Service {
     }
     get S3Client() {
         if (this.s3Client === undefined) {
-            this.s3Client = new S3Client_1.default();
+            this.s3Client = new S3Client_1.default({
+                bucketName: process.env.S3_BUCKET_NAME,
+                region: process.env.S3_REGION,
+                accessKeyId: process.env.S3_ACCESS_KEY_ID,
+                secretAccessKey: process.env.S3_SECRET_ACCESS_KEY
+            });
         }
         return this.s3Client;
     }
@@ -179,6 +185,15 @@ class Service {
             this.stringClient = new StringClient_1.default();
         }
         return this.stringClient;
+    }
+    get EncryptClient() {
+        if (this.encryptClient === undefined) {
+            this.encryptClient = new EncryptClient_1.default({
+                secretKeyHex: process.env.SECRET_KEY_HEX,
+                hmacKeyBase64: process.env.HMAC_KEY_BASE64
+            });
+        }
+        return this.encryptClient;
     }
 }
 exports.Service = Service;
