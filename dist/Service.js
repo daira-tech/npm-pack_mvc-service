@@ -43,33 +43,54 @@ class Service {
         this.response = new ResponseType_1.ResponseType();
         this.isTest = process.env.NODE_ENV === 'test';
         this.tags = [];
+        this.dbUser = this.isTest ? process.env.TEST_DB_USER : process.env.DB_USER;
+        this.dbHost = this.isTest ? process.env.TEST_DB_HOST : process.env.DB_HOST;
+        this.dbName = this.isTest ? process.env.TEST_DB_DATABASE : process.env.DB_DATABASE;
+        this.dbPassword = this.isTest ? process.env.TEST_DB_PASSWORD : process.env.DB_PASSWORD;
+        this.dbPort = this.isTest ? Number(process.env.TEST_DB_PORT) : Number(process.env.DB_PORT);
+        this.dbIsSslConnect = (this.isTest ? process.env.TEST_DB_IS_SSL : process.env.DB_IS_SSL) === 'true';
         this.isExecuteRollback = false;
         this.req = request;
         this.res = response;
     }
     inintialize() {
         return __awaiter(this, void 0, void 0, function* () {
-            var _a;
-            this.pool = yield this.setPool();
             this.request.setRequest(this.req);
             yield this.checkMaintenance();
-            this.Pool.query(`SET TIME ZONE '${(_a = process.env.TZ) !== null && _a !== void 0 ? _a : 'Asia/Tokyo'}';`);
             yield this.middleware();
         });
     }
     setPool() {
-        return __awaiter(this, void 0, void 0, function* () {
+        if (this.dbUser === undefined) {
+            throw new Error("Database user is not configured");
+        }
+        if (this.dbHost === undefined) {
+            throw new Error("Database host is not configured");
+        }
+        if (this.dbName === undefined) {
+            throw new Error("Database name is not configured");
+        }
+        if (this.dbPassword === undefined) {
+            throw new Error("Database password is not configured");
+        }
+        if (this.dbPort === undefined) {
+            throw new Error("Database port is not configured");
+        }
+        try {
             return new pg_1.Pool({
-                user: this.isTest ? process.env.TEST_DB_USER : process.env.DB_USER,
-                host: this.isTest ? process.env.TEST_DB_HOST : process.env.DB_HOST,
-                database: this.isTest ? process.env.TEST_DB_DATABASE : process.env.DB_DATABASE,
-                password: this.isTest ? process.env.TEST_DB_PASSWORD : process.env.DB_PASSWORD,
-                port: this.isTest ? Number(process.env.TEST_DB_PORT) : Number(process.env.DB_PORT),
-                ssl: (this.isTest ? process.env.TEST_DB_IS_SSL : process.env.DB_IS_SSL) === 'true' ? {
+                user: this.dbUser,
+                host: this.dbHost,
+                database: this.dbName,
+                password: this.dbPassword,
+                port: this.dbPort,
+                ssl: this.dbIsSslConnect ? {
                     rejectUnauthorized: false
                 } : false
             });
-        });
+        }
+        catch (ex) {
+            throw new Error("Failed to connect to the database. Please check the connection settings.");
+        }
     }
     checkMaintenance() {
         return __awaiter(this, void 0, void 0, function* () { });
@@ -119,8 +140,10 @@ class Service {
         return;
     }
     get Pool() {
+        var _a;
         if (this.pool === undefined) {
-            throw new Error("Please call this.Pool after using the inintialize method.");
+            this.pool = this.setPool();
+            this.pool.query(`SET TIME ZONE '${(_a = process.env.TZ) !== null && _a !== void 0 ? _a : 'Asia/Tokyo'}';`);
         }
         return this.pool;
     }

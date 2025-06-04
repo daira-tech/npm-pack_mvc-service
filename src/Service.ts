@@ -38,24 +38,49 @@ export class Service {
     }
 
     public async inintialize(): Promise<void> {
-        this.pool = await this.setPool();
         this.request.setRequest(this.req);
         await this.checkMaintenance();
-        this.Pool.query(`SET TIME ZONE '${process.env.TZ ?? 'Asia/Tokyo'}';`);
         await this.middleware();
     }
 
-    protected async setPool(): Promise<Pool> {
-        return new Pool({
-            user: this.isTest ? process.env.TEST_DB_USER : process.env.DB_USER,
-            host: this.isTest ? process.env.TEST_DB_HOST : process.env.DB_HOST,
-            database: this.isTest ? process.env.TEST_DB_DATABASE : process.env.DB_DATABASE,
-            password: this.isTest ? process.env.TEST_DB_PASSWORD : process.env.DB_PASSWORD,
-            port: this.isTest ? Number(process.env.TEST_DB_PORT) : Number(process.env.DB_PORT),
-            ssl: (this.isTest ? process.env.TEST_DB_IS_SSL : process.env.DB_IS_SSL) === 'true' ? {
-              rejectUnauthorized: false
-            } : false
-        });
+    protected dbUser?: string = this.isTest ? process.env.TEST_DB_USER : process.env.DB_USER;
+    protected dbHost?: string = this.isTest ? process.env.TEST_DB_HOST : process.env.DB_HOST;
+    protected dbName?: string = this.isTest ? process.env.TEST_DB_DATABASE : process.env.DB_DATABASE;
+    protected dbPassword?: string = this.isTest ? process.env.TEST_DB_PASSWORD : process.env.DB_PASSWORD;
+    protected dbPort?: number = this.isTest ? Number(process.env.TEST_DB_PORT) : Number(process.env.DB_PORT);
+    protected dbIsSslConnect?: boolean = (this.isTest ? process.env.TEST_DB_IS_SSL : process.env.DB_IS_SSL) === 'true';
+    private setPool(): Pool {
+        if (this.dbUser === undefined) {
+            throw new Error("Database user is not configured");
+        }
+        if (this.dbHost === undefined) {
+            throw new Error("Database host is not configured");
+        }
+        if (this.dbName === undefined) {
+            throw new Error("Database name is not configured");
+        }
+        if (this.dbPassword === undefined) {
+            throw new Error("Database password is not configured");
+        }
+        if (this.dbPort === undefined) {
+            throw new Error("Database port is not configured");
+        }
+
+        try {
+            return new Pool({
+                user: this.dbUser,
+                host: this.dbHost,
+                database: this.dbName,
+                password: this.dbPassword,
+                port: this.dbPort,
+                ssl: this.dbIsSslConnect ? {
+                  rejectUnauthorized: false
+                } : false
+            });
+        } catch (ex) {
+            throw new Error("Failed to connect to the database. Please check the connection settings.");
+
+        }
     }
     protected async checkMaintenance(): Promise<void> { }
     protected async middleware(): Promise<void>{ }
@@ -101,15 +126,16 @@ export class Service {
     }
 
     private pool?: Pool;
-    get Pool(): Pool {
+    protected get Pool(): Pool {
         if (this.pool === undefined) {
-            throw new Error("Please call this.Pool after using the inintialize method.");
+            this.pool = this.setPool();
+            this.pool.query(`SET TIME ZONE '${process.env.TZ ?? 'Asia/Tokyo'}';`);
         }
         return this.pool; 
     }
     private client?: PoolClient;
     private isExecuteRollback: boolean = false;
-    get Client(): PoolClient { 
+    protected get Client(): PoolClient { 
         if (this.client === undefined) {
             throw new Error("Please call this.PoolClient after using the startConnect method.");
         }

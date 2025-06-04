@@ -32,8 +32,14 @@ declare module 'mvc-service' {
         protected readonly res: Response;
         constructor(request: Request, response: Response);
 
-        public inintialize(): Promise<void>;
-        protected setPool(): Promise<Pool>;
+        public inintialize(): void;
+
+        protected dbUser?: string;
+        protected dbHost?: string;
+        protected dbName?: string;
+        protected dbPassword?: string;
+        protected dbPort?: number;
+        protected dbIsSslConnect?: boolean;
         protected checkMaintenance(): Promise<void>;
         protected middleware(): Promise<void>;
 
@@ -41,8 +47,8 @@ declare module 'mvc-service' {
         public handleException(ex: any): void;
         protected outputErrorLog(ex: any): Promise<void>;
 
-        get Pool(): Pool;
-        get Client(): PoolClient;
+        protected get Pool(): Pool;
+        protected get Client(): PoolClient;
 
         public startConnect(): Promise<void>;
         public commit(): Promise<void>;
