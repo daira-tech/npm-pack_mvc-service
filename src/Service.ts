@@ -7,6 +7,7 @@ import S3Client from './S3Client';
 import Base64Client from './Base64Client';
 import StringClient from './StringClient';
 import EncryptClient from './EncryptClient';
+import PoolManager from './PoolManager';
 
 export type MethodType = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
 
@@ -47,8 +48,8 @@ export class Service {
     protected dbHost?: string = this.isTest ? process.env.TEST_DB_HOST : process.env.DB_HOST;
     protected dbName?: string = this.isTest ? process.env.TEST_DB_DATABASE : process.env.DB_DATABASE;
     protected dbPassword?: string = this.isTest ? process.env.TEST_DB_PASSWORD : process.env.DB_PASSWORD;
-    protected dbPort?: number = this.isTest ? Number(process.env.TEST_DB_PORT) : Number(process.env.DB_PORT);
-    protected dbIsSslConnect?: boolean = (this.isTest ? process.env.TEST_DB_IS_SSL : process.env.DB_IS_SSL) === 'true';
+    protected dbPort?: string | number = this.isTest ? process.env.TEST_DB_PORT : process.env.DB_PORT;
+    protected dbIsSslConnect: boolean = (this.isTest ? process.env.TEST_DB_IS_SSL : process.env.DB_IS_SSL) === 'true';
     private setPool(): Pool {
         if (this.dbUser === undefined) {
             throw new Error("Database user is not configured");
@@ -67,19 +68,9 @@ export class Service {
         }
 
         try {
-            return new Pool({
-                user: this.dbUser,
-                host: this.dbHost,
-                database: this.dbName,
-                password: this.dbPassword,
-                port: this.dbPort,
-                ssl: this.dbIsSslConnect ? {
-                  rejectUnauthorized: false
-                } : false
-            });
+            return PoolManager.getPool(this.dbUser, this.dbHost, this.dbName, this.dbPassword, this.dbPort, this.dbIsSslConnect);
         } catch (ex) {
             throw new Error("Failed to connect to the database. Please check the connection settings.");
-
         }
     }
     protected async checkMaintenance(): Promise<void> { }

@@ -13,7 +13,6 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Service = void 0;
-const pg_1 = require("pg");
 const Exception_1 = require("./Exception");
 const RequestType_1 = require("./RequestType");
 const ResponseType_1 = require("./ResponseType");
@@ -21,6 +20,7 @@ const S3Client_1 = __importDefault(require("./S3Client"));
 const Base64Client_1 = __importDefault(require("./Base64Client"));
 const StringClient_1 = __importDefault(require("./StringClient"));
 const EncryptClient_1 = __importDefault(require("./EncryptClient"));
+const PoolManager_1 = __importDefault(require("./PoolManager"));
 class Service {
     get Method() { return this.method; }
     get Endpoint() { return this.endpoint; }
@@ -47,7 +47,7 @@ class Service {
         this.dbHost = this.isTest ? process.env.TEST_DB_HOST : process.env.DB_HOST;
         this.dbName = this.isTest ? process.env.TEST_DB_DATABASE : process.env.DB_DATABASE;
         this.dbPassword = this.isTest ? process.env.TEST_DB_PASSWORD : process.env.DB_PASSWORD;
-        this.dbPort = this.isTest ? Number(process.env.TEST_DB_PORT) : Number(process.env.DB_PORT);
+        this.dbPort = this.isTest ? process.env.TEST_DB_PORT : process.env.DB_PORT;
         this.dbIsSslConnect = (this.isTest ? process.env.TEST_DB_IS_SSL : process.env.DB_IS_SSL) === 'true';
         this.isExecuteRollback = false;
         this.req = request;
@@ -77,16 +77,7 @@ class Service {
             throw new Error("Database port is not configured");
         }
         try {
-            return new pg_1.Pool({
-                user: this.dbUser,
-                host: this.dbHost,
-                database: this.dbName,
-                password: this.dbPassword,
-                port: this.dbPort,
-                ssl: this.dbIsSslConnect ? {
-                    rejectUnauthorized: false
-                } : false
-            });
+            return PoolManager_1.default.getPool(this.dbUser, this.dbHost, this.dbName, this.dbPassword, this.dbPort, this.dbIsSslConnect);
         }
         catch (ex) {
             throw new Error("Failed to connect to the database. Please check the connection settings.");
