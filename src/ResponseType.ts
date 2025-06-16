@@ -329,7 +329,8 @@ export class ResponseType extends ReqResType {
             ymlString += `${space}${key}:\n`;
             ymlString += `${space}  type: ${this.replaceFromPropertyTypeToSwagger(property)}\n`;
             if (property.description !== undefined) {
-                ymlString += `${space}  description: ${property.description}\n`;
+                const joinSpace = `\n${space}    `;
+                ymlString += `${space}  description: |${joinSpace}${property.description.replaceAll("\n", joinSpace)}\n`;
             }
             switch (property.type) {
                 case 'object':
@@ -366,7 +367,8 @@ export class ResponseType extends ReqResType {
             ymlString += `${space}  ${key}:\n`;
             ymlString += `${space}    type: ${this.replaceFromPropertyTypeToSwagger(property)}\n`;
             if (property.description !== undefined) {
-                ymlString += `${space}    description: ${property.description}\n`;
+                const joinSpace = `\n${space}      `;
+                ymlString += `${space}    description: |${joinSpace}${property.description.replaceAll("\n", joinSpace)}\n`;
             }
             switch (property.type) {
                 case 'object':
@@ -397,7 +399,8 @@ export class ResponseType extends ReqResType {
         let ymlString = `${space}items:\n`;
         ymlString += `${space}  type: ${this.replaceFromPropertyTypeToSwagger(property)}\n`;
         if (property.description !== undefined) {
-            ymlString += `${space}  description: ${property.description}\n`;
+            const joinSpace = `\n${space}    `;
+            ymlString += `${space}  description: |${joinSpace}${property.description.replaceAll("\n", joinSpace)}\n`;
         }
         switch (property.type) {
             case 'object':

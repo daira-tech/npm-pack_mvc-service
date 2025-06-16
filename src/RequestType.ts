@@ -600,13 +600,14 @@ export class RequestType extends ReqResType {
             for (const [key, property] of Object.entries(this.properties)) {
                 ymlString += `${space}- name: ${key}\n`;
                 ymlString += `${space}  in: query\n`;
+
+                const descJoin = `\n${space}    `;
                 if (property.type === 'enum' || property.type === 'enum?') {
-                    const descJoin = `\n${space}    `;
-                    ymlString += `${space}  description: |${property.description === undefined ? '' : `${descJoin}${property.description}`}`;
+                    ymlString += `${space}  description: |${property.description === undefined ? '' : `${descJoin}${property.description.replaceAll("\n", descJoin)}`}`;
                     ymlString += `${descJoin}enum list`;
                     ymlString += `${Object.entries(property.enums).map(([key, value]) => `${descJoin}- ${key}: ${value}`)}\n`;
                 } else if (property.description !== undefined) {
-                    ymlString += `${space}  description: |\n${space}    ${property.description}\n`;
+                    ymlString += `${space}  description: |\n${space}    ${property.description.replaceAll("\n", descJoin)}\n`;
                 }
                 ymlString += `${space}  required: ${property.type.endsWith('?') ? 'false' : 'true'}\n`;
                 ymlString += `${space}  schema:\n`;
@@ -636,13 +637,13 @@ export class RequestType extends ReqResType {
     
                 componentYml += `${space}${key}:\n`;
                 componentYml += `  ${space}type: ${this.replaceFromPropertyTypeToSwagger(property)}\n`;
+                const descJoin = `\n${space}    `;
                 if (property.type === 'enum' || property.type === 'enum?') {
-                    const descJoin = `\n${space}    `;
-                    componentYml += `${space}  description: |${property.description === undefined ? '' : `${descJoin}${property.description}`}`;
+                    componentYml += `${space}  description: |${property.description === undefined ? '' : `${descJoin}${property.description.replaceAll("\n", descJoin)}`}`;
                     componentYml += `${descJoin}enum list`;
                     componentYml += `${Object.entries(property.enums).map(([key, value]) => `${descJoin}- ${key}: ${value}`)}\n`;
                 } else if (property.description !== undefined) {
-                    componentYml += `${space}  description: |\n${space}    ${property.description}\n`;
+                    componentYml += `${space}  description: |${descJoin}${property.description.replaceAll("\n", descJoin)}\n`;
                 }
 
                 if (property.type === 'enum' || property.type === 'enum?') {
@@ -710,13 +711,13 @@ export class RequestType extends ReqResType {
             
             ymlString += `${space}  ${key}:\n`;
             ymlString += `${space}    type: ${this.replaceFromPropertyTypeToSwagger(property)}\n`;
+            const descJoin = `\n${space}      `;
             if (property.type === 'enum' || property.type === 'enum?') {
-                const descJoin = `\n${space}      `;
-                ymlString += `${space}    description: |${property.description === undefined ? '' : `${descJoin}${property.description}`}`;
+                ymlString += `${space}    description: |${property.description === undefined ? '' : `${descJoin}${property.description.replaceAll('\n', descJoin)}`}`;
                 ymlString += `${descJoin}enum list`;
                 ymlString += `${Object.entries(property.enums).map(([key, value]) => `${descJoin}- ${key}: ${value}`)}\n`;
             } else if ((property.description ?? '') !== '') {
-                ymlString += `${space}    description: ${property.description}\n`;
+                ymlString += `${space}    description: |${descJoin}${property.description.replaceAll('\n', descJoin)}\n`;
             }
 
             if (property.type === 'enum' || property.type === 'enum?') {
@@ -762,7 +763,8 @@ export class RequestType extends ReqResType {
         let ymlString = `${space}items:\n`;
         ymlString += `${space}  type: ${this.replaceFromPropertyTypeToSwagger(property)}\n`;
         if ((property.description ?? '') !== '') {
-            ymlString += `${space}  description: ${property.description}\n`;
+            const descJoin = `\n${space}    `;
+            ymlString += `${space}  description: |${descJoin}${property.description.replaceAll('\n', descJoin)}\n`;
         }
 
 

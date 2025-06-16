@@ -55,7 +55,7 @@ const createSwagger = (services, name, url, params = []) => {
                 yml += `          name: ${param.name}\n`;
                 yml += `          required: ${param.require === true ? 'true' : 'false'}\n`;
                 if (param.description !== undefined) {
-                    yml += `          description: ${param.description}\n`;
+                    yml += `          description: |\n            ${param.description}\n`;
                 }
                 if (param.example !== undefined) {
                     yml += `          example: ${param.example}\n`;

@@ -576,14 +576,14 @@ class RequestType extends ReqResType_1.default {
             for (const [key, property] of Object.entries(this.properties)) {
                 ymlString += `${space}- name: ${key}\n`;
                 ymlString += `${space}  in: query\n`;
+                const descJoin = `\n${space}    `;
                 if (property.type === 'enum' || property.type === 'enum?') {
-                    const descJoin = `\n${space}    `;
-                    ymlString += `${space}  description: |${property.description === undefined ? '' : `${descJoin}${property.description}`}`;
+                    ymlString += `${space}  description: |${property.description === undefined ? '' : `${descJoin}${property.description.replaceAll("\n", descJoin)}`}`;
                     ymlString += `${descJoin}enum list`;
                     ymlString += `${Object.entries(property.enums).map(([key, value]) => `${descJoin}- ${key}: ${value}`)}\n`;
                 }
                 else if (property.description !== undefined) {
-                    ymlString += `${space}  description: |\n${space}    ${property.description}\n`;
+                    ymlString += `${space}  description: |\n${space}    ${property.description.replaceAll("\n", descJoin)}\n`;
                 }
                 ymlString += `${space}  required: ${property.type.endsWith('?') ? 'false' : 'true'}\n`;
                 ymlString += `${space}  schema:\n`;
@@ -612,14 +612,14 @@ class RequestType extends ReqResType_1.default {
                 }
                 componentYml += `${space}${key}:\n`;
                 componentYml += `  ${space}type: ${this.replaceFromPropertyTypeToSwagger(property)}\n`;
+                const descJoin = `\n${space}    `;
                 if (property.type === 'enum' || property.type === 'enum?') {
-                    const descJoin = `\n${space}    `;
-                    componentYml += `${space}  description: |${property.description === undefined ? '' : `${descJoin}${property.description}`}`;
+                    componentYml += `${space}  description: |${property.description === undefined ? '' : `${descJoin}${property.description.replaceAll("\n", descJoin)}`}`;
                     componentYml += `${descJoin}enum list`;
                     componentYml += `${Object.entries(property.enums).map(([key, value]) => `${descJoin}- ${key}: ${value}`)}\n`;
                 }
                 else if (property.description !== undefined) {
-                    componentYml += `${space}  description: |\n${space}    ${property.description}\n`;
+                    componentYml += `${space}  description: |${descJoin}${property.description.replaceAll("\n", descJoin)}\n`;
                 }
                 if (property.type === 'enum' || property.type === 'enum?') {
                     componentYml += `${space}  nullable: ${property.enumType.endsWith('?')}\n`;
@@ -676,14 +676,14 @@ class RequestType extends ReqResType_1.default {
             const property = properties[key];
             ymlString += `${space}  ${key}:\n`;
             ymlString += `${space}    type: ${this.replaceFromPropertyTypeToSwagger(property)}\n`;
+            const descJoin = `\n${space}      `;
             if (property.type === 'enum' || property.type === 'enum?') {
-                const descJoin = `\n${space}      `;
-                ymlString += `${space}    description: |${property.description === undefined ? '' : `${descJoin}${property.description}`}`;
+                ymlString += `${space}    description: |${property.description === undefined ? '' : `${descJoin}${property.description.replaceAll('\n', descJoin)}`}`;
                 ymlString += `${descJoin}enum list`;
                 ymlString += `${Object.entries(property.enums).map(([key, value]) => `${descJoin}- ${key}: ${value}`)}\n`;
             }
             else if (((_a = property.description) !== null && _a !== void 0 ? _a : '') !== '') {
-                ymlString += `${space}    description: ${property.description}\n`;
+                ymlString += `${space}    description: |${descJoin}${property.description.replaceAll('\n', descJoin)}\n`;
             }
             if (property.type === 'enum' || property.type === 'enum?') {
                 ymlString += `${space}    nullable: ${property.enumType.endsWith('?')}\n`;
@@ -723,7 +723,8 @@ class RequestType extends ReqResType_1.default {
         let ymlString = `${space}items:\n`;
         ymlString += `${space}  type: ${this.replaceFromPropertyTypeToSwagger(property)}\n`;
         if (((_a = property.description) !== null && _a !== void 0 ? _a : '') !== '') {
-            ymlString += `${space}  description: ${property.description}\n`;
+            const descJoin = `\n${space}    `;
+            ymlString += `${space}  description: |${descJoin}${property.description.replaceAll('\n', descJoin)}\n`;
         }
         switch (property.type) {
             case 'object':
