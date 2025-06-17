@@ -13,6 +13,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Service = void 0;
+const axios_1 = __importDefault(require("axios"));
 const Exception_1 = require("./Exception");
 const RequestType_1 = require("./RequestType");
 const ResponseType_1 = require("./ResponseType");
@@ -208,6 +209,49 @@ class Service {
             });
         }
         return this.encryptClient;
+    }
+    requestApi(method, url, params, header) {
+        return __awaiter(this, void 0, void 0, function* () {
+            // GET,DELETEのparamをURLクエリに
+            if (method === 'GET' || method === 'DELETE') {
+                for (const [key, value] of Object.entries(params)) {
+                    if (value === undefined || value === null) {
+                        continue;
+                    }
+                    if (Array.isArray(value)) {
+                        for (const arrayValue of value) {
+                            url += url.includes('?') ? '&' : '?';
+                            url += `${key}=${arrayValue.toString()}`;
+                        }
+                    }
+                    else {
+                        url += url.includes('?') ? '&' : '?';
+                        url += `${key}=${value.toString()}`;
+                    }
+                }
+            }
+            try {
+                switch (method) {
+                    case 'GET':
+                        return yield axios_1.default.get(url, header === undefined ? {} : { headers: header });
+                    case 'POST':
+                        return yield axios_1.default.post(url, params, header === undefined ? {} : { headers: header });
+                    case 'PUT':
+                        return yield axios_1.default.put(url, params, header === undefined ? {} : { headers: header });
+                    case 'DELETE':
+                        return yield axios_1.default.delete(url, header === undefined ? {} : { headers: header });
+                    case 'PATCH':
+                        return yield axios_1.default.patch(url, params, header === undefined ? {} : { headers: header });
+                }
+            }
+            catch (ex) {
+                let response = ex.response;
+                if (response && response.status >= 400 && response.status < 500) {
+                    return response;
+                }
+                throw ex;
+            }
+        });
     }
 }
 exports.Service = Service;

@@ -20,7 +20,7 @@ export default class PoolManager {
         }
     
         return this.poolMap[key];
-}
+    }
   
 static async shutdownAll(): Promise<void> {
     for (const [key, pool] of Object.entries(this.poolMap)) {

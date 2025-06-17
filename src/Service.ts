@@ -1,3 +1,4 @@
+import axios, { AxiosResponse } from "axios";
 import { Request, Response } from 'express';
 import { Pool, type PoolClient } from 'pg';
 import { MaintenanceException, AuthException, InputErrorException, ForbiddenException } from './Exception';
@@ -202,5 +203,49 @@ export class Service {
         }
 
         return this.encryptClient;
+    }
+
+    public async requestApi<TRequest=Record<string, any>, TResponse={[key: string]: any}>(
+        method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE', url: string, params: TRequest, header: {[key: string]: any}): Promise<AxiosResponse<TResponse>> {
+
+        // GET,DELETEのparamをURLクエリに
+        if (method === 'GET' || method === 'DELETE') {
+            for (const [key, value] of Object.entries(params as Record<string, any>)) {
+                if (value === undefined || value === null) {
+                    continue;
+                }
+
+                if (Array.isArray(value)) {
+                    for (const arrayValue of value) {
+                        url += url.includes('?') ? '&' : '?';
+                        url += `${key}=${arrayValue.toString()}`;
+                    }
+                } else {
+                    url += url.includes('?') ? '&' : '?';
+                    url += `${key}=${value.toString()}`;
+                }
+            }
+        }
+
+        try {
+            switch (method) {
+                case 'GET':
+                    return await axios.get(url, header === undefined ? {} : { headers: header });
+                case 'POST':
+                    return await axios.post(url, params, header === undefined ? {} : { headers: header });
+                case 'PUT':
+                    return await axios.put(url, params, header === undefined ? {} : { headers: header });
+                case 'DELETE':
+                    return await axios.delete(url, header === undefined ? {} : { headers: header });
+                case 'PATCH':
+                    return await axios.patch(url, params, header === undefined ? {} : { headers: header });
+            }
+        } catch (ex) {
+            let response = (ex as any).response as AxiosResponse<TResponse>;
+            if (response && response.status >= 400 && response.status < 500) {
+                return response;
+            }
+            throw ex;
+        }
     }
 }

@@ -1,3 +1,4 @@
+import { AxiosResponse } from "axios";
 import { Request, Response } from 'express';
 import { Pool, PoolClient } from 'pg';
 import { IncomingHttpHeaders } from './src/RequestType';
@@ -59,6 +60,9 @@ declare module 'mvc-service' {
         get Base64Client(): Base64Client;
         get StringClient(): StringClient;
         get EncryptClient(): EncryptClient;
+
+        public requestApi<TRequest=Record<string, any>, TResponse={[key: string]: any}>(
+            method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE', url: string, params: TRequest, header: {[key: string]: any}): Promise<AxiosResponse<TResponse>>;
     }
 
     export interface IParams {
