@@ -1,6 +1,6 @@
 import { randomBytes } from 'crypto';
 
-export default class StringClient {
+export class StringClient {
     constructor() { }
 
     public generateUUIDv7(): string {

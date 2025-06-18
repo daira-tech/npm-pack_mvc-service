@@ -12,6 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.Base64Client = void 0;
 const pdf_lib_1 = require("pdf-lib");
 const sharp_1 = __importDefault(require("sharp"));
 class Base64Client {
@@ -150,4 +151,4 @@ class Base64Client {
         });
     }
 }
-exports.default = Base64Client;
+exports.Base64Client = Base64Client;

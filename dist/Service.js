@@ -17,10 +17,10 @@ const axios_1 = __importDefault(require("axios"));
 const Exception_1 = require("./exceptions/Exception");
 const RequestType_1 = require("./reqestResponse/RequestType");
 const ResponseType_1 = require("./reqestResponse/ResponseType");
-const AwsS3Client_1 = __importDefault(require("./clients/AwsS3Client"));
-const Base64Client_1 = __importDefault(require("./clients/Base64Client"));
-const StringClient_1 = __importDefault(require("./clients/StringClient"));
-const EncryptClient_1 = __importDefault(require("./clients/EncryptClient"));
+const AwsS3Client_1 = require("./clients/AwsS3Client");
+const Base64Client_1 = require("./clients/Base64Client");
+const StringClient_1 = require("./clients/StringClient");
+const EncryptClient_1 = require("./clients/EncryptClient");
 const PoolManager_1 = __importDefault(require("./PoolManager"));
 class Service {
     get Method() { return this.method; }
@@ -180,7 +180,7 @@ class Service {
     }
     get S3Client() {
         if (this.s3Client === undefined) {
-            this.s3Client = new AwsS3Client_1.default({
+            this.s3Client = new AwsS3Client_1.AwsS3Client({
                 bucketName: process.env.S3_BUCKET_NAME,
                 region: process.env.S3_REGION,
                 accessKeyId: process.env.S3_ACCESS_KEY_ID,
@@ -191,19 +191,19 @@ class Service {
     }
     get Base64Client() {
         if (this.base64Client === undefined) {
-            this.base64Client = new Base64Client_1.default();
+            this.base64Client = new Base64Client_1.Base64Client();
         }
         return this.base64Client;
     }
     get StringClient() {
         if (this.stringClient === undefined) {
-            this.stringClient = new StringClient_1.default();
+            this.stringClient = new StringClient_1.StringClient();
         }
         return this.stringClient;
     }
     get EncryptClient() {
         if (this.encryptClient === undefined) {
-            this.encryptClient = new EncryptClient_1.default({
+            this.encryptClient = new EncryptClient_1.EncryptClient({
                 secretKeyHex: process.env.SECRET_KEY_HEX,
                 hmacKeyBase64: process.env.HMAC_KEY_BASE64
             });

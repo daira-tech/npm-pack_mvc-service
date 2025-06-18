@@ -4,10 +4,10 @@ import { Pool, type PoolClient } from 'pg';
 import { MaintenanceException, AuthException, InputErrorException, ForbiddenException } from './exceptions/Exception';
 import { RequestType } from './reqestResponse/RequestType';
 import { ResponseType } from './reqestResponse/ResponseType';
-import AwsS3Client from './clients/AwsS3Client';
-import Base64Client from './clients/Base64Client';
-import StringClient from './clients/StringClient';
-import EncryptClient from './clients/EncryptClient';
+import { AwsS3Client } from './clients/AwsS3Client';
+import { Base64Client } from './clients/Base64Client';
+import { StringClient } from './clients/StringClient';
+import { EncryptClient } from './clients/EncryptClient';
 import PoolManager from './PoolManager';
 
 export type MethodType = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';

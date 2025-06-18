@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.StringClient = void 0;
 const crypto_1 = require("crypto");
 class StringClient {
     constructor() { }
@@ -10,4 +11,4 @@ class StringClient {
         return `${timeHex.slice(0, 8)}-${timeHex.slice(8, 12)}-7${timeHex.slice(13, 16)}-${randomHex.slice(0, 4)}-${randomHex.slice(4)}`;
     }
 }
-exports.default = StringClient;
+exports.StringClient = StringClient;

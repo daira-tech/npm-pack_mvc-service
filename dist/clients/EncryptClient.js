@@ -3,6 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.EncryptClient = void 0;
 const crypto_1 = __importDefault(require("crypto"));
 class EncryptClient {
     get SecretKey() {
@@ -82,4 +83,4 @@ class EncryptClient {
         return Buffer.from(str, 'base64');
     }
 }
-exports.default = EncryptClient;
+exports.EncryptClient = EncryptClient;

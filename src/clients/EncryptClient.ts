@@ -1,6 +1,6 @@
 import crypto from 'crypto';
 
-export default class EncryptClient {
+export class EncryptClient {
     private secretKeyHex?: string;
     get SecretKey(): Buffer<ArrayBuffer> { 
         if (this.secretKeyHex === undefined) {

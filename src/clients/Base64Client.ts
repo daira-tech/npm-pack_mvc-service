@@ -9,7 +9,7 @@ export type TImage = TPng | TJpeg | TGif;
 export type TPdf = 'application/pdf';
 export type TJson = 'application/json';
 
-export default class Base64Client {
+export class Base64Client {
     constructor() { }
 
     // public encode(text: string): string {

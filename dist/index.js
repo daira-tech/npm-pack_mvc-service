@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.ResponseType = exports.RequestType = exports.createSwagger = exports.ForbiddenException = exports.InputErrorException = exports.AuthException = exports.MaintenanceException = exports.Service = void 0;
+exports.rollback = exports.migrate = exports.MigrateDatabase = exports.MigrateTable = exports.createTableDoc = exports.TableModel = exports.ResponseType = exports.RequestType = exports.EncryptClient = exports.StringClient = exports.Base64Client = exports.AwsS3Client = exports.createSwagger = exports.ForbiddenException = exports.InputErrorException = exports.AuthException = exports.MaintenanceException = exports.Service = void 0;
 var Service_1 = require("./Service");
 Object.defineProperty(exports, "Service", { enumerable: true, get: function () { return Service_1.Service; } });
 var Exception_1 = require("./exceptions/Exception");
@@ -10,7 +10,27 @@ Object.defineProperty(exports, "InputErrorException", { enumerable: true, get: f
 Object.defineProperty(exports, "ForbiddenException", { enumerable: true, get: function () { return Exception_1.ForbiddenException; } });
 var Swagger_1 = require("./documents/Swagger");
 Object.defineProperty(exports, "createSwagger", { enumerable: true, get: function () { return Swagger_1.createSwagger; } });
+var AwsS3Client_1 = require("./clients/AwsS3Client");
+Object.defineProperty(exports, "AwsS3Client", { enumerable: true, get: function () { return AwsS3Client_1.AwsS3Client; } });
+var Base64Client_1 = require("./clients/Base64Client");
+Object.defineProperty(exports, "Base64Client", { enumerable: true, get: function () { return Base64Client_1.Base64Client; } });
+var StringClient_1 = require("./clients/StringClient");
+Object.defineProperty(exports, "StringClient", { enumerable: true, get: function () { return StringClient_1.StringClient; } });
+var EncryptClient_1 = require("./clients/EncryptClient");
+Object.defineProperty(exports, "EncryptClient", { enumerable: true, get: function () { return EncryptClient_1.EncryptClient; } });
 var RequestType_1 = require("./reqestResponse/RequestType");
 Object.defineProperty(exports, "RequestType", { enumerable: true, get: function () { return RequestType_1.RequestType; } });
 var ResponseType_1 = require("./reqestResponse/ResponseType");
 Object.defineProperty(exports, "ResponseType", { enumerable: true, get: function () { return ResponseType_1.ResponseType; } });
+// models
+var TableModel_1 = require("./models/TableModel");
+Object.defineProperty(exports, "TableModel", { enumerable: true, get: function () { return TableModel_1.TableModel; } });
+var TableDoc_1 = require("./models/TableDoc");
+Object.defineProperty(exports, "createTableDoc", { enumerable: true, get: function () { return TableDoc_1.createTableDoc; } });
+var MigrateTable_1 = require("./models/MigrateTable");
+Object.defineProperty(exports, "MigrateTable", { enumerable: true, get: function () { return MigrateTable_1.MigrateTable; } });
+var MigrateDatabase_1 = require("./models/MigrateDatabase");
+Object.defineProperty(exports, "MigrateDatabase", { enumerable: true, get: function () { return MigrateDatabase_1.MigrateDatabase; } });
+var MigrateRollback_1 = require("./models/MigrateRollback");
+Object.defineProperty(exports, "migrate", { enumerable: true, get: function () { return MigrateRollback_1.migrate; } });
+Object.defineProperty(exports, "rollback", { enumerable: true, get: function () { return MigrateRollback_1.rollback; } });

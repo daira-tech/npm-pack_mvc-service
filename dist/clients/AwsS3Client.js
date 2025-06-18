@@ -15,12 +15,10 @@ var __asyncValues = (this && this.__asyncValues) || function (o) {
     function verb(n) { i[n] = o[n] && function (v) { return new Promise(function (resolve, reject) { v = o[n](v), settle(resolve, reject, v.done, v.value); }); }; }
     function settle(resolve, reject, d, v) { Promise.resolve(v).then(function(v) { resolve({ value: v, done: d }); }, reject); }
 };
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.AwsS3Client = void 0;
 const client_s3_1 = require("@aws-sdk/client-s3");
-const Base64Client_1 = __importDefault(require("./Base64Client"));
+const Base64Client_1 = require("./Base64Client");
 class AwsS3Client {
     get urlPrefix() {
         return `https://${this.bucketName}.s3.${this.region}.amazonaws.com`;
@@ -79,7 +77,7 @@ class AwsS3Client {
     }
     uploadToPdf(path, fileName, base64Datas) {
         return __awaiter(this, void 0, void 0, function* () {
-            const base64Client = new Base64Client_1.default();
+            const base64Client = new Base64Client_1.Base64Client();
             const mergedPdfBase64 = yield base64Client.mergeToPdfBase64(base64Datas);
             const command = new client_s3_1.PutObjectCommand({
                 Bucket: this.bucketName,
@@ -104,7 +102,7 @@ class AwsS3Client {
     }
     uploadBase64Data(path, fileName, base64Data) {
         return __awaiter(this, void 0, void 0, function* () {
-            const base64Client = new Base64Client_1.default();
+            const base64Client = new Base64Client_1.Base64Client();
             const type = base64Client.getMimeType(base64Data);
             const extension = {
                 'image/png': '.png',
@@ -246,4 +244,4 @@ class AwsS3Client {
         });
     }
 }
-exports.default = AwsS3Client;
+exports.AwsS3Client = AwsS3Client;
