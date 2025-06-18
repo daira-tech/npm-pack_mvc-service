@@ -1,12 +1,12 @@
 import { AxiosResponse } from "axios";
 import { Request, Response } from 'express';
 import { Pool, PoolClient } from 'pg';
-import { IncomingHttpHeaders } from './src/RequestType';
-import { ArrayType, EnumType, ObjectType, PrimitiveType } from './src/ReqResType';
-import S3Client from './src/S3Client';
-import Base64Client from './src/Base64Client';
-import StringClient from './src/StringClient';
-import EncryptClient from './src/EncryptClient';
+import { IncomingHttpHeaders } from './src/reqestResponse/RequestType';
+import { ArrayType, EnumType, ObjectType, PrimitiveType } from './src/reqestResponse/ReqResType';
+import S3Client from './src/clients/AwsS3Client';
+import Base64Client from './src/clients/Base64Client';
+import StringClient from './src/clients/StringClient';
+import EncryptClient from './src/clients/EncryptClient';
 
 declare module 'mvc-service' {
     export type MethodType = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';

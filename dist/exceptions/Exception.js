@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.MaintenanceException = exports.InputErrorException = exports.ForbiddenException = exports.AuthException = void 0;
+exports.BusinessLogicException = exports.DbConflictException = exports.MaintenanceException = exports.InputErrorException = exports.ForbiddenException = exports.AuthException = void 0;
 class AuthException extends Error {
     get Id() {
         return this.id;
@@ -37,3 +37,17 @@ class MaintenanceException extends Error {
     }
 }
 exports.MaintenanceException = MaintenanceException;
+class DbConflictException extends Error {
+    // for 409 Conflict
+    constructor(message = "") {
+        super(message);
+    }
+}
+exports.DbConflictException = DbConflictException;
+class BusinessLogicException extends Error {
+    // for 422 Unprocessable Entity
+    constructor(message = "") {
+        super(message);
+    }
+}
+exports.BusinessLogicException = BusinessLogicException;

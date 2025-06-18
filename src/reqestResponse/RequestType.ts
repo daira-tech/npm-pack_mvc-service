@@ -1,6 +1,6 @@
 import { Request } from 'express';
 import ReqResType from "./ReqResType";
-import { InputErrorException } from './Exception';
+import { InputErrorException } from '../exceptions/Exception';
 
 export class RequestType extends ReqResType {
 

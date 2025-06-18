@@ -1,6 +1,13 @@
 import { PDFDocument } from 'pdf-lib';
 import sharp from 'sharp';
-import { TImage, TPdf } from './Types';
+
+export type TPng = 'image/png';
+export type TJpeg = 'image/jpeg';
+export type TGif = 'image/gif';
+export type TImage = TPng | TJpeg | TGif;
+
+export type TPdf = 'application/pdf';
+export type TJson = 'application/json';
 
 export default class Base64Client {
     constructor() { }

@@ -1,13 +1,13 @@
 import axios, { AxiosResponse } from "axios";
 import { Request, Response } from 'express';
 import { Pool, type PoolClient } from 'pg';
-import { MaintenanceException, AuthException, InputErrorException, ForbiddenException } from './Exception';
-import { RequestType } from './RequestType';
-import { ResponseType } from './ResponseType';
-import S3Client from './S3Client';
-import Base64Client from './Base64Client';
-import StringClient from './StringClient';
-import EncryptClient from './EncryptClient';
+import { MaintenanceException, AuthException, InputErrorException, ForbiddenException } from './exceptions/Exception';
+import { RequestType } from './reqestResponse/RequestType';
+import { ResponseType } from './reqestResponse/ResponseType';
+import AwsS3Client from './clients/AwsS3Client';
+import Base64Client from './clients/Base64Client';
+import StringClient from './clients/StringClient';
+import EncryptClient from './clients/EncryptClient';
 import PoolManager from './PoolManager';
 
 export type MethodType = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
@@ -164,10 +164,10 @@ export class Service {
         }
     }
 
-    private s3Client?: S3Client;
-    get S3Client(): S3Client {
+    private s3Client?: AwsS3Client;
+    get S3Client(): AwsS3Client {
         if (this.s3Client === undefined) {
-            this.s3Client = new S3Client({
+            this.s3Client = new AwsS3Client({
                 bucketName: process.env.S3_BUCKET_NAME,
                 region: process.env.S3_REGION,
                 accessKeyId: process.env.S3_ACCESS_KEY_ID,
@@ -242,7 +242,7 @@ export class Service {
             }
         } catch (ex) {
             let response = (ex as any).response as AxiosResponse<TResponse>;
-            if (response && response.status >= 400 && response.status < 500) {
+            if (response && [400,401,403,409,422].includes(response.status)) {
                 return response;
             }
             throw ex;

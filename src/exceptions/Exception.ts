@@ -38,3 +38,17 @@ export class MaintenanceException extends Error {
         super(message);
     }
 }
+
+export class DbConflictException extends Error {
+    // for 409 Conflict
+    constructor(message: string = "") {
+        super(message);
+    }
+}
+
+export class BusinessLogicException extends Error {
+    // for 422 Unprocessable Entity
+    constructor(message: string = "") {
+        super(message);
+    }
+}

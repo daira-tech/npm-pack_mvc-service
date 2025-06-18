@@ -21,7 +21,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const client_s3_1 = require("@aws-sdk/client-s3");
 const Base64Client_1 = __importDefault(require("./Base64Client"));
-class S3Clienta {
+class AwsS3Client {
     get urlPrefix() {
         return `https://${this.bucketName}.s3.${this.region}.amazonaws.com`;
     }
@@ -246,4 +246,4 @@ class S3Clienta {
         });
     }
 }
-exports.default = S3Clienta;
+exports.default = AwsS3Client;

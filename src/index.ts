@@ -1,7 +1,7 @@
 export { Service } from './Service';
-export { MaintenanceException, AuthException, InputErrorException, ForbiddenException } from './Exception';
-export { createSwagger } from './Swagger';
+export { MaintenanceException, AuthException, InputErrorException, ForbiddenException } from './exceptions/Exception';
+export { createSwagger } from './documents/Swagger';
 
-export { RequestType } from './RequestType';
-export { ResponseType } from './ResponseType';
-export { PropertyType } from './ReqResType';
+export { RequestType } from './reqestResponse/RequestType';
+export { ResponseType } from './reqestResponse/ResponseType';
+export { PropertyType } from './reqestResponse/ReqResType';

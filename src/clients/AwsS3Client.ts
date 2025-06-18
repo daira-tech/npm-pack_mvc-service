@@ -1,7 +1,7 @@
 import { _Object, DeleteObjectsCommand, GetObjectCommand, ListObjectsV2Command, PutObjectCommand, S3Client, ScanRange } from '@aws-sdk/client-s3';
 import Base64Client from './Base64Client';
 
-export default class S3Clienta {
+export default class AwsS3Client {
     private client: S3Client;
 
     private readonly bucketName;

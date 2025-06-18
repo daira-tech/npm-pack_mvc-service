@@ -14,13 +14,13 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Service = void 0;
 const axios_1 = __importDefault(require("axios"));
-const Exception_1 = require("./Exception");
-const RequestType_1 = require("./RequestType");
-const ResponseType_1 = require("./ResponseType");
-const S3Client_1 = __importDefault(require("./S3Client"));
-const Base64Client_1 = __importDefault(require("./Base64Client"));
-const StringClient_1 = __importDefault(require("./StringClient"));
-const EncryptClient_1 = __importDefault(require("./EncryptClient"));
+const Exception_1 = require("./exceptions/Exception");
+const RequestType_1 = require("./reqestResponse/RequestType");
+const ResponseType_1 = require("./reqestResponse/ResponseType");
+const AwsS3Client_1 = __importDefault(require("./clients/AwsS3Client"));
+const Base64Client_1 = __importDefault(require("./clients/Base64Client"));
+const StringClient_1 = __importDefault(require("./clients/StringClient"));
+const EncryptClient_1 = __importDefault(require("./clients/EncryptClient"));
 const PoolManager_1 = __importDefault(require("./PoolManager"));
 class Service {
     get Method() { return this.method; }
@@ -180,7 +180,7 @@ class Service {
     }
     get S3Client() {
         if (this.s3Client === undefined) {
-            this.s3Client = new S3Client_1.default({
+            this.s3Client = new AwsS3Client_1.default({
                 bucketName: process.env.S3_BUCKET_NAME,
                 region: process.env.S3_REGION,
                 accessKeyId: process.env.S3_ACCESS_KEY_ID,
@@ -246,7 +246,7 @@ class Service {
             }
             catch (ex) {
                 let response = ex.response;
-                if (response && response.status >= 400 && response.status < 500) {
+                if (response && [400, 401, 403, 409, 422].includes(response.status)) {
                     return response;
                 }
                 throw ex;

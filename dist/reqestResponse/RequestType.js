@@ -5,7 +5,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.RequestType = void 0;
 const ReqResType_1 = __importDefault(require("./ReqResType"));
-const Exception_1 = require("./Exception");
+const Exception_1 = require("../exceptions/Exception");
 class RequestType extends ReqResType_1.default {
     constructor() {
         super(...arguments);
