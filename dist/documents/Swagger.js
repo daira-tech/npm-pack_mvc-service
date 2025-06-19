@@ -38,8 +38,8 @@ const createSwagger = (services, name, url, params = []) => {
         yml += `      summary: ${service.Summary}\n`;
         const croneParams = [...params];
         for (const path of service.Endpoint.split('/')) {
-            if (path.includes('{') && path.includes('}')) {
-                const key = path.replace('{', '').replace('}', '');
+            if (path.startsWith(':')) {
+                const key = path.replace(':', '');
                 croneParams.push({
                     in: 'path',
                     name: key,
@@ -82,7 +82,7 @@ tags:\n`;
     }
     swaggerInfo += 'paths:\n';
     for (const keyEndpoint in endpontSwaggerYml) {
-        swaggerInfo += `  ${keyEndpoint}:\n`;
+        swaggerInfo += `  ${keyEndpoint.replace(/\/:([^\/]+)/g, '/{$1}')}:\n`;
         setYmlByMethod('GET', endpontSwaggerYml[keyEndpoint]);
         setYmlByMethod('POST', endpontSwaggerYml[keyEndpoint]);
         setYmlByMethod('PUT', endpontSwaggerYml[keyEndpoint]);
