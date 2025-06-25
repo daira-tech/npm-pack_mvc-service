@@ -120,6 +120,20 @@ class Service {
             });
             return;
         }
+        else if (ex instanceof Exception_1.DbConflictException) {
+            this.res.status(409).json({
+                errorCode: `${this.apiCode}-${ex.ErrorId}`,
+                errorMessage: ex.message
+            });
+            return;
+        }
+        else if (ex instanceof Exception_1.UnprocessableException) {
+            this.res.status(422).json({
+                errorCode: `${this.apiCode}-${ex.ErrorId}`,
+                errorMessage: ex.message
+            });
+            return;
+        }
         else if (ex instanceof Exception_1.MaintenanceException) {
             this.res.status(503).json({
                 errorMessage: ex.message

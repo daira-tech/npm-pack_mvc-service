@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.rollback = exports.migrate = exports.MigrateDatabase = exports.MigrateTable = exports.createTableDoc = exports.TableModel = exports.ResponseType = exports.RequestType = exports.EncryptClient = exports.StringClient = exports.Base64Client = exports.AwsS3Client = exports.createSwagger = exports.ForbiddenException = exports.InputErrorException = exports.AuthException = exports.MaintenanceException = exports.Service = void 0;
+exports.rollback = exports.migrate = exports.MigrateDatabase = exports.MigrateTable = exports.createTableDoc = exports.TableModel = exports.ResponseType = exports.RequestType = exports.EncryptClient = exports.StringClient = exports.Base64Client = exports.AwsS3Client = exports.createSwagger = exports.UnprocessableException = exports.DbConflictException = exports.ForbiddenException = exports.InputErrorException = exports.AuthException = exports.MaintenanceException = exports.Service = void 0;
 var Service_1 = require("./Service");
 Object.defineProperty(exports, "Service", { enumerable: true, get: function () { return Service_1.Service; } });
 var Exception_1 = require("./exceptions/Exception");
@@ -8,6 +8,8 @@ Object.defineProperty(exports, "MaintenanceException", { enumerable: true, get: 
 Object.defineProperty(exports, "AuthException", { enumerable: true, get: function () { return Exception_1.AuthException; } });
 Object.defineProperty(exports, "InputErrorException", { enumerable: true, get: function () { return Exception_1.InputErrorException; } });
 Object.defineProperty(exports, "ForbiddenException", { enumerable: true, get: function () { return Exception_1.ForbiddenException; } });
+Object.defineProperty(exports, "DbConflictException", { enumerable: true, get: function () { return Exception_1.DbConflictException; } });
+Object.defineProperty(exports, "UnprocessableException", { enumerable: true, get: function () { return Exception_1.UnprocessableException; } });
 var Swagger_1 = require("./documents/Swagger");
 Object.defineProperty(exports, "createSwagger", { enumerable: true, get: function () { return Swagger_1.createSwagger; } });
 var AwsS3Client_1 = require("./clients/AwsS3Client");

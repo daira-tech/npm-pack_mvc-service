@@ -1,7 +1,7 @@
 import axios, { AxiosResponse } from "axios";
 import { Request, Response } from 'express';
 import { Pool, type PoolClient } from 'pg';
-import { MaintenanceException, AuthException, InputErrorException, ForbiddenException } from './exceptions/Exception';
+import { MaintenanceException, AuthException, InputErrorException, ForbiddenException, DbConflictException, UnprocessableException, NotFoundException } from './exceptions/Exception';
 import { RequestType } from './reqestResponse/RequestType';
 import { ResponseType } from './reqestResponse/ResponseType';
 import { AwsS3Client } from './clients/AwsS3Client';
@@ -100,6 +100,18 @@ export class Service {
             return;
         } else if (ex instanceof InputErrorException) {
             this.res.status(400).json({
+                errorCode : `${this.apiCode}-${ex.ErrorId}`,
+                errorMessage : ex.message
+            });
+            return;
+        } else if (ex instanceof DbConflictException) {
+            this.res.status(409).json({
+                errorCode : `${this.apiCode}-${ex.ErrorId}`,
+                errorMessage : ex.message
+            });
+            return;
+        } else if (ex instanceof UnprocessableException) {
+            this.res.status(422).json({
                 errorCode : `${this.apiCode}-${ex.ErrorId}`,
                 errorMessage : ex.message
             });
@@ -242,7 +254,7 @@ export class Service {
             }
         } catch (ex) {
             let response = (ex as any).response as AxiosResponse<TResponse>;
-            if (response && [400,401,403,409,422].includes(response.status)) {
+            if (response && [400, 401, 403, 409, 422].includes(response.status)) {
                 return response;
             }
             throw ex;

@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+const Exception_1 = require("../exceptions/Exception");
 class ValidateClient {
     constructor(model) {
         this.model = model;
@@ -50,7 +51,7 @@ class ValidateClient {
             message = message.replace('{column}', (_b = column.alias) !== null && _b !== void 0 ? _b : column.columnName);
             message = message.replace('{value}', value.toString());
             message = message.replace('{list}', list.join(', '));
-            this.model.throwValidationError(code, message);
+            throw new Exception_1.UnprocessableException(code, message);
         }
     }
     validateUnderNow(option, key, error) {
@@ -73,7 +74,7 @@ class ValidateClient {
             }
             message = message.replace('{column}', (_b = column.alias) !== null && _b !== void 0 ? _b : column.columnName);
             message = message.replace('{value}', value.toString());
-            this.model.throwValidationError(code, message);
+            throw new Exception_1.UnprocessableException(code, message);
         }
     }
     validateUnderToday(option, key, isErrorToday, error) {
@@ -109,7 +110,7 @@ class ValidateClient {
             }
             message = message.replace('{column}', (_b = column.alias) !== null && _b !== void 0 ? _b : column.columnName);
             message = message.replace('{value}', value.toString());
-            this.model.throwValidationError(code, message);
+            throw new Exception_1.UnprocessableException(code, message);
         }
     }
     validateRegExp(option, key, regExp, error) {
@@ -133,7 +134,7 @@ class ValidateClient {
             }
             message = message.replace('{column}', (_b = column.alias) !== null && _b !== void 0 ? _b : column.columnName);
             message = message.replace('{value}', value.toString());
-            this.model.throwValidationError(code, message);
+            throw new Exception_1.UnprocessableException(code, message);
         }
     }
     validatePositiveNumber(option, key, error) {
@@ -157,7 +158,7 @@ class ValidateClient {
             }
             message = message.replace('{column}', (_b = column.alias) !== null && _b !== void 0 ? _b : column.columnName);
             message = message.replace('{value}', value.toString());
-            this.model.throwValidationError(code, message);
+            throw new Exception_1.UnprocessableException(code, message);
         }
     }
 }

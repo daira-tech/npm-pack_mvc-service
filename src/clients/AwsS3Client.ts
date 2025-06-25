@@ -147,14 +147,22 @@ export class AwsS3Client {
             }
 
             // v3ではBodyがReadableStreamなので、変換が必要
-            const stream = res.Body as ReadableStream;
-            const reader = stream.getReader();
             const chunks: Uint8Array[] = [];
-            
-            while (true) {
-                const { done, value } = await reader.read();
-                if (done) break;
-                chunks.push(value);
+            if (res.Body && typeof res.Body === 'object' && 'getReader' in res.Body) {
+                // ReadableStreamの場合
+                const stream = res.Body as ReadableStream;
+                const reader = stream.getReader();
+                
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+                    chunks.push(value);
+                }
+            } else {
+                // Node.js Readableの場合
+                for await (const chunk of res.Body as any) {
+                    chunks.push(chunk);
+                }
             }
             
             const buffer = Buffer.concat(chunks);

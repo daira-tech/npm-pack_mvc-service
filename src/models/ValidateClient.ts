@@ -1,3 +1,5 @@
+import { UnprocessableException } from "../exceptions/Exception";
+import ValidateValueUtil from "./SqlUtils/ValidateValueUtil";
 import { TableModel } from "./TableModel";
 import { TOption, TSqlValue } from "./Type";
 
@@ -58,7 +60,7 @@ export default class ValidateClient {
             message = message.replace('{column}', column.alias ?? column.columnName);
             message = message.replace('{value}', value.toString());
             message = message.replace('{list}', list.join(', '));
-            this.model.throwValidationError(code, message);
+            throw new UnprocessableException(code, message);
         }
     }
 
@@ -83,7 +85,7 @@ export default class ValidateClient {
             }
             message = message.replace('{column}', column.alias ?? column.columnName);
             message = message.replace('{value}', value.toString());
-            this.model.throwValidationError(code, message);
+            throw new UnprocessableException(code, message);
         }
     }
 
@@ -122,7 +124,7 @@ export default class ValidateClient {
             }
             message = message.replace('{column}', column.alias ?? column.columnName);
             message = message.replace('{value}', value.toString());
-            this.model.throwValidationError(code, message);
+            throw new UnprocessableException(code, message);
         }
     }
 
@@ -149,7 +151,7 @@ export default class ValidateClient {
             }
             message = message.replace('{column}', column.alias ?? column.columnName);
             message = message.replace('{value}', value.toString());
-            this.model.throwValidationError(code, message);
+            throw new UnprocessableException(code, message);
         }
     }
 
@@ -176,7 +178,7 @@ export default class ValidateClient {
             }
             message = message.replace('{column}', column.alias ?? column.columnName);
             message = message.replace('{value}', value.toString());
-            this.model.throwValidationError(code, message);
+            throw new UnprocessableException(code, message);
         }
     }
 }

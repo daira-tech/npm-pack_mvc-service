@@ -8,6 +8,8 @@ import { Base64Client } from './src/clients/Base64Client';
 import { StringClient } from './src/clients/StringClient';
 import { EncryptClient } from './src/clients/EncryptClient';
 
+export { AwsS3Client } from './src/clients/AwsS3Client';
+
 // models class
 import ValidateClient from './src/models/ValidateClient';
 
@@ -136,6 +138,18 @@ declare module 'pg-mvc-service' {
 
     export class MaintenanceException extends Error {
         constructor(message?: string);
+    }
+
+    export class DbConflictException extends Error {
+        private errorId: string;
+        get ErrorId(): string;
+        constructor(errorId: string, message?: string);
+    }
+
+    export class UnprocessableException extends Error {
+        private errorId: string;
+        get ErrorId(): string;
+        constructor(errorId: string, message?: string);
     }
 
     export type TSqlValue = string | number | boolean | Date | null | Array<string | null> | Array<number | null> | Array<Date | null> | Array<Boolean | null>;

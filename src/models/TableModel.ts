@@ -4,6 +4,7 @@ import ValidateValueUtil from './SqlUtils/ValidateValueUtil';
 import SelectExpression from './SqlUtils/SelectExpression';
 import WhereExpression from './SqlUtils/WhereExpression';
 import ValidateClient from './ValidateClient';
+import { DbConflictException, UnprocessableException } from '../exceptions/Exception';
 
 export class TableModel {
 
@@ -400,7 +401,7 @@ export class TableModel {
         return { datas: data.rows as Array<T>, count: Number(countData.rows[0].count), lastPage: Math.ceil(Number(countData.rows[0].count) / this.PageCount)};
     }
 
-    protected readonly errorMessages: Record<TColumnType | TColumnArrayType | 'length' | 'null' | 'notInput' | 'fk' | 'idNotExist', string> = {
+    private readonly errorMessageEnglish: Record<TColumnType | TColumnArrayType | 'length' | 'null' | 'notInput' | 'fk' | 'idNotExist', string> = {
         'string': '{name} should be entered as a string or number type.',
         'string[]': '{name} should be entered as an array of string or number types.',
         'uuid': '{name} should be entered as a UUID.',
@@ -421,9 +422,44 @@ export class TableModel {
         'fk': 'The value of {name} does not exist in the table.',
         'idNotExist': 'The specified ID({id}) does not exist in the table.',
     }
-    public throwValidationError(code: string, message: string): never {
-        throw new Error(message);
+    private readonly errorMessageJapan: Record<TColumnType | TColumnArrayType | 'length' | 'null' | 'notInput' | 'fk' | 'idNotExist', string> = {
+        'string': '{name}はstringかnumberで入力してください。',
+        'string[]': '{name}はstringかnumberの配列で入力してください。',
+        'uuid': '{name}はuuidで入力してください。',
+        'uuid[]': '{name}はuuidの配列で入力してください。',
+        'number': '{name}はnumberか半角数字のstring型で入力してください。',
+        'number[]': '{name}はnumberか半角数字のstring型の配列で入力してください。',
+        'bool': '{name}はbool型、"true"、"false"、0、または1で入力してください。',
+        'bool[]': '{name}はbool型、"true"、"false"、0、または1の配列で入力してください。',
+        'date': '{name}は"YYYY-MM-DD"形式、"YYYY-MM-DD hh:mi:ss"形式、またはDate型で入力してください。',
+        'date[]': '{name}は"YYYY-MM-DD"形式、"YYYY-MM-DD hh:mi:ss"形式、またはDate型の配列で入力してください。',
+        'time': '{name}は"hh:mi"形式または"hh:mi:ss"形式で入力してください。',
+        'time[]': '{name}は"hh:mi"形式または"hh:mi:ss"形式の配列で入力してください。',
+        'timestamp': '{name}は"YYYY-MM-DD"形式、"YYYY-MM-DD hh:mi:ss"形式、"YYYY-MM-DDThh:mi:ss"形式、またはDate型で入力してください。',
+        'timestamp[]': '{name}は"YYYY-MM-DD"形式、"YYYY-MM-DD hh:mi:ss"形式、"YYYY-MM-DDThh:mi:ss"形式、またはDate型の配列で入力してください。',
+        'length': '{name}は{length}文字以内で入力してください。',
+        'null': '{name}はnullを許可されていません。',
+        'notInput': '{name}を入力してください。',
+        'fk': '{name}の値がテーブルに存在しません。',
+        'idNotExist': '指定されたID({id})はテーブルに存在しません。',
     }
+
+    private throwException(code: string, type: TColumnType | TColumnArrayType | 'length' | 'null' | 'notInput' | 'fk' | 'idNotExist', columnName: string, vallue: TSqlValue): never {
+        const column = this.getColumn(columnName);
+        
+        let message = this.errorMessages[type];
+
+        const name = (column.alias === undefined || column.alias === '') ? columnName : column.alias;
+        message = message.replace('{name}', name);
+        if (message.includes("{length}") && (column.type === 'string' || column.type !== 'string[]')) {
+            message = message.replace('{length}', (column.length ?? '未設定').toString());
+        } 
+
+        throw new UnprocessableException(code, message);
+    }
+
+    protected readonly errorMessages: Record<TColumnType | TColumnArrayType | 'length' | 'null' | 'notInput' | 'fk' | 'idNotExist', string> = 
+        process.env.TZ === 'Asia/Tokyo' ? this.errorMessageJapan : this.errorMessageEnglish;
 
     protected async validateOptions(options: TOption, isInsert: boolean): Promise<void> {
         if (Object.keys(options).length === 0) {
@@ -436,16 +472,15 @@ export class TableModel {
                 throw new Error(`${this.TableName}.${key} cannot be modified because it is a primary key.`);
             }
 
-            const name = (column.alias === undefined || column.alias === '') ? key : column.alias;
             if (value === null) {
                 if (column.attribute === 'nullable') {
                     continue;
                 }
-                this.throwValidationError("001", this.errorMessages.null.replace('{name}', name));
+                this.throwException("001", "null", key, value);
             }
 
             if (ValidateValueUtil.isErrorValue(column.type, value)) {
-                this.throwValidationError("002", this.errorMessages[column.type].replace('{name}', name));
+                this.throwException("002", column.type, key, value);
             }
 
             if (column.type === 'string') {
@@ -454,7 +489,7 @@ export class TableModel {
                 }
 
                 if (value.toString().length > column.length) {
-                    this.throwValidationError("003", this.errorMessages.length.replace('{name}', name).replace('{length}', column.toString()));
+                    this.throwException("003", "length", key, value);
                 }
             } else if (column.type === 'string[]') {
                 if (Number.isInteger(column.length) === false) {
@@ -464,7 +499,7 @@ export class TableModel {
                 // ValidateValueUtil.isErrorValue(column.type, value)で型チェックしてるのでas []にしている
                 for (const v of value as Array<string | number | boolean>) {
                     if (v.toString().length > column.length) {
-                        this.throwValidationError("004", this.errorMessages.length.replace('{name}', name).replace('{length}', column.length.toString()));
+                        this.throwException("004", "length", key, value);
                     }
                 }
             }
@@ -482,15 +517,15 @@ export class TableModel {
                 // 一部の値がnullの場合はエラー
                 if (refValues.some(value => value === null || value === undefined)) {
                     const name = ref.columns.map(col => this.getColumn(col.target).alias ?? this.getColumn(col.target).columnName).join(',');
-                    this.throwValidationError("004", this.errorMessages.fk.replace('{name}', name));
+                    throw new UnprocessableException("005", this.errorMessages.null.replace('{name}', name));
                 }
 
                 let refIndex = 1;
-                const sql = `SELECT COUNT(*) as count FROM ${ref.table} WHERE ${ref.columns.map(col => `${col.ref} = $${refIndex++}`)}`;
+                const sql = `SELECT COUNT(*) as count FROM ${ref.table} WHERE ${ref.columns.map(col => `${col.ref} = $${refIndex++}`).join(" AND ")}`;
                 const datas = await this.clientQuery(sql, refValues);
                 if (datas.rows[0].count == "0") {
                     const name = ref.columns.map(col => this.getColumn(col.target).alias ?? this.getColumn(col.target).columnName).join(',');
-                    this.throwValidationError("004", this.errorMessages.fk.replace('{name}', name));
+                    throw new DbConflictException("006", this.errorMessages.fk.replace('{name}', name));
                 }
             }
         }
@@ -503,7 +538,7 @@ export class TableModel {
             if (options[key] === undefined || options[key] === null) {
                 // Null許容されていないカラムにNULLを入れようとしているか？
                 if (column.attribute === "primary" || column.attribute === "noDefault") {
-                    this.throwValidationError("101", this.errorMessages.notInput.replace('{name}', name));
+                    this.throwException("101", "notInput", key, options[key]);
                 }
             }
         }
@@ -598,7 +633,7 @@ export class TableModel {
         const sql = `UPDATE ${this.TableName} SET ${updateExpressions.join(',')} WHERE id = $${vars.length}`;
         const data = await this.executeQuery(sql, vars);
         if (data.rowCount !== 1) {
-            this.throwValidationError("201", this.errorMessages.idNotExist.replace('{id}', id));
+            throw new UnprocessableException("201", this.errorMessages.idNotExist.replace('{id}', id));
         }
     }
 
@@ -635,7 +670,7 @@ export class TableModel {
 
         const datas = await this.executeQuery(sql, [id]);
         if (datas.rowCount !== 1) {
-            this.throwValidationError("301", this.errorMessages.idNotExist.replace('{id}', id));
+            throw new UnprocessableException("301", this.errorMessages.idNotExist.replace('{id}', id));
         }
     }
 

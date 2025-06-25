@@ -17,6 +17,7 @@ const ValidateValueUtil_1 = __importDefault(require("./SqlUtils/ValidateValueUti
 const SelectExpression_1 = __importDefault(require("./SqlUtils/SelectExpression"));
 const WhereExpression_1 = __importDefault(require("./SqlUtils/WhereExpression"));
 const ValidateClient_1 = __importDefault(require("./ValidateClient"));
+const Exception_1 = require("../exceptions/Exception");
 class TableModel {
     get DbName() { return this.dbName; }
     get TableName() {
@@ -107,7 +108,7 @@ class TableModel {
         this.groupExpression = [];
         this.sortExpression = [];
         this.vars = [];
-        this.errorMessages = {
+        this.errorMessageEnglish = {
             'string': '{name} should be entered as a string or number type.',
             'string[]': '{name} should be entered as an array of string or number types.',
             'uuid': '{name} should be entered as a UUID.',
@@ -128,6 +129,28 @@ class TableModel {
             'fk': 'The value of {name} does not exist in the table.',
             'idNotExist': 'The specified ID({id}) does not exist in the table.',
         };
+        this.errorMessageJapan = {
+            'string': '{name}はstringかnumberで入力してください。',
+            'string[]': '{name}はstringかnumberの配列で入力してください。',
+            'uuid': '{name}はuuidで入力してください。',
+            'uuid[]': '{name}はuuidの配列で入力してください。',
+            'number': '{name}はnumberか半角数字のstring型で入力してください。',
+            'number[]': '{name}はnumberか半角数字のstring型の配列で入力してください。',
+            'bool': '{name}はbool型、"true"、"false"、0、または1で入力してください。',
+            'bool[]': '{name}はbool型、"true"、"false"、0、または1の配列で入力してください。',
+            'date': '{name}は"YYYY-MM-DD"形式、"YYYY-MM-DD hh:mi:ss"形式、またはDate型で入力してください。',
+            'date[]': '{name}は"YYYY-MM-DD"形式、"YYYY-MM-DD hh:mi:ss"形式、またはDate型の配列で入力してください。',
+            'time': '{name}は"hh:mi"形式または"hh:mi:ss"形式で入力してください。',
+            'time[]': '{name}は"hh:mi"形式または"hh:mi:ss"形式の配列で入力してください。',
+            'timestamp': '{name}は"YYYY-MM-DD"形式、"YYYY-MM-DD hh:mi:ss"形式、"YYYY-MM-DDThh:mi:ss"形式、またはDate型で入力してください。',
+            'timestamp[]': '{name}は"YYYY-MM-DD"形式、"YYYY-MM-DD hh:mi:ss"形式、"YYYY-MM-DDThh:mi:ss"形式、またはDate型の配列で入力してください。',
+            'length': '{name}は{length}文字以内で入力してください。',
+            'null': '{name}はnullを許可されていません。',
+            'notInput': '{name}を入力してください。',
+            'fk': '{name}の値がテーブルに存在しません。',
+            'idNotExist': '指定されたID({id})はテーブルに存在しません。',
+        };
+        this.errorMessages = process.env.TZ === 'Asia/Tokyo' ? this.errorMessageJapan : this.errorMessageEnglish;
         this.client = client;
         if (tableAlias !== undefined && tableAlias.trim() !== '') {
             this.tableAlias = tableAlias;
@@ -365,8 +388,16 @@ class TableModel {
             return { datas: data.rows, count: Number(countData.rows[0].count), lastPage: Math.ceil(Number(countData.rows[0].count) / this.PageCount) };
         });
     }
-    throwValidationError(code, message) {
-        throw new Error(message);
+    throwException(code, type, columnName, vallue) {
+        var _a;
+        const column = this.getColumn(columnName);
+        let message = this.errorMessages[type];
+        const name = (column.alias === undefined || column.alias === '') ? columnName : column.alias;
+        message = message.replace('{name}', name);
+        if (message.includes("{length}") && (column.type === 'string' || column.type !== 'string[]')) {
+            message = message.replace('{length}', ((_a = column.length) !== null && _a !== void 0 ? _a : '未設定').toString());
+        }
+        throw new Exception_1.UnprocessableException(code, message);
     }
     validateOptions(options, isInsert) {
         return __awaiter(this, void 0, void 0, function* () {
@@ -378,22 +409,21 @@ class TableModel {
                 if (isInsert === false && column.attribute === 'primary') {
                     throw new Error(`${this.TableName}.${key} cannot be modified because it is a primary key.`);
                 }
-                const name = (column.alias === undefined || column.alias === '') ? key : column.alias;
                 if (value === null) {
                     if (column.attribute === 'nullable') {
                         continue;
                     }
-                    this.throwValidationError("001", this.errorMessages.null.replace('{name}', name));
+                    this.throwException("001", "null", key, value);
                 }
                 if (ValidateValueUtil_1.default.isErrorValue(column.type, value)) {
-                    this.throwValidationError("002", this.errorMessages[column.type].replace('{name}', name));
+                    this.throwException("002", column.type, key, value);
                 }
                 if (column.type === 'string') {
                     if (Number.isInteger(column.length) === false) {
                         throw new Error(`For strings, please specify the length of the column.(column: ${column.columnName})`);
                     }
                     if (value.toString().length > column.length) {
-                        this.throwValidationError("003", this.errorMessages.length.replace('{name}', name).replace('{length}', column.toString()));
+                        this.throwException("003", "length", key, value);
                     }
                 }
                 else if (column.type === 'string[]') {
@@ -403,7 +433,7 @@ class TableModel {
                     // ValidateValueUtil.isErrorValue(column.type, value)で型チェックしてるのでas []にしている
                     for (const v of value) {
                         if (v.toString().length > column.length) {
-                            this.throwValidationError("004", this.errorMessages.length.replace('{name}', name).replace('{length}', column.length.toString()));
+                            this.throwException("004", "length", key, value);
                         }
                     }
                 }
@@ -419,14 +449,14 @@ class TableModel {
                     // 一部の値がnullの場合はエラー
                     if (refValues.some(value => value === null || value === undefined)) {
                         const name = ref.columns.map(col => { var _a; return (_a = this.getColumn(col.target).alias) !== null && _a !== void 0 ? _a : this.getColumn(col.target).columnName; }).join(',');
-                        this.throwValidationError("004", this.errorMessages.fk.replace('{name}', name));
+                        throw new Exception_1.UnprocessableException("005", this.errorMessages.null.replace('{name}', name));
                     }
                     let refIndex = 1;
-                    const sql = `SELECT COUNT(*) as count FROM ${ref.table} WHERE ${ref.columns.map(col => `${col.ref} = $${refIndex++}`)}`;
+                    const sql = `SELECT COUNT(*) as count FROM ${ref.table} WHERE ${ref.columns.map(col => `${col.ref} = $${refIndex++}`).join(" AND ")}`;
                     const datas = yield this.clientQuery(sql, refValues);
                     if (datas.rows[0].count == "0") {
                         const name = ref.columns.map(col => { var _a; return (_a = this.getColumn(col.target).alias) !== null && _a !== void 0 ? _a : this.getColumn(col.target).columnName; }).join(',');
-                        this.throwValidationError("004", this.errorMessages.fk.replace('{name}', name));
+                        throw new Exception_1.DbConflictException("006", this.errorMessages.fk.replace('{name}', name));
                     }
                 }
             }
@@ -440,7 +470,7 @@ class TableModel {
                 if (options[key] === undefined || options[key] === null) {
                     // Null許容されていないカラムにNULLを入れようとしているか？
                     if (column.attribute === "primary" || column.attribute === "noDefault") {
-                        this.throwValidationError("101", this.errorMessages.notInput.replace('{name}', name));
+                        this.throwException("101", "notInput", key, options[key]);
                     }
                 }
             }
@@ -530,7 +560,7 @@ class TableModel {
             const sql = `UPDATE ${this.TableName} SET ${updateExpressions.join(',')} WHERE id = $${vars.length}`;
             const data = yield this.executeQuery(sql, vars);
             if (data.rowCount !== 1) {
-                this.throwValidationError("201", this.errorMessages.idNotExist.replace('{id}', id));
+                throw new Exception_1.UnprocessableException("201", this.errorMessages.idNotExist.replace('{id}', id));
             }
         });
     }
@@ -564,7 +594,7 @@ class TableModel {
             let sql = `DELETE FROM ${this.TableName} WHERE id = $1`;
             const datas = yield this.executeQuery(sql, [id]);
             if (datas.rowCount !== 1) {
-                this.throwValidationError("301", this.errorMessages.idNotExist.replace('{id}', id));
+                throw new Exception_1.UnprocessableException("301", this.errorMessages.idNotExist.replace('{id}', id));
             }
         });
     }

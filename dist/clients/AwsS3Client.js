@@ -136,7 +136,8 @@ class AwsS3Client {
     }
     getText(path, fileName) {
         return __awaiter(this, void 0, void 0, function* () {
-            var _a;
+            var _a, e_1, _b, _c;
+            var _d;
             try {
                 const command = new client_s3_1.GetObjectCommand({
                     Bucket: this.bucketName,
@@ -146,18 +147,39 @@ class AwsS3Client {
                 if (res.Body === undefined) {
                     throw new Error(`Failed to get text data. Response body is undefined.`);
                 }
-                if (((_a = res.ContentType) === null || _a === void 0 ? void 0 : _a.startsWith('text/')) === false) {
+                if (((_d = res.ContentType) === null || _d === void 0 ? void 0 : _d.startsWith('text/')) === false) {
                     throw new Error(`Cannot get text data from non-text file. ContentType: ${res.ContentType}`);
                 }
                 // v3ではBodyがReadableStreamなので、変換が必要
-                const stream = res.Body;
-                const reader = stream.getReader();
                 const chunks = [];
-                while (true) {
-                    const { done, value } = yield reader.read();
-                    if (done)
-                        break;
-                    chunks.push(value);
+                if (res.Body && typeof res.Body === 'object' && 'getReader' in res.Body) {
+                    // ReadableStreamの場合
+                    const stream = res.Body;
+                    const reader = stream.getReader();
+                    while (true) {
+                        const { done, value } = yield reader.read();
+                        if (done)
+                            break;
+                        chunks.push(value);
+                    }
+                }
+                else {
+                    try {
+                        // Node.js Readableの場合
+                        for (var _e = true, _f = __asyncValues(res.Body), _g; _g = yield _f.next(), _a = _g.done, !_a; _e = true) {
+                            _c = _g.value;
+                            _e = false;
+                            const chunk = _c;
+                            chunks.push(chunk);
+                        }
+                    }
+                    catch (e_1_1) { e_1 = { error: e_1_1 }; }
+                    finally {
+                        try {
+                            if (!_e && !_a && (_b = _f.return)) yield _b.call(_f);
+                        }
+                        finally { if (e_1) throw e_1.error; }
+                    }
                 }
                 const buffer = Buffer.concat(chunks);
                 return buffer.toString('utf-8');
@@ -183,7 +205,7 @@ class AwsS3Client {
     }
     getDataFronJson(path, fileName) {
         return __awaiter(this, void 0, void 0, function* () {
-            var _a, e_1, _b, _c;
+            var _a, e_2, _b, _c;
             const command = new client_s3_1.GetObjectCommand({
                 Bucket: this.bucketName,
                 Key: this.makeKey(path, fileName),
@@ -205,12 +227,12 @@ class AwsS3Client {
                     chunks.push(chunk);
                 }
             }
-            catch (e_1_1) { e_1 = { error: e_1_1 }; }
+            catch (e_2_1) { e_2 = { error: e_2_1 }; }
             finally {
                 try {
                     if (!_d && !_a && (_b = _e.return)) yield _b.call(_e);
                 }
-                finally { if (e_1) throw e_1.error; }
+                finally { if (e_2) throw e_2.error; }
             }
             const buffer = Buffer.concat(chunks);
             const jsonString = buffer.toString('utf-8');

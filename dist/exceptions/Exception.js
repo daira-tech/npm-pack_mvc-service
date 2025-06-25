@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.BusinessLogicException = exports.DbConflictException = exports.MaintenanceException = exports.InputErrorException = exports.ForbiddenException = exports.AuthException = void 0;
+exports.UnprocessableException = exports.DbConflictException = exports.NotFoundException = exports.MaintenanceException = exports.InputErrorException = exports.ForbiddenException = exports.AuthException = void 0;
 class AuthException extends Error {
     get Id() {
         return this.id;
@@ -19,15 +19,10 @@ class InputErrorException extends Error {
     get ErrorId() {
         return this.errorId;
     }
-    get ErrorLog() {
-        return this.errorLog;
-    }
-    constructor(errorId, message = "", errorLog = "") {
+    constructor(errorId, message = "") {
         super(message);
         this.errorId = "";
-        this.errorLog = "";
         this.errorId = errorId;
-        this.errorLog = errorLog;
     }
 }
 exports.InputErrorException = InputErrorException;
@@ -37,17 +32,39 @@ class MaintenanceException extends Error {
     }
 }
 exports.MaintenanceException = MaintenanceException;
-class DbConflictException extends Error {
-    // for 409 Conflict
-    constructor(message = "") {
+class NotFoundException extends Error {
+    get ErrorId() {
+        return this.errorId;
+    }
+    constructor(errorId, message = "") {
         super(message);
+        // for 404 Not Found
+        this.errorId = "";
+        this.errorId = errorId;
+    }
+}
+exports.NotFoundException = NotFoundException;
+class DbConflictException extends Error {
+    get ErrorId() {
+        return this.errorId;
+    }
+    constructor(errorId, message = "") {
+        super(message);
+        // for 409 Conflict
+        this.errorId = "";
+        this.errorId = errorId;
     }
 }
 exports.DbConflictException = DbConflictException;
-class BusinessLogicException extends Error {
-    // for 422 Unprocessable Entity
-    constructor(message = "") {
+class UnprocessableException extends Error {
+    get ErrorId() {
+        return this.errorId;
+    }
+    constructor(errorId, message = "") {
         super(message);
+        // for 422 Unprocessable Entity
+        this.errorId = "";
+        this.errorId = errorId;
     }
 }
-exports.BusinessLogicException = BusinessLogicException;
+exports.UnprocessableException = UnprocessableException;
