@@ -4,7 +4,6 @@ export type PrimitiveType = {
         'string?' | 'number?' | 'boolean?' | 'date?' | 'datetime?' | 'time?' | 'uuid?' | 'mail?' | 'https?' | 'base64?';
     description?: string;
 };
-
 export type ObjectType = {
     type: 'object' | 'object?';
     description?: string;

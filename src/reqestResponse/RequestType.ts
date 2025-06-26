@@ -1,6 +1,25 @@
 import { Request } from 'express';
-import ReqResType from "./ReqResType";
+import ReqResType, { EnumType, PrimitiveType, PropertyType } from "./ReqResType";
 import { InputErrorException } from '../exceptions/Exception';
+
+// エラーメッセージの型定義
+export interface ErrorMessageType {
+    REQUIRED: string;
+    UNNECESSARY: string;
+    INVALID_OBJECT: string;
+    INVALID_ARRAY: string;
+    INVALID_NUMBER: string;
+    INVALID_BOOL: string;
+    INVALID_STRING: string;
+    INVALID_UUID: string;
+    INVALID_MAIL: string;
+    INVALID_HTTPS: string;
+    INVALID_DATE: string;
+    INVALID_TIME: string;
+    INVALID_DATETIME: string;
+    INVALID_BASE64: string;
+    INVALID_ENUM: string;
+}
 
 export class RequestType extends ReqResType {
 
@@ -10,22 +29,46 @@ export class RequestType extends ReqResType {
     // エラー文言
     // エラーメッセージの変更はサブクラスで行ってください
     // *****************************************
-    public readonly INVALID_PATH_PARAM_UUID_ERROR_MESSAGE = 'The {property} in the URL must be a UUID. ({value})';
-    public readonly REQUIRED_ERROR_MESSAGE = '{property} is required.';
-    public readonly UNNECESSARY_INPUT_ERROR_MESSAGE = "{property} is unnecessary input. ";
-    public readonly INVALID_OBJECT_ERROR_MESSAGE = '{property} must be of type Object. ({value})';
-    public readonly INVALID_ARRAY_ERROR_MESSAGE = '{property} must be of type Array. ({value})';
-    public readonly INVALID_NUMBER_ERROR_MESSAGE = '{property} must be of type number. ({value})';
-    public readonly INVALID_BOOL_ERROR_MESSAGE = '{property} must be of type bool or a string with true, false, or a number with 0, 1. ({value})';
-    public readonly INVALID_STRING_ERROR_MESSAGE = '{property} must be of type string. ({value})';
-    public readonly INVALID_UUID_ERROR_MESSAGE = '{property} must be a UUID. ({value})';
-    public readonly INVALID_MAIL_ERROR_MESSAGE = '{property} must be an email. ({value})';
-    public readonly INVALID_HTTPS_ERROR_MESSAGE = '{property} must be an https or http URL. ({value})';
-    public readonly INVALID_DATE_ERROR_MESSAGE = '{property} must be a string in "YYYY-MM-DD" format and a valid date. ({value})';
-    public readonly INVALID_TIME_ERROR_MESSAGE = '{property} must be a string in "hh:mi" format and a valid time. ({value})';
-    public readonly INVALID_DATETIME_ERROR_MESSAGE = '{property} must be a string in "YYYY-MM-DD hh:mi:ss" or "YYYY-MM-DDThh:mi:ss" format and a valid date and time. ({value})';
-    public readonly INVALID_BASE64_ERROR_MESSAGE = '{property} must be in Base64 format. ({value})';
-    public readonly INVALID_ENUM_ERROR_MESSAGE = '{property} must be in {enums}. ({value})';
+    private readonly ERROR_MESSAGE_ENGLISH: ErrorMessageType = {
+        REQUIRED: '{property} is required.',
+        UNNECESSARY: '{property} is unnecessary input. ',
+        INVALID_OBJECT: '{property} must be of type Object. ({value})',
+        INVALID_ARRAY: '{property} must be of type Array. ({value})',
+        INVALID_NUMBER: '{property} must be of type number. ({value})',
+        INVALID_BOOL: '{property} must be of type bool or a string with true, false, or a number with 0, 1. ({value})',
+        INVALID_STRING: '{property} must be of type string. ({value})',
+        INVALID_UUID: '{property} must be a UUID. ({value})',
+        INVALID_MAIL: '{property} must be an email. ({value})',
+        INVALID_HTTPS: '{property} must be an https or http URL. ({value})',
+        INVALID_DATE: '{property} must be a string in "YYYY-MM-DD" format and a valid date. ({value})',
+        INVALID_TIME: '{property} must be a string in "hh:mi" format and a valid time. ({value})',
+        INVALID_DATETIME: '{property} must be a string in "YYYY-MM-DD hh:mi:ss" or "YYYY-MM-DDThh:mi:ss" format and a valid date and time. ({value})',
+        INVALID_BASE64: '{property} must be in Base64 format. ({value})',
+        INVALID_ENUM: '{property} must be in {enums}. ({value})'
+    }
+    private readonly ERROR_MESSAGE_JAPAN: ErrorMessageType = {
+        REQUIRED: '{property}は必須項目です。',
+        UNNECESSARY: '{property}は不要な入力です。',
+        INVALID_OBJECT: '{property}はobject型で入力してください。（{value}）',
+        INVALID_ARRAY: '{property}はarray型で入力してください。（{value}）',
+        INVALID_NUMBER: '{property}はnumber型または半角数値のstring型で入力してください。（{value}）',
+        INVALID_BOOL: '{property}はboolean型またはtrue、falseのstring型または0、1のnumber型で入力してください。（{value}）',
+        INVALID_STRING: '{property}はstring型で入力してください。（{value}）',
+        INVALID_UUID: '{property}はUUID形式のstring型で入力してください。（{value}）',
+        INVALID_MAIL: '{property}はメールアドレス形式のstring型で入力してください。（{value}）',
+        INVALID_HTTPS: '{property}はhttpsまたはhttpのURL形式のstring型で入力してください。（{value}）',
+        INVALID_DATE: '{property}は"YYYY-MM-DD"形式のstring型で入力してください。（{value}）',
+        INVALID_TIME: '{property}は"hh:mi"形式のstring型で入力してください。（{value}）',
+        INVALID_DATETIME: '{property}は"YYYY-MM-DD hh:mi:ss"または"YYYY-MM-DDThh:mi:ss"形式のstring型で入力してください。（{value}）',
+        INVALID_BASE64: '{property}はBase64形式のstring型で入力してください。（{value}）',
+        INVALID_ENUM: '{property}は{enums}のいずれかの値で入力してください。（{value}）'
+    }
+    protected readonly ERROR_MESSAGE: ErrorMessageType = process.env.TZ === 'Asia/Tokyo' ? this.ERROR_MESSAGE_JAPAN : this.ERROR_MESSAGE_ENGLISH;
+
+    protected paramProperties: Array<(PrimitiveType | EnumType) & { key: string }> = []
+    get paramPath(): string {
+        return this.paramProperties.map(property => `/{${property.key}}`).join("");
+    }
 
     private params?: {[key: string]: any};
     get Params():  {[key: string]: any} {
@@ -60,13 +103,16 @@ export class RequestType extends ReqResType {
 
     public setRequest(request: Request) {
         this.createBody(request);
+
+        this.params = {};
         if (request.params !== undefined) {
             for (const [key, value] of Object.entries(request.params)) {
-                if (key.includes("id") || key.includes("Id")) {
-                    if (this.isUUID(value) === false) {
-                        throw new InputErrorException("990", this.ErrorMessage("990", [key], value));
-                    }
+                const index = this.paramProperties.findIndex(property => property.key === key);
+                if (index === -1) {
+                    throw new Error(`${key} is not set in paramProperties.`);                  
                 }
+                const property = this.paramProperties[index];
+                this.params[key] = this.convertValue(property.type, value, [key, `(pathIndex: ${index})`], false);
             }
         }
         this.params = request.params ?? {};
@@ -82,52 +128,71 @@ export class RequestType extends ReqResType {
      * @param {Array<string | number>} keys - The keys indicating the property path. プロパティパスを示すキー
      * @param {any} value - The value that caused the error. エラーを引き起こした値
      * @returns {string} The generated error message. 生成されたエラーメッセージ
-     */
-    private ErrorMessage(code: "990" | "000" | "001" | "002" | "003" | "004" | "101" | "102" | "103" | "104" |
-        "201" | "211" | "212" | "213" | "221" | "231" | "241" | "251" | "252" |
-        "261" | "271" | "272" | "281" | "291" | "301" | "401" | "402" | "411" | "421" | "422" | "423" | "431", keys: Array<string | number>, value: any): string {
+     */ 
+    private throwInputError(code: 
+        "REQUIRE_00" | "REQUIRE_01" | "OBJECT_01" | "ARRAY_01" | "UNNECESSARY_01" | 
+        "REQUIRE_11" | "OBJECT_11" | "ARRAY_11" | "UNNECESSARY_11" |
+        "NUMBER_21" | "BOOL_21" | "BOOL_22" | "BOOL_23" | "STRING_21" | "UUID_21" | "MAIL_21" | "DATE_21" | "DATE_22" |
+        "TIME_21" | "DATETIME_21" | "DATETIME_22" | "HTTPS_21" | "BASE64_21" | 
+        "REQUIRE_31" | 
+        "ENUM_41" | "ENUM_42" | "NUMBER_41" | "STRING_41" |
+        "NUMBER_91" | "BOOL_91" | "BOOL_92" | "BOOL_93" | "STRING_91" | "UUID_91" | "MAIL_91" | "DATE_91" | "DATE_92" |
+        "TIME_91" | "DATETIME_91" | "DATETIME_92" | "HTTPS_91" | "BASE64_91"
+        , keys: Array<string | number>, value: any): never {
         const list = {
-            "990": this.INVALID_PATH_PARAM_UUID_ERROR_MESSAGE,
-            "000": this.REQUIRED_ERROR_MESSAGE,
-            "001": this.REQUIRED_ERROR_MESSAGE,
-            "101": this.REQUIRED_ERROR_MESSAGE,
-            "301": this.REQUIRED_ERROR_MESSAGE,
-            "002": this.INVALID_OBJECT_ERROR_MESSAGE,
-            "102": this.INVALID_OBJECT_ERROR_MESSAGE,
-            "003": this.INVALID_ARRAY_ERROR_MESSAGE,
-            "103": this.INVALID_ARRAY_ERROR_MESSAGE,
-            "004": this.UNNECESSARY_INPUT_ERROR_MESSAGE,
-            "104": this.UNNECESSARY_INPUT_ERROR_MESSAGE,
-            "201": this.INVALID_NUMBER_ERROR_MESSAGE,
-            "211": this.INVALID_BOOL_ERROR_MESSAGE,
-            "212": this.INVALID_BOOL_ERROR_MESSAGE,
-            "213": this.INVALID_BOOL_ERROR_MESSAGE,
-            "221": this.INVALID_STRING_ERROR_MESSAGE,
-            "231": this.INVALID_UUID_ERROR_MESSAGE,
-            "241": this.INVALID_MAIL_ERROR_MESSAGE,
-            "251": this.INVALID_DATE_ERROR_MESSAGE,
-            "252": this.INVALID_DATE_ERROR_MESSAGE,
-            "261": this.INVALID_TIME_ERROR_MESSAGE,
-            "271": this.INVALID_DATETIME_ERROR_MESSAGE,
-            "272": this.INVALID_DATETIME_ERROR_MESSAGE,
-            "281": this.INVALID_HTTPS_ERROR_MESSAGE,
-            "291": this.INVALID_BASE64_ERROR_MESSAGE,
-            "411": this.INVALID_NUMBER_ERROR_MESSAGE,
-            "421": this.INVALID_BOOL_ERROR_MESSAGE,
-            "422": this.INVALID_BOOL_ERROR_MESSAGE,
-            "423": this.INVALID_BOOL_ERROR_MESSAGE,
-            "431": this.INVALID_STRING_ERROR_MESSAGE,
+            "REQUIRE_00": this.ERROR_MESSAGE.REQUIRED,
+            "REQUIRE_01": this.ERROR_MESSAGE.REQUIRED,
+            "OBJECT_01": this.ERROR_MESSAGE.INVALID_OBJECT,
+            "ARRAY_01": this.ERROR_MESSAGE.INVALID_ARRAY,
+            "UNNECESSARY_01": this.ERROR_MESSAGE.UNNECESSARY,
+            "REQUIRE_11": this.ERROR_MESSAGE.REQUIRED,
+            "OBJECT_11": this.ERROR_MESSAGE.INVALID_OBJECT,
+            "ARRAY_11": this.ERROR_MESSAGE.INVALID_ARRAY,
+            "UNNECESSARY_11": this.ERROR_MESSAGE.UNNECESSARY,
+            "NUMBER_21": this.ERROR_MESSAGE.INVALID_NUMBER,
+            "BOOL_21": this.ERROR_MESSAGE.INVALID_BOOL,
+            "BOOL_22": this.ERROR_MESSAGE.INVALID_BOOL,
+            "BOOL_23": this.ERROR_MESSAGE.INVALID_BOOL,
+            "STRING_21": this.ERROR_MESSAGE.INVALID_STRING,
+            "UUID_21": this.ERROR_MESSAGE.INVALID_UUID,
+            "MAIL_21": this.ERROR_MESSAGE.INVALID_MAIL,
+            "DATE_21": this.ERROR_MESSAGE.INVALID_DATE,
+            "DATE_22": this.ERROR_MESSAGE.INVALID_DATE,
+            "TIME_21": this.ERROR_MESSAGE.INVALID_TIME,
+            "DATETIME_21": this.ERROR_MESSAGE.INVALID_DATETIME,
+            "DATETIME_22": this.ERROR_MESSAGE.INVALID_DATETIME,
+            "HTTPS_21": this.ERROR_MESSAGE.INVALID_HTTPS,
+            "BASE64_21": this.ERROR_MESSAGE.INVALID_BASE64,
+            "REQUIRE_31": this.ERROR_MESSAGE.REQUIRED,
+            "NUMBER_41": this.ERROR_MESSAGE.INVALID_NUMBER,
+            "STRING_41": this.ERROR_MESSAGE.INVALID_STRING,
+            "ENUM_41": this.ERROR_MESSAGE.INVALID_ENUM,
+            "ENUM_42": this.ERROR_MESSAGE.INVALID_ENUM,
+            "NUMBER_91": this.ERROR_MESSAGE.INVALID_NUMBER,
+            "BOOL_91": this.ERROR_MESSAGE.INVALID_BOOL,
+            "BOOL_92": this.ERROR_MESSAGE.INVALID_BOOL,
+            "BOOL_93": this.ERROR_MESSAGE.INVALID_BOOL,
+            "STRING_91": this.ERROR_MESSAGE.INVALID_STRING,
+            "UUID_91": this.ERROR_MESSAGE.INVALID_UUID,
+            "MAIL_91": this.ERROR_MESSAGE.INVALID_MAIL,
+            "DATE_91": this.ERROR_MESSAGE.INVALID_DATE,
+            "DATE_92": this.ERROR_MESSAGE.INVALID_DATE,
+            "TIME_91": this.ERROR_MESSAGE.INVALID_TIME,
+            "DATETIME_91": this.ERROR_MESSAGE.INVALID_DATETIME,
+            "DATETIME_92": this.ERROR_MESSAGE.INVALID_DATETIME,
+            "HTTPS_91": this.ERROR_MESSAGE.INVALID_HTTPS,
+            "BASE64_91": this.ERROR_MESSAGE.INVALID_BASE64,
         }
 
-        let errorMessage = '';
-        if (code === "401" || code === "402") {
+        let errorMessage =  list[code];
+        if (code === "ENUM_41" || code === "ENUM_42") {
             const property = this.getProperty(keys);
-            errorMessage = this.INVALID_ENUM_ERROR_MESSAGE.replace('{enums}', Object.keys(property.enums).join(','));
-        } else {
-            errorMessage = list[code];
+            errorMessage = errorMessage.replace('{enums}', Object.keys(property.enums).join(','));
         }
-        errorMessage = errorMessage.replace("{property}", keys.join('.')).replace("{value}", value)
-        return errorMessage;
+
+        errorMessage = errorMessage.replace("{property}", keys.join('.')).replace("{value}", value);
+
+        throw new InputErrorException(code, errorMessage);
     }
 
     /**
@@ -177,14 +242,14 @@ export class RequestType extends ReqResType {
                         }
                         continue;
                     } else {
-                        throw new InputErrorException("000", this.ErrorMessage("000", [key, 0], ""));
+                        this.throwInputError("REQUIRE_00", [key, 0], "");
                     }
                 } else {
                     if (this.properties[key].type.endsWith('?')) {
                         this.changeBody([key], null);
                         continue;
                     } else {
-                        throw new InputErrorException("001", this.ErrorMessage("001", [key], ""));
+                        this.throwInputError("REQUIRE_01", [key], "");
                     }
                 }
             }
@@ -196,7 +261,7 @@ export class RequestType extends ReqResType {
                     if (typeof value === 'object') {
                         this.setObject([key], value);
                     } else {
-                        throw new InputErrorException("002", this.ErrorMessage("002", [key], value));
+                        this.throwInputError("OBJECT_01", [key], value);
                     }
                     break;
                 case 'array':
@@ -207,9 +272,9 @@ export class RequestType extends ReqResType {
                         if (request.method === 'GET' || request.method === 'DELETE') {
                             // GET,DELETEメソッドの場合、?array=1&array=2で配列となるが、
                             // ?array=1のみで終わる場合は配列にならないため、直接配列にしている
-                            this.data[key] = [this.convertValue(this.properties[key].properties.type, value, [key, 0])];
+                            this.data[key] = [this.convertValue(this.properties[key].properties.type, value, [key, 0], true)];
                         } else {
-                            throw new InputErrorException("003", this.ErrorMessage("003", [key], value));
+                            this.throwInputError("ARRAY_01", [key], value);
                         }
                     }
                     break;
@@ -226,7 +291,7 @@ export class RequestType extends ReqResType {
         // 不要項目チェック
         for (const [key, value] of Object.entries(this.data)) {
             if (key in this.properties === false) {
-                throw new InputErrorException("004", this.ErrorMessage("004", [key], value));
+                this.throwInputError("UNNECESSARY_01", [key], value);
             }
         }
     }
@@ -249,7 +314,7 @@ export class RequestType extends ReqResType {
             if (enumType.endsWith('?')) {
                 this.changeBody(keys, null);
             } else {
-                throw new InputErrorException("401", this.ErrorMessage("401", keys, value));
+                this.throwInputError("ENUM_41", keys, value);
             }
         }
 
@@ -257,7 +322,7 @@ export class RequestType extends ReqResType {
             case 'number':
             case 'number?':
                 if (this.isNumber(value) === false) {
-                    throw new InputErrorException("411", this.ErrorMessage("411", keys, value));
+                    this.throwInputError("NUMBER_41", keys, value);
                 }
                 value = Number(value);
                 break;
@@ -271,13 +336,13 @@ export class RequestType extends ReqResType {
                         value = value;
                         break;
                     default:
-                        throw new InputErrorException("431", this.ErrorMessage("431", keys, value));
+                        this.throwInputError("STRING_41", keys, value);
                 }
                 break;
         }
 
         if (Object.keys(property.enums).includes(value.toString()) === false) {
-            throw new InputErrorException("402", this.ErrorMessage("402", keys, value));
+            this.throwInputError("ENUM_42", keys, value);
         }
 
         this.changeBody(keys, value);
@@ -306,7 +371,7 @@ export class RequestType extends ReqResType {
                     this.changeBody([...keys, i], values[i] === undefined ? undefined : null);
                     continue;
                 } else {
-                    throw new InputErrorException("301", this.ErrorMessage("301", [...keys, i], ""));
+                    this.throwInputError("REQUIRE_31", [...keys, i], "");
                 }
             }
 
@@ -409,7 +474,7 @@ export class RequestType extends ReqResType {
                     this.changeBody([...keys, key], null);
                     continue;
                 } else {
-                    throw new InputErrorException("101", this.ErrorMessage("101", [...keys, key], ""));
+                    this.throwInputError("REQUIRE_11", [...keys, key], "");
                 }
             }
 
@@ -420,7 +485,7 @@ export class RequestType extends ReqResType {
                     if (typeof value === 'object') {
                         this.setObject([...keys, key], value);
                     } else {
-                        throw new InputErrorException("102", this.ErrorMessage("102", [...keys, key], value));
+                        this.throwInputError("OBJECT_11", [...keys, key], value);
                     }
                     break;
                 case 'array':
@@ -428,7 +493,7 @@ export class RequestType extends ReqResType {
                     if (Array.isArray(value)) {
                         this.setArray([...keys, key], value);
                     } else {
-                        throw new InputErrorException("103", this.ErrorMessage("103", [...keys, key], value));
+                        this.throwInputError("ARRAY_11", [...keys, key], value);
                     }
                     break;
                 case 'enum':
@@ -444,7 +509,7 @@ export class RequestType extends ReqResType {
         // unnecessary input check
         for (const [key, value] of Object.entries(values)) {
             if (key in property.properties === false) {
-                throw new InputErrorException("104", this.ErrorMessage("104", [...keys, key], value));
+                this.throwInputError("UNNECESSARY_11", [...keys, key], value);
             }
         }
     }
@@ -464,13 +529,13 @@ export class RequestType extends ReqResType {
      * @returns {any} The converted value, 変換された値
      * @throws {InputErrorException} Thrown if type conversion fails, 型変換に失敗した場合にスローされます
      */
-    private convertValue(type: string, value: any, keys: Array<string | number>) {
+    private convertValue(type: string, value: any, keys: Array<string | number>, isRequestBody: boolean) {
 
         switch (type) {
             case 'number':
             case 'number?':
                 if (this.isNumber(value) === false) {
-                    throw new InputErrorException("201", this.ErrorMessage("201", keys, value));
+                    this.throwInputError(isRequestBody ? "NUMBER_21" : "NUMBER_91", keys, value);
                 }
                 return Number(value);
             case 'boolean':
@@ -480,16 +545,16 @@ export class RequestType extends ReqResType {
                         return value;
                     case 'number':
                         if (value !== 0 && value !== 1) {
-                            throw new InputErrorException("211", this.ErrorMessage("211", keys, value));
+                            this.throwInputError(isRequestBody ? "BOOL_21" : "BOOL_91", keys, value);
                         }
                         return value === 1 ? true : false;
                     case 'string':
                         if (value !== 'true' && value !== 'false') {
-                            throw new InputErrorException("212", this.ErrorMessage("212", keys, value));
+                            this.throwInputError(isRequestBody ? "BOOL_22" : "BOOL_92", keys, value);
                         }
                         return value === 'true' ? true : false;
                     default:
-                        throw new InputErrorException("213", this.ErrorMessage("213", keys, value));
+                        this.throwInputError(isRequestBody ? "BOOL_23" : "BOOL_93", keys, value);
                 }
             case 'string':
             case 'string?':
@@ -499,28 +564,28 @@ export class RequestType extends ReqResType {
                     case 'string':
                         return value;
                     default:
-                        throw new InputErrorException("221", this.ErrorMessage("221", keys, value));
+                        this.throwInputError(isRequestBody ? "STRING_21" : "STRING_91", keys, value);
                 }
             case 'uuid':
             case 'uuid?':
                 if (this.isUUID(value)) {
                     return value;
                 }
-                throw new InputErrorException("231", this.ErrorMessage("231", keys, value));
+                this.throwInputError(isRequestBody ? "UUID_21" : "UUID_91", keys, value);
             case 'mail':
             case 'mail?':
                 if (this.isMail(value)) {
                     return value;
                 }
-                throw new InputErrorException("241", this.ErrorMessage("241", keys, value));
+                this.throwInputError(isRequestBody ? "MAIL_21" : "MAIL_91", keys, value);
             case 'date':
             case 'date?':
                 if (this.isYYYYMMDD(value) === false) {
-                    throw new InputErrorException("251", this.ErrorMessage("251", keys, value));
+                    this.throwInputError(isRequestBody ? "DATE_21" : "DATE_91", keys, value);
                 }
 
                 if (this.isErrorDateTime(value)) {
-                    throw new InputErrorException("252", this.ErrorMessage("252", keys, value));
+                    this.throwInputError(isRequestBody ? "DATE_22" : "DATE_92", keys, value);
                 }
                 return value;
             case 'time':
@@ -528,7 +593,7 @@ export class RequestType extends ReqResType {
                 if (this.isHHMM(value)) {
                     return `${value}`;
                 }
-                throw new InputErrorException("261", this.ErrorMessage("261", keys, value));
+                this.throwInputError(isRequestBody ? "TIME_21" : "TIME_91", keys, value);
             case 'datetime':
             case 'datetime?':
                 if (this.isYYYYMMDDhhmi(value)) {
@@ -536,11 +601,11 @@ export class RequestType extends ReqResType {
                 }
 
                 if (this.isYYYYMMDDhhmiss(value) === false) {
-                    throw new InputErrorException("271", this.ErrorMessage("271", keys, value));
+                    this.throwInputError(isRequestBody ? "DATETIME_21" : "DATETIME_91", keys, value);
                 }
 
                 if (this.isErrorDateTime(value)) {
-                    throw new InputErrorException("272", this.ErrorMessage("272", keys, value));
+                    this.throwInputError(isRequestBody ? "DATETIME_22" : "DATETIME_92", keys, value);
                 }
                 return value.replace('T', ' ');
             case 'https':
@@ -548,13 +613,13 @@ export class RequestType extends ReqResType {
                 if (this.isHttps(value)) {
                     return value;
                 }
-                throw new InputErrorException("281", this.ErrorMessage("281", keys, value));
+                this.throwInputError(isRequestBody ? "HTTPS_21" : "HTTPS_91", keys, value);
             case 'base64':
             case 'base64?':
                 if (this.isBase64(value)) {
                     return value;
                 }
-                throw new InputErrorException("291", this.ErrorMessage("291", keys, value));
+                this.throwInputError(isRequestBody ? "BASE64_21" : "BASE64_91", keys, value);
         }
 
         return value;
@@ -574,7 +639,7 @@ export class RequestType extends ReqResType {
      */
     private convertInput(keys: Array<string | number>, value: any) {
         const property = this.getProperty(keys);
-        this.changeBody(keys, this.convertValue(property.type, value, keys));
+        this.changeBody(keys, this.convertValue(property.type, value, keys, true));
     }
 
 

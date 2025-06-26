@@ -31,12 +31,6 @@ export const createSwagger = (services: Service[], name: string, url: string, pa
         }
         let yml = "";
     
-        const splitEndpont = service.Endpoint.split('/');
-        let tagName = splitEndpont[0];
-        if (tagName === '' && splitEndpont.length > 1) {
-            tagName = splitEndpont[1];;
-        }
-    
         const apiTags = service.Tags;
         if (apiTags.length > 0) {
             tags = [ ...tags, ...apiTags];
@@ -49,8 +43,8 @@ export const createSwagger = (services: Service[], name: string, url: string, pa
 
         const croneParams = [...params];
         for (const path of service.Endpoint.split('/')) {
-            if (path.startsWith(':')) {
-                const key = path.replace(':', '');
+            if (path.startsWith('{') && path.endsWith('}')) {
+                const key = path.replace('{', '').replace('}', '');
                 croneParams.push({
                     in: 'path',
                     name: key,
@@ -98,7 +92,7 @@ tags:\n`;
     swaggerInfo += 'paths:\n'
 
     for (const keyEndpoint in endpontSwaggerYml) {
-        swaggerInfo += `  ${keyEndpoint.replace(/\/:([^\/]+)/g, '/{$1}')}:\n`;
+        swaggerInfo += `  ${keyEndpoint}:\n`;
 
         setYmlByMethod('GET', endpontSwaggerYml[keyEndpoint]);
         setYmlByMethod('POST', endpontSwaggerYml[keyEndpoint]);

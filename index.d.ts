@@ -1,7 +1,7 @@
 import { AxiosResponse } from "axios";
 import { Request, Response } from 'express';
 import { Pool, PoolClient } from 'pg';
-import { IncomingHttpHeaders } from './src/reqestResponse/RequestType';
+import { ErrorMessageType, IncomingHttpHeaders } from './src/reqestResponse/RequestType';
 import { ArrayType, EnumType, ObjectType, PrimitiveType } from './src/reqestResponse/ReqResType';
 import { AwsS3Client } from './src/clients/AwsS3Client';
 import { Base64Client } from './src/clients/Base64Client';
@@ -85,22 +85,8 @@ declare module 'pg-mvc-service' {
         constructor();
 
         protected properties: { [key: string]: PropertyType; };
-
-        public readonly INVALID_PATH_PARAM_UUID_ERROR_MESSAGE: string;
-        public readonly REQUIRED_ERROR_MESSAGE: string;
-        public readonly UNNECESSARY_INPUT_ERROR_MESSAGE: string;
-        public readonly INVALID_OBJECT_ERROR_MESSAGE: string;
-        public readonly INVALID_ARRAY_ERROR_MESSAGE: string;
-        public readonly INVALID_NUMBER_ERROR_MESSAGE: string;
-        public readonly INVALID_BOOL_ERROR_MESSAGE: string;
-        public readonly INVALID_STRING_ERROR_MESSAGE: string;
-        public readonly INVALID_UUID_ERROR_MESSAGE: string;
-        public readonly INVALID_MAIL_ERROR_MESSAGE: string;
-        public readonly INVALID_DATE_ERROR_MESSAGE: string;
-        public readonly INVALID_TIME_ERROR_MESSAGE: string;
-        public readonly INVALID_DATETIME_ERROR_MESSAGE: string;
-        public readonly INVALID_BASE64_ERROR_MESSAGE: string;
-        public readonly INVALID_ENUM_ERROR_MESSAGE: string;
+        protected paramProperties: Array<(PrimitiveType | EnumType) & { key: string }>;
+        protected readonly ERROR_MESSAGE: ErrorMessageType;
 
         protected throwException(code: string, message: string): never;
 

@@ -24,7 +24,7 @@ const EncryptClient_1 = require("./clients/EncryptClient");
 const PoolManager_1 = __importDefault(require("./PoolManager"));
 class Service {
     get Method() { return this.method; }
-    get Endpoint() { return this.endpoint; }
+    get Endpoint() { return this.endpoint + this.request.paramPath; }
     get ApiCode() { return this.apiCode; }
     get Summary() { return `${this.ApiCode !== '' ? this.apiCode + ': ' : ''}${this.summary}`; }
     get ApiUserAvailable() { return this.apiUserAvailable; }

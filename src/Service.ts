@@ -16,7 +16,7 @@ export class Service {
     protected readonly method: MethodType = 'GET';
     get Method(): MethodType { return this.method; }
     protected readonly endpoint: string = '';
-    get Endpoint(): string { return this.endpoint; }
+    get Endpoint(): string { return this.endpoint + this.request.paramPath; }
     protected readonly apiCode: string = '';
     get ApiCode(): string { return this.apiCode; }
     protected readonly summary: string = '';
