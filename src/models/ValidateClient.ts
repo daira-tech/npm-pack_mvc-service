@@ -1,7 +1,5 @@
 import { UnprocessableException } from "../exceptions/Exception";
-import ValidateValueUtil from "./SqlUtils/ValidateValueUtil";
 import { TableModel } from "./TableModel";
-import { TOption, TSqlValue } from "./Type";
 
 type TError = {code?: string; message?: string;};
 
@@ -44,9 +42,9 @@ export default class ValidateClient {
         }
     }
 
-    public validateInList(option: TOption, key: string, list: Array<TSqlValue>, error?: TError) {
+    public validateInList(options: {[key: string]: any}, key: string, list: Array<number | string | boolean>, error?: TError) {
         const column = this.model.getColumn(key);
-        const value = option[key];
+        const value = options[key];
         if (value === undefined || value === null || value === "") {
             return;
         }
@@ -64,9 +62,9 @@ export default class ValidateClient {
         }
     }
 
-    public validateUnderNow(option: TOption, key: string, error?: TError) {
+    public validateUnderNow(options: {[key: string]: any}, key: string, error?: TError) {
         const column = this.model.getColumn(key);
-        const value = option[key];
+        const value = options[key];
         if (value === undefined || value === null || value === "") {
             return;
         }
@@ -89,9 +87,9 @@ export default class ValidateClient {
         }
     }
 
-    public validateUnderToday(option: TOption, key: string, isErrorToday: boolean, error?: TError): void {
+    public validateUnderToday(options: {[key: string]: any}, key: string, isErrorToday: boolean, error?: TError): void {
         const column = this.model.getColumn(key);
-        const value = option[key];
+        const value = options[key];
         if (value === undefined || value === null || value === "") {
             return;
         }
@@ -128,9 +126,9 @@ export default class ValidateClient {
         }
     }
 
-    public validateRegExp(option: TOption, key: string, regExp: RegExp | string, error?: TError): void {
+    public validateRegExp(options: {[key: string]: any}, key: string, regExp: RegExp | string, error?: TError): void {
         const column = this.model.getColumn(key);
-        const value = option[key];
+        const value = options[key];
         if (value === undefined || value === null || value === "") {
             return;
         }
@@ -155,9 +153,9 @@ export default class ValidateClient {
         }
     }
 
-    public validatePositiveNumber(option: TOption, key: string, error?: TError) {
+    public validatePositiveNumber(options: {[key: string]: any}, key: string, error?: TError) {
         const column = this.model.getColumn(key);
-        const value = option[key];
+        const value = options[key];
         if (value === undefined || value === null || value === "") {
             return;
         }

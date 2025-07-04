@@ -218,7 +218,7 @@ export class Service {
     }
 
     public async requestApi<TRequest=Record<string, any>, TResponse={[key: string]: any}>(
-        method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE', url: string, params: TRequest, header: {[key: string]: any}): Promise<AxiosResponse<TResponse>> {
+        method: MethodType, url: string, params: TRequest, header: {[key: string]: any}): Promise<AxiosResponse<TResponse>> {
 
         // GET,DELETEのparamをURLクエリに
         if (method === 'GET' || method === 'DELETE') {

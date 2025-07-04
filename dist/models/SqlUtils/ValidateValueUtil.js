@@ -107,7 +107,7 @@ class ValidateValueUtil {
                     throw new Error('Please enter a valid timestamp in "YYYY-MM-DD", "YYYY-MM-DD hh:mi:ss", or "YYYY-MM-DDThh:mi:ss" format or as a Date type.');
                 }
                 break;
-            case "number":
+            case "integer":
                 if (this.isErrorNumber(value)) {
                     throw new Error('Please enter a value of type number or a string of half-width digits.');
                 }
@@ -115,6 +115,12 @@ class ValidateValueUtil {
             case "bool":
                 if (this.isErrorBool(value)) {
                     throw new Error('Please enter a value of type bool, or a string "true" or "false", or a number 0 or 1.');
+                }
+                break;
+            case "json":
+            case "jsonb":
+                if (this.isErrorJson(value)) {
+                    throw new Error('Please enter a value as an Object or JSON string.');
                 }
                 break;
         }
@@ -143,11 +149,16 @@ class ValidateValueUtil {
                     case "timestamp[]":
                         isError = this.isErrorTimestamp(v);
                         break;
-                    case "number[]":
+                    case "integer[]": // TODO: ここ最大最小のチェックもしないと
+                    case "real[]": // TODO: ここ最大最小 + 桁数のチェックもしないと
                         isError = this.isErrorNumber(v);
                         break;
                     case "bool[]":
                         isError = this.isErrorBool(v);
+                        break;
+                    case "json[]":
+                    case "jsonb[]":
+                        isError = this.isErrorJson(v);
                         break;
                     default:
                         throw new Error(`The specified ColumnTypeEnum does not exist. (${columnType})`);
@@ -169,10 +180,14 @@ class ValidateValueUtil {
                 return this.isErrorTime(value);
             case "timestamp":
                 return this.isErrorTimestamp(value);
-            case "number":
+            case "integer": // TODO: ここ最大最小のチェックもしないと
+            case "real": // TODO: ここ最大最小 + 桁数のチェックもしないと
                 return this.isErrorNumber(value);
             case "bool":
                 return this.isErrorBool(value);
+            case "json":
+            case "jsonb":
+                return this.isErrorJson(value);
             default:
                 throw new Error(`The specified ColumnTypeEnum does not exist. (${columnType})`);
         }
@@ -243,6 +258,21 @@ class ValidateValueUtil {
         }
         else if (DateTimeUtil_1.default.isHHMM(value)) {
             return false;
+        }
+        return true;
+    }
+    static isErrorJson(value) {
+        if (typeof value === 'object' && value !== null && Array.isArray(value) === false) {
+            return false;
+        }
+        if (typeof value === 'string') {
+            try {
+                JSON.parse(value);
+                return false;
+            }
+            catch (_a) {
+                return true;
+            }
         }
         return true;
     }

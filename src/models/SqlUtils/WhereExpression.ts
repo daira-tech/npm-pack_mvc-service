@@ -1,5 +1,5 @@
 import { TableModel } from "../TableModel";
-import { TColumnArrayType, TColumnDetail, TColumnInfo, TColumnType, TNestedCondition, TOperator, TQuery, TSqlValue } from "../Type";
+import { TColumnArrayType, TColumnDetail, TColumnInfo, TColumnType, TNestedCondition, TOperator, TQuery } from "../Type";
 import ValidateValueUtil from "./ValidateValueUtil";
 
 export default class WhereExpression {
@@ -66,15 +66,17 @@ export default class WhereExpression {
         }
     }
 
-    public static create(left: TColumnInfo, operator: TOperator, right: TSqlValue | null | Array<TSqlValue> | TColumnInfo, varLength: number) : TQuery {
+    public static create(left: TColumnInfo, operator: TOperator, right: TColumnInfo | any, varLength: number) : TQuery {
 
         // Check if the specified ColumnInfo exists
         const leftColumn = left.model.getColumn(left.name);
 
         // Are the operators correct?
         const useableOperator: { [key in TColumnType | TColumnArrayType]: string[] } = {
-            number: ["=", "!=", ">", ">=", "<", "<=", "in", "not in"],
-            'number[]': [],
+            integer: ["=", "!=", ">", ">=", "<", "<=", "in", "not in"],
+            'integer[]': [],
+            real: ["=", "!=", ">", ">=", "<", "<="],
+            'real[]': [],
             string: ["=", "!=", "like", "ilike", "h2f_like", "h2f_ilike", "in", "not in"],
             'string[]': [],
             uuid: ["=", "!=", "in", "not in"],
@@ -86,7 +88,11 @@ export default class WhereExpression {
             time: ["=", "!=", ">", ">=", "<", "<="],
             'time[]': [],
             timestamp: ["=", "!=", ">", ">=", "<", "<="],
-            'timestamp[]': []
+            'timestamp[]': [],
+            json: [],
+            'json[]': [],
+            jsonb: [],
+            'jsonb[]': []
         };
 
         if (useableOperator[leftColumn.type].includes(operator) == false) {
@@ -118,7 +124,7 @@ export default class WhereExpression {
         }
     }
 
-    private static createExpression(leftColumn: TColumnDetail, operator: TOperator, right: TSqlValue | Array<TSqlValue> | TColumnInfo, varLength: number) : TQuery {
+    private static createExpression(leftColumn: TColumnDetail, operator: TOperator, right: TColumnInfo | any, varLength: number) : TQuery {
         // IN NOT IN clause
         if (["in", "not in"].includes(operator)) {
             if (Array.isArray(right) == false) {
@@ -192,7 +198,7 @@ export default class WhereExpression {
         }
     }
 
-    private static createExpressionArrayValue(leftColumn: TColumnDetail, operator: TOperator, right: TSqlValue | Array<TSqlValue>, varLength: number) : TQuery {
+    private static createExpressionArrayValue(leftColumn: TColumnDetail, operator: TOperator, right: any, varLength: number) : TQuery {
 
         // ValidateValueUtil.validateValue(leftColumn, right);
         // LIKE operators are different, so handle separately

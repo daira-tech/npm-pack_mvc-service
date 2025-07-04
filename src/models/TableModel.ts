@@ -1,10 +1,11 @@
 import { Pool, PoolClient } from 'pg';
-import { TAggregateFuncType, TColumn, TColumnArrayType, TColumnAttribute, TColumnDetail, TColumnInfo, TColumnType, TKeyFormat, TNestedCondition, TOperator, TOption, TQuery, TSelectExpression, TSortKeyword, TSqlValue } from "./Type";
+import { TAggregateFuncType, TColumn, TColumnArrayType, TColumnDetail, TColumnInfo, TColumnType, TKeyFormat, TNestedCondition, TOperator, TQuery, TSelectExpression, TSortKeyword } from "./Type";
 import ValidateValueUtil from './SqlUtils/ValidateValueUtil';
 import SelectExpression from './SqlUtils/SelectExpression';
 import WhereExpression from './SqlUtils/WhereExpression';
 import ValidateClient from './ValidateClient';
 import { DbConflictException, UnprocessableException } from '../exceptions/Exception';
+import ExpressionClient from './ExpressionClient';
 
 export class TableModel {
 
@@ -122,6 +123,9 @@ export class TableModel {
     }
 
     private client: PoolClient | Pool;
+    get Client(): PoolClient | Pool {
+        return this.client;
+    }
     constructor(client: Pool);
     constructor(client: Pool, tableAlias: string);
     constructor(client: PoolClient);
@@ -277,9 +281,9 @@ export class TableModel {
 
     public where(expression: string): void;
     public where(conditions: Array<TNestedCondition>): void;
-    public where(left: string, operator: TOperator, right: TSqlValue | Array<TSqlValue> | TColumnInfo | null): void;
-    public where(left: TColumnInfo, operator: TOperator, right: TSqlValue | Array<TSqlValue> | TColumnInfo | null): void;
-    public where(left: string | TColumnInfo | Array<TNestedCondition>, operator?: TOperator, right?: TSqlValue | Array<TSqlValue> | TColumnInfo | null): void {
+    public where(left: string, operator: TOperator, right: TColumnInfo | any): void;
+    public where(left: TColumnInfo, operator: TOperator, right: TColumnInfo | any): void;
+    public where(left: string | TColumnInfo | Array<TNestedCondition>, operator?: TOperator, right?: TColumnInfo | any): void {
         if (typeof left === 'string') {
             if (operator === undefined || right === undefined) {
                 this.whereExpressions.push(left);
@@ -352,7 +356,7 @@ export class TableModel {
 
             ValidateValueUtil.validateValue(columnInfo, value);
             switch (columnInfo.type) {
-                case 'number':
+                case 'integer':
                     orderConditions.push(`WHEN ${columnInfo.expression} = ${value} THEN ${i}`);
                     break;
                 case 'uuid':
@@ -406,8 +410,10 @@ export class TableModel {
         'string[]': '{name} should be entered as an array of string or number types.',
         'uuid': '{name} should be entered as a UUID.',
         'uuid[]': '{name} should be entered as an array of UUIDs.',
-        'number': '{name} should be entered as a number.',
-        'number[]': '{name} should be entered as an array of numbers.',
+        'integer': '{name} should be entered as a number.',
+        'integer[]': '{name} should be entered as an array of numbers.',
+        'real': '{name} should be entered as a number.',
+        'real[]': '{name} should be entered as an array of numbers.',
         'bool': '{name} should be entered as a bool type, "true", "false", 0, or 1.',
         'bool[]': '{name} should be entered as an array of bool types, "true", "false", 0, or 1.',
         'date': '{name} should be entered in "YYYY-MM-DD" or "YYYY-MM-DD hh:mi:ss" format or as a Date type.',
@@ -416,6 +422,10 @@ export class TableModel {
         'time[]': '{name} should be entered as an array of times in "hh:mi" format or "hh:mi:ss" format.',
         'timestamp': '{name} should be entered in "YYYY-MM-DD" format, "YYYY-MM-DD hh:mi:ss" format, "YYYY-MM-DDThh:mi:ss" format, or as a Date type.',
         'timestamp[]': '{name} should be entered as an array of timestamps in "YYYY-MM-DD" format, "YYYY-MM-DD hh:mi:ss" format, "YYYY-MM-DDThh:mi:ss" format, or as Date types.',
+        'json': '{name} should be entered as an Object or JSON string.',
+        'json[]': '{name} should be entered as an array of Objects or JSON strings.',
+        'jsonb': '{name} should be entered as an Object or JSON string.',
+        'jsonb[]': '{name} should be entered as an array of Objects or JSON strings.',
         'length': '{name} should be entered within {length} characters.',
         'null': '{name} is not allowed to be null.',
         'notInput': 'Please enter {name}.',
@@ -427,8 +437,10 @@ export class TableModel {
         'string[]': '{name}はstringかnumberの配列で入力してください。',
         'uuid': '{name}はuuidで入力してください。',
         'uuid[]': '{name}はuuidの配列で入力してください。',
-        'number': '{name}はnumberか半角数字のstring型で入力してください。',
-        'number[]': '{name}はnumberか半角数字のstring型の配列で入力してください。',
+        'integer': '{name}はnumberか半角数字のstring型で入力してください。',
+        'integer[]': '{name}はnumberか半角数字のstring型の配列で入力してください。',
+        'real': '{name}はnumberか半角数字のstring型で入力してください。',
+        'real[]': '{name}はnumberか半角数字のstring型の配列で入力してください。',
         'bool': '{name}はbool型、"true"、"false"、0、または1で入力してください。',
         'bool[]': '{name}はbool型、"true"、"false"、0、または1の配列で入力してください。',
         'date': '{name}は"YYYY-MM-DD"形式、"YYYY-MM-DD hh:mi:ss"形式、またはDate型で入力してください。',
@@ -437,6 +449,10 @@ export class TableModel {
         'time[]': '{name}は"hh:mi"形式または"hh:mi:ss"形式の配列で入力してください。',
         'timestamp': '{name}は"YYYY-MM-DD"形式、"YYYY-MM-DD hh:mi:ss"形式、"YYYY-MM-DDThh:mi:ss"形式、またはDate型で入力してください。',
         'timestamp[]': '{name}は"YYYY-MM-DD"形式、"YYYY-MM-DD hh:mi:ss"形式、"YYYY-MM-DDThh:mi:ss"形式、またはDate型の配列で入力してください。',
+        'json': '{name}はObject形またはJSON文字列で入力してください。',
+        'json[]': '{name}はObject形またはJSON文字列の配列で入力してください。',
+        'jsonb': '{name}はObject形またはJSON文字列で入力してください。',
+        'jsonb[]': '{name}はObject形またはJSON文字列の配列で入力してください。',
         'length': '{name}は{length}文字以内で入力してください。',
         'null': '{name}はnullを許可されていません。',
         'notInput': '{name}を入力してください。',
@@ -444,7 +460,7 @@ export class TableModel {
         'idNotExist': '指定されたID({id})はテーブルに存在しません。',
     }
 
-    private throwException(code: string, type: TColumnType | TColumnArrayType | 'length' | 'null' | 'notInput' | 'fk' | 'idNotExist', columnName: string, vallue: TSqlValue): never {
+    private throwException(code: string, type: TColumnType | TColumnArrayType | 'length' | 'null' | 'notInput' | 'fk' | 'idNotExist', columnName: string, vallue: any): never {
         const column = this.getColumn(columnName);
         
         let message = this.errorMessages[type];
@@ -461,7 +477,7 @@ export class TableModel {
     protected readonly errorMessages: Record<TColumnType | TColumnArrayType | 'length' | 'null' | 'notInput' | 'fk' | 'idNotExist', string> = 
         process.env.TZ === 'Asia/Tokyo' ? this.errorMessageJapan : this.errorMessageEnglish;
 
-    protected async validateOptions(options: TOption, isInsert: boolean): Promise<void> {
+    protected async validateOptions(options: {[key: string]: any}, isInsert: boolean): Promise<void> {
         if (Object.keys(options).length === 0) {
             throw new Error('At least one key-value pair is required in options.');
         }
@@ -531,7 +547,7 @@ export class TableModel {
         }
     }
 
-    protected async validateInsert(options: TOption) : Promise<void> {
+    protected async validateInsert(options: {[key: string]: any}) : Promise<void> {
         for (const key in this.Columns) {
             const column = this.getColumn(key);
             const name = (column.alias === undefined || column.alias === '') ? key : column.alias;
@@ -544,12 +560,12 @@ export class TableModel {
         }
     }
 
-    protected async validateUpdate(options: TOption) : Promise<void> { }
-    protected async validateUpdateId(id: any, options: TOption) : Promise<void> { }
+    protected async validateUpdate(options: {[key: string]: any}) : Promise<void> { }
+    protected async validateUpdateId(id: any, options: {[key: string]: any}) : Promise<void> { }
     protected async validateDelete() : Promise<void> { }
     protected async validateDeleteId(id: any) : Promise<void> { }
 
-    public async executeInsert(options: TOption) : Promise<void> {
+    public async executeInsert(options: {[key: string]: any}) : Promise<void> {
         await this.validateOptions(options, true);
         await this.validateInsert(options);
 
@@ -570,7 +586,7 @@ export class TableModel {
         await this.executeQuery(sql, vars);
     }
 
-    public async executeUpdate(options: TOption) : Promise<number> {
+    public async executeUpdate(options: {[key: string]: any}) : Promise<number> {
         await this.validateOptions(options, false);
         await this.validateUpdate(options);
 
@@ -606,7 +622,7 @@ export class TableModel {
         return data.rowCount;
     }
 
-    public async executeUpdateId(id: any, options: TOption) : Promise<void> {
+    public async executeUpdateId(id: any, options: {[key: string]: any}) : Promise<void> {
         ValidateValueUtil.validateId(this.Columns, id);
         await this.validateOptions(options, false);
         await this.validateUpdateId(id, options);
@@ -744,5 +760,14 @@ export class TableModel {
         }
 
         return this.validateClient;
+    }
+
+    private expressionClient?: ExpressionClient;
+    get ExpressionClient(): ExpressionClient {
+        if (this.expressionClient === undefined) {
+            this.expressionClient = new ExpressionClient(this);
+        }
+
+        return this.expressionClient;
     }
 }

@@ -1,11 +1,9 @@
 import { TableModel } from "./TableModel";
 
-export type TSqlValue = string | number | boolean | Date | null | Array<string | null> | Array<number | null> | Array<Date | null> | Array<Boolean | null>;
-
 // column type
 export type TColumnAttribute = "primary" | "nullable" | "hasDefault" | "noDefault";
-export type TColumnType = "number" | "string" | "uuid" |  "date" | "time" | "timestamp" | "bool";
-export type TColumnArrayType = "number[]" | "string[]" | "uuid[]" |  "date[]" | "time[]" | "timestamp[]" | "bool[]";
+export type TColumnType = "integer" | "real" | "string" | "uuid" |  "date" | "time" | "timestamp" | "bool" | "json" | "jsonb";
+export type TColumnArrayType = "integer[]" | "real[]" | "string[]" | "uuid[]" |  "date[]" | "time[]" | "timestamp[]" | "bool[]" | "json[]" | "jsonb[]";
 type TColumnBase = {
     alias?: string,
     type: TColumnType | TColumnArrayType,
@@ -16,12 +14,18 @@ type TColumnBase = {
 
 type TStringColumn = TColumnBase & {
     type: "string",
-    length: number
+    length: number,
 };
 
-type TNonStringColumn = TColumnBase & {
+type TJsonColumn = TColumnBase & {
+    type: "json" | "jsonb"
+    length?: undefined,
+    attribute: Exclude<TColumnAttribute, "primary">
+};
+
+type TBasicColumn = TColumnBase & {
     type: Exclude<TColumnType, "string">,
-    length?: undefined
+    length?: undefined,
 };
 
 type TStringArrayColumn = TColumnBase & {
@@ -36,7 +40,7 @@ type TArrayColumn = TColumnBase & {
     attribute: Exclude<TColumnAttribute, "primary">
 };
 
-export type TColumn = TStringColumn | TNonStringColumn | TStringArrayColumn | TArrayColumn;
+export type TColumn = TStringColumn | TJsonColumn | TBasicColumn | TStringArrayColumn | TArrayColumn;
 export type TColumnDetail = TColumn & {
     columnName: string,
     tableName: string,
@@ -51,9 +55,8 @@ export type TAggregateFuncType = 'sum' | 'avg' | 'max' | 'min' | 'count';
 export type TCondition = string | {
     l: string | TColumnInfo, 
     o: TOperator, 
-    r: TSqlValue | Array<TSqlValue> | TColumnInfo
+    r: any | TColumnInfo
 };
 export type TNestedCondition = TCondition | ['AND' | 'OR', ...TNestedCondition[]] | TNestedCondition[];
 export type TSortKeyword = 'desc' | 'asc';
 export type TKeyFormat = 'snake' | 'lowerCamel';
-export type TOption = {[key: string]: TSqlValue};

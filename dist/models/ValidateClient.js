@@ -35,10 +35,10 @@ class ValidateClient {
             return false;
         }
     }
-    validateInList(option, key, list, error) {
+    validateInList(options, key, list, error) {
         var _a, _b;
         const column = this.model.getColumn(key);
-        const value = option[key];
+        const value = options[key];
         if (value === undefined || value === null || value === "") {
             return;
         }
@@ -54,10 +54,10 @@ class ValidateClient {
             throw new Exception_1.UnprocessableException(code, message);
         }
     }
-    validateUnderNow(option, key, error) {
+    validateUnderNow(options, key, error) {
         var _a, _b;
         const column = this.model.getColumn(key);
-        const value = option[key];
+        const value = options[key];
         if (value === undefined || value === null || value === "") {
             return;
         }
@@ -77,10 +77,10 @@ class ValidateClient {
             throw new Exception_1.UnprocessableException(code, message);
         }
     }
-    validateUnderToday(option, key, isErrorToday, error) {
+    validateUnderToday(options, key, isErrorToday, error) {
         var _a, _b;
         const column = this.model.getColumn(key);
-        const value = option[key];
+        const value = options[key];
         if (value === undefined || value === null || value === "") {
             return;
         }
@@ -113,10 +113,10 @@ class ValidateClient {
             throw new Exception_1.UnprocessableException(code, message);
         }
     }
-    validateRegExp(option, key, regExp, error) {
+    validateRegExp(options, key, regExp, error) {
         var _a, _b;
         const column = this.model.getColumn(key);
-        const value = option[key];
+        const value = options[key];
         if (value === undefined || value === null || value === "") {
             return;
         }
@@ -137,10 +137,10 @@ class ValidateClient {
             throw new Exception_1.UnprocessableException(code, message);
         }
     }
-    validatePositiveNumber(option, key, error) {
+    validatePositiveNumber(options, key, error) {
         var _a, _b;
         const column = this.model.getColumn(key);
-        const value = option[key];
+        const value = options[key];
         if (value === undefined || value === null || value === "") {
             return;
         }

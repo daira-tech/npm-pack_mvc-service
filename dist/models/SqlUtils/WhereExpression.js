@@ -63,8 +63,10 @@ class WhereExpression {
         const leftColumn = left.model.getColumn(left.name);
         // Are the operators correct?
         const useableOperator = {
-            number: ["=", "!=", ">", ">=", "<", "<=", "in", "not in"],
-            'number[]': [],
+            integer: ["=", "!=", ">", ">=", "<", "<=", "in", "not in"],
+            'integer[]': [],
+            real: ["=", "!=", ">", ">=", "<", "<="],
+            'real[]': [],
             string: ["=", "!=", "like", "ilike", "h2f_like", "h2f_ilike", "in", "not in"],
             'string[]': [],
             uuid: ["=", "!=", "in", "not in"],
@@ -76,7 +78,11 @@ class WhereExpression {
             time: ["=", "!=", ">", ">=", "<", "<="],
             'time[]': [],
             timestamp: ["=", "!=", ">", ">=", "<", "<="],
-            'timestamp[]': []
+            'timestamp[]': [],
+            json: [],
+            'json[]': [],
+            jsonb: [],
+            'jsonb[]': []
         };
         if (useableOperator[leftColumn.type].includes(operator) == false) {
             throw new Error(`The ${operator} operator cannot be used for ${leftColumn.tableName}.${leftColumn.columnName}. (${leftColumn.type})`);

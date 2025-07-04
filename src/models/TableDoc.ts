@@ -333,14 +333,20 @@ function toColumnType(column: TColumn) {
         return column.type.replace('bool', 'BOOLEAN');
     } else if (column.type.startsWith('date')) {
         return column.type.replace('date', 'DATE');
-    } else if (column.type.startsWith('number')) {
-        return column.type.replace('number', 'INTEGER');
+    } else if (column.type.startsWith('integer')) {
+        return column.type.replace('integer', 'INTEGER');
+    } else if (column.type.startsWith('real')) {
+        return column.type.replace('real', 'REAL');
     } else if (column.type.startsWith('string')) {
         return column.type.replace('string', `VARCHAR(${column.length})`);
-    } else if (column.type.startsWith('time')) {
-        return column.type.replace('time', 'TIME');
     } else if (column.type.startsWith('timestamp')) {
         return column.type.replace('timestamp', 'TIMESTAMP');
+    } else if (column.type.startsWith('time')) {
+        return column.type.replace('time', 'TIME');
+    } else if (column.type.startsWith('jsonb')) {
+        return column.type.replace('jsonb', 'JSONB');
+    } else if (column.type.startsWith('json')) {
+        return column.type.replace('json', 'JSON');
     }
 
     return '';
