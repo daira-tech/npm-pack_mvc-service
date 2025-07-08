@@ -49,7 +49,7 @@ export type TColumnDetail = TColumn & {
 
 export type TOperator = "=" | "!=" | ">" | ">=" | "<" | "<=" | "like" | "ilike" | "h2f_like" | "h2f_ilike" | "in" | "not in";
 export type TColumnInfo = { model: TableModel, name: string }
-export type TQuery = {sql: string, vars?: Array<any>};
+export type TQuery = {expression: string, vars?: Array<any>};
 export type TSelectExpression = { expression: string, alias: string }
 export type TAggregateFuncType = 'sum' | 'avg' | 'max' | 'min' | 'count';
 export type TCondition = string | {

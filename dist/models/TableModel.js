@@ -19,6 +19,8 @@ const WhereExpression_1 = __importDefault(require("./SqlUtils/WhereExpression"))
 const ValidateClient_1 = __importDefault(require("./ValidateClient"));
 const Exception_1 = require("../exceptions/Exception");
 const ExpressionClient_1 = __importDefault(require("./ExpressionClient"));
+const UpdateExpression_1 = __importDefault(require("./SqlUtils/UpdateExpression"));
+const MessageUtil_1 = __importDefault(require("./Utils/MessageUtil"));
 class TableModel {
     get DbName() { return this.dbName; }
     get TableName() {
@@ -61,7 +63,7 @@ class TableModel {
             sql += join.type === 'left' ? ' LEFT OUTER JOIN' : ' INNER JOIN';
             sql += ` ${join.model.TableName} as "${join.model.TableAlias}" ON `;
             const query = WhereExpression_1.default.createCondition(join.conditions, this, this.vars.length + 1);
-            sql += query.sql;
+            sql += query.expression;
             if (query.vars !== undefined) {
                 this.vars = [...this.vars, ...query.vars];
             }
@@ -112,69 +114,14 @@ class TableModel {
         this.groupExpression = [];
         this.sortExpression = [];
         this.vars = [];
-        this.errorMessageEnglish = {
-            'string': '{name} should be entered as a string or number type.',
-            'string[]': '{name} should be entered as an array of string or number types.',
-            'uuid': '{name} should be entered as a UUID.',
-            'uuid[]': '{name} should be entered as an array of UUIDs.',
-            'integer': '{name} should be entered as a number.',
-            'integer[]': '{name} should be entered as an array of numbers.',
-            'real': '{name} should be entered as a number.',
-            'real[]': '{name} should be entered as an array of numbers.',
-            'bool': '{name} should be entered as a bool type, "true", "false", 0, or 1.',
-            'bool[]': '{name} should be entered as an array of bool types, "true", "false", 0, or 1.',
-            'date': '{name} should be entered in "YYYY-MM-DD" or "YYYY-MM-DD hh:mi:ss" format or as a Date type.',
-            'date[]': '{name} should be entered as an array of dates in "YYYY-MM-DD" or "YYYY-MM-DD hh:mi:ss" format or as Date types.',
-            'time': '{name} should be entered in "hh:mi" format or "hh:mi:ss" format.',
-            'time[]': '{name} should be entered as an array of times in "hh:mi" format or "hh:mi:ss" format.',
-            'timestamp': '{name} should be entered in "YYYY-MM-DD" format, "YYYY-MM-DD hh:mi:ss" format, "YYYY-MM-DDThh:mi:ss" format, or as a Date type.',
-            'timestamp[]': '{name} should be entered as an array of timestamps in "YYYY-MM-DD" format, "YYYY-MM-DD hh:mi:ss" format, "YYYY-MM-DDThh:mi:ss" format, or as Date types.',
-            'json': '{name} should be entered as an Object or JSON string.',
-            'json[]': '{name} should be entered as an array of Objects or JSON strings.',
-            'jsonb': '{name} should be entered as an Object or JSON string.',
-            'jsonb[]': '{name} should be entered as an array of Objects or JSON strings.',
-            'length': '{name} should be entered within {length} characters.',
-            'null': '{name} is not allowed to be null.',
-            'notInput': 'Please enter {name}.',
-            'fk': 'The value of {name} does not exist in the table.',
-            'idNotExist': 'The specified ID({id}) does not exist in the table.',
-        };
-        this.errorMessageJapan = {
-            'string': '{name}はstringかnumberで入力してください。',
-            'string[]': '{name}はstringかnumberの配列で入力してください。',
-            'uuid': '{name}はuuidで入力してください。',
-            'uuid[]': '{name}はuuidの配列で入力してください。',
-            'integer': '{name}はnumberか半角数字のstring型で入力してください。',
-            'integer[]': '{name}はnumberか半角数字のstring型の配列で入力してください。',
-            'real': '{name}はnumberか半角数字のstring型で入力してください。',
-            'real[]': '{name}はnumberか半角数字のstring型の配列で入力してください。',
-            'bool': '{name}はbool型、"true"、"false"、0、または1で入力してください。',
-            'bool[]': '{name}はbool型、"true"、"false"、0、または1の配列で入力してください。',
-            'date': '{name}は"YYYY-MM-DD"形式、"YYYY-MM-DD hh:mi:ss"形式、またはDate型で入力してください。',
-            'date[]': '{name}は"YYYY-MM-DD"形式、"YYYY-MM-DD hh:mi:ss"形式、またはDate型の配列で入力してください。',
-            'time': '{name}は"hh:mi"形式または"hh:mi:ss"形式で入力してください。',
-            'time[]': '{name}は"hh:mi"形式または"hh:mi:ss"形式の配列で入力してください。',
-            'timestamp': '{name}は"YYYY-MM-DD"形式、"YYYY-MM-DD hh:mi:ss"形式、"YYYY-MM-DDThh:mi:ss"形式、またはDate型で入力してください。',
-            'timestamp[]': '{name}は"YYYY-MM-DD"形式、"YYYY-MM-DD hh:mi:ss"形式、"YYYY-MM-DDThh:mi:ss"形式、またはDate型の配列で入力してください。',
-            'json': '{name}はObject形またはJSON文字列で入力してください。',
-            'json[]': '{name}はObject形またはJSON文字列の配列で入力してください。',
-            'jsonb': '{name}はObject形またはJSON文字列で入力してください。',
-            'jsonb[]': '{name}はObject形またはJSON文字列の配列で入力してください。',
-            'length': '{name}は{length}文字以内で入力してください。',
-            'null': '{name}はnullを許可されていません。',
-            'notInput': '{name}を入力してください。',
-            'fk': '{name}の値がテーブルに存在しません。',
-            'idNotExist': '指定されたID({id})はテーブルに存在しません。',
-        };
-        this.errorMessages = process.env.TZ === 'Asia/Tokyo' ? this.errorMessageJapan : this.errorMessageEnglish;
+        this.errorMessages = process.env.TZ === 'Asia/Tokyo' ? MessageUtil_1.default.optionErrorMessageJapan : MessageUtil_1.default.optionErrorMessageEnglish;
         this.client = client;
         if (tableAlias !== undefined && tableAlias.trim() !== '') {
             this.tableAlias = tableAlias;
         }
     }
-    findId(id_1) {
-        return __awaiter(this, arguments, void 0, function* (id, selectColumns = "*", selectExpressions = null, keyFormat = 'snake') {
-            ValidateValueUtil_1.default.validateId(this.Columns, id);
+    find(pkOrId_1) {
+        return __awaiter(this, arguments, void 0, function* (pkOrId, selectColumns = "*", selectExpressions = null, keyFormat = 'snake') {
             let selects = [];
             if (selectColumns == "*") {
                 for (const key of Object.keys(this.Columns)) {
@@ -191,44 +138,16 @@ class TableModel {
                     selects.push(`${expression.expression} as "${expression.alias}"`);
                 }
             }
-            const sql = `SELECT ${selects.join(',')} FROM ${this.TableName} WHERE id = $1`;
-            let datas = yield this.executeQuery(sql, [id]);
-            return datas.rowCount == 0 ? null : datas.rows[0];
-        });
-    }
-    find(pk_1) {
-        return __awaiter(this, arguments, void 0, function* (pk, selectColumns = "*", selectExpressions = null, keyFormat = 'snake') {
-            let selects = [];
-            if (selectColumns == "*") {
-                for (const key of Object.keys(this.Columns)) {
-                    selects.push(SelectExpression_1.default.create({ model: this, name: key }, null, null, keyFormat));
-                }
+            let query;
+            if (typeof pkOrId === 'string' || typeof pkOrId === 'number' || typeof pkOrId === 'boolean') {
+                ValidateValueUtil_1.default.validateId(this.Columns, pkOrId);
+                query = WhereExpression_1.default.createConditionPk(this, { id: pkOrId });
             }
-            else if (selectColumns != null) {
-                for (const key of selectColumns) {
-                    selects.push(SelectExpression_1.default.create({ model: this, name: key }, null, null, keyFormat));
-                }
+            else {
+                query = WhereExpression_1.default.createConditionPk(this, pkOrId);
             }
-            if (selectExpressions != null) {
-                for (const expression of selectExpressions) {
-                    selects.push(`${expression.expression} as "${expression.alias}"`);
-                }
-            }
-            const conditions = [];
-            const vars = [];
-            for (const [keyColumn, column] of Object.entries(this.Columns)) {
-                if (column.attribute !== 'primary') {
-                    continue;
-                }
-                if (pk[keyColumn] === undefined || pk[keyColumn] === null) {
-                    throw new Error(`No value is set for the primary key "${this.TableName}".${keyColumn}. Please set it in the first argument.`);
-                }
-                ValidateValueUtil_1.default.validateValue(column, pk[keyColumn]);
-                vars.push(pk[keyColumn]);
-                conditions.push(`${keyColumn} = $${vars.length}`);
-            }
-            const sql = `SELECT ${selects.join(',')} FROM ${this.TableName} WHERE ${conditions.join(' AND ')}`;
-            let datas = yield this.executeQuery(sql, vars);
+            const sql = `SELECT ${selects.join(',')} FROM ${this.TableName} WHERE ${query.expression}`;
+            let datas = yield this.executeQuery(sql, query.vars);
             return datas.rowCount == 0 ? null : datas.rows[0];
         });
     }
@@ -299,7 +218,7 @@ class TableModel {
             }
             else {
                 const query = WhereExpression_1.default.create({ model: this, name: left }, operator, right, this.vars.length + 1);
-                this.whereExpressions.push(query.sql);
+                this.whereExpressions.push(query.expression);
                 if (query.vars !== undefined) {
                     this.vars = [...this.vars, ...query.vars];
                 }
@@ -312,7 +231,7 @@ class TableModel {
             }
             else {
                 const query = WhereExpression_1.default.create(left, operator, right, this.vars.length + 1);
-                this.whereExpressions.push(query.sql);
+                this.whereExpressions.push(query.expression);
                 if (query.vars !== undefined) {
                     this.vars = [...this.vars, ...query.vars];
                 }
@@ -321,7 +240,7 @@ class TableModel {
         }
         if (Array.isArray(left)) {
             const query = WhereExpression_1.default.createCondition(left, this, this.vars.length + 1);
-            this.whereExpressions.push(query.sql);
+            this.whereExpressions.push(query.expression);
             if (query.vars !== undefined) {
                 this.vars = [...this.vars, ...query.vars];
             }
@@ -404,7 +323,7 @@ class TableModel {
             return { datas: data.rows, count: Number(countData.rows[0].count), lastPage: Math.ceil(Number(countData.rows[0].count) / this.PageCount) };
         });
     }
-    throwException(code, type, columnName, vallue) {
+    throwException(code, type, columnName, value) {
         var _a;
         const column = this.getColumn(columnName);
         let message = this.errorMessages[type];
@@ -456,6 +375,16 @@ class TableModel {
             }
             // 外部キー制約チェック
             if (isInsert) {
+                for (const key in this.Columns) {
+                    const column = this.getColumn(key);
+                    const name = (column.alias === undefined || column.alias === '') ? key : column.alias;
+                    if (options[key] === undefined || options[key] === null) {
+                        // Null許容されていないカラムにNULLを入れようとしているか？
+                        if (column.attribute === "primary" || column.attribute === "noDefault") {
+                            this.throwException("005", "notInput", key, options[key]);
+                        }
+                    }
+                }
                 for (const ref of this.References) {
                     const refValues = ref.columns.map(col => options[col.target]);
                     // 全ての値がnullの場合はスキップ
@@ -465,49 +394,22 @@ class TableModel {
                     // 一部の値がnullの場合はエラー
                     if (refValues.some(value => value === null || value === undefined)) {
                         const name = ref.columns.map(col => { var _a; return (_a = this.getColumn(col.target).alias) !== null && _a !== void 0 ? _a : this.getColumn(col.target).columnName; }).join(',');
-                        throw new Exception_1.UnprocessableException("005", this.errorMessages.null.replace('{name}', name));
+                        throw new Exception_1.UnprocessableException("006", this.errorMessages.null.replace('{name}', name));
                     }
                     let refIndex = 1;
                     const sql = `SELECT COUNT(*) as count FROM ${ref.table} WHERE ${ref.columns.map(col => `${col.ref} = $${refIndex++}`).join(" AND ")}`;
                     const datas = yield this.clientQuery(sql, refValues);
                     if (datas.rows[0].count == "0") {
                         const name = ref.columns.map(col => { var _a; return (_a = this.getColumn(col.target).alias) !== null && _a !== void 0 ? _a : this.getColumn(col.target).columnName; }).join(',');
-                        throw new Exception_1.DbConflictException("006", this.errorMessages.fk.replace('{name}', name));
+                        throw new Exception_1.DbConflictException("007", this.errorMessages.fk.replace('{name}', name));
                     }
                 }
             }
         });
     }
-    validateInsert(options) {
-        return __awaiter(this, void 0, void 0, function* () {
-            for (const key in this.Columns) {
-                const column = this.getColumn(key);
-                const name = (column.alias === undefined || column.alias === '') ? key : column.alias;
-                if (options[key] === undefined || options[key] === null) {
-                    // Null許容されていないカラムにNULLを入れようとしているか？
-                    if (column.attribute === "primary" || column.attribute === "noDefault") {
-                        this.throwException("101", "notInput", key, options[key]);
-                    }
-                }
-            }
-        });
-    }
-    validateUpdate(options) {
-        return __awaiter(this, void 0, void 0, function* () { });
-    }
-    validateUpdateId(id, options) {
-        return __awaiter(this, void 0, void 0, function* () { });
-    }
-    validateDelete() {
-        return __awaiter(this, void 0, void 0, function* () { });
-    }
-    validateDeleteId(id) {
-        return __awaiter(this, void 0, void 0, function* () { });
-    }
-    executeInsert(options) {
+    insert(options) {
         return __awaiter(this, void 0, void 0, function* () {
             yield this.validateOptions(options, true);
-            yield this.validateInsert(options);
             const columns = [];
             const vars = [];
             for (const [key, value] of Object.entries(options)) {
@@ -522,10 +424,47 @@ class TableModel {
             yield this.executeQuery(sql, vars);
         });
     }
+    update(pkOrId, options) {
+        return __awaiter(this, void 0, void 0, function* () {
+            var _a;
+            yield this.validateOptions(options, false);
+            const updateSetQuery = UpdateExpression_1.default.createUpdateSet(this, options);
+            let whereQuery;
+            if (typeof pkOrId === 'string' || typeof pkOrId === 'number' || typeof pkOrId === 'boolean') {
+                ValidateValueUtil_1.default.validateId(this.Columns, pkOrId);
+                whereQuery = WhereExpression_1.default.createConditionPk(this, { id: pkOrId }, updateSetQuery.vars);
+            }
+            else {
+                whereQuery = WhereExpression_1.default.createConditionPk(this, pkOrId, updateSetQuery.vars);
+            }
+            const sql = updateSetQuery.expression + ' WHERE ' + whereQuery.expression;
+            const data = yield this.executeQuery(sql, whereQuery.vars);
+            if (data.rowCount !== 1) {
+                throw new Exception_1.UnprocessableException("201", this.errorMessages.find.replace('{pks}', ((_a = whereQuery.vars) !== null && _a !== void 0 ? _a : []).join(',')));
+            }
+        });
+    }
+    delete(pkOrId) {
+        return __awaiter(this, void 0, void 0, function* () {
+            var _a;
+            let whereQuery;
+            if (typeof pkOrId === 'string' || typeof pkOrId === 'number' || typeof pkOrId === 'boolean') {
+                ValidateValueUtil_1.default.validateId(this.Columns, pkOrId);
+                whereQuery = WhereExpression_1.default.createConditionPk(this, { id: pkOrId });
+            }
+            else {
+                whereQuery = WhereExpression_1.default.createConditionPk(this, pkOrId);
+            }
+            const sql = `DELETE FROM ${this.TableName} WHERE ${whereQuery.expression}`;
+            const data = yield this.executeQuery(sql, whereQuery.vars);
+            if (data.rowCount !== 1) {
+                throw new Exception_1.UnprocessableException("301", this.errorMessages.find.replace('{pks}', ((_a = whereQuery.vars) !== null && _a !== void 0 ? _a : []).join(',')));
+            }
+        });
+    }
     executeUpdate(options) {
         return __awaiter(this, void 0, void 0, function* () {
             yield this.validateOptions(options, false);
-            yield this.validateUpdate(options);
             const updateExpressions = [];
             for (const [key, value] of Object.entries(options)) {
                 const column = this.getColumn(key);
@@ -539,7 +478,7 @@ class TableModel {
                 for (const join of this.joinConditions) {
                     tables.push(`${join.model.TableName} as "${join.model.TableAlias}"`);
                     const query = WhereExpression_1.default.createCondition(join.conditions, this, this.vars.length);
-                    this.whereExpressions.push(query.sql);
+                    this.whereExpressions.push(query.expression);
                     if (query.vars !== undefined) {
                         this.vars = [...this.vars, ...query.vars];
                     }
@@ -553,43 +492,15 @@ class TableModel {
             return data.rowCount;
         });
     }
-    executeUpdateId(id, options) {
-        return __awaiter(this, void 0, void 0, function* () {
-            ValidateValueUtil_1.default.validateId(this.Columns, id);
-            yield this.validateOptions(options, false);
-            yield this.validateUpdateId(id, options);
-            yield this.validateUpdate(options);
-            const updateExpressions = [];
-            const vars = [];
-            for (const [key, value] of Object.entries(options)) {
-                if (value === undefined) {
-                    throw new Error(`The update option ${key} is undefined.`);
-                }
-                const column = this.getColumn(key);
-                if (column.attribute === 'primary') {
-                    throw new Error(`The primary key ${this.TableName}.${key} cannot be changed.`);
-                }
-                vars.push(value);
-                updateExpressions.push(`${key} = $${vars.length}`);
-            }
-            vars.push(id);
-            const sql = `UPDATE ${this.TableName} SET ${updateExpressions.join(',')} WHERE id = $${vars.length}`;
-            const data = yield this.executeQuery(sql, vars);
-            if (data.rowCount !== 1) {
-                throw new Exception_1.UnprocessableException("201", this.errorMessages.idNotExist.replace('{id}', id));
-            }
-        });
-    }
     executeDelete() {
         return __awaiter(this, void 0, void 0, function* () {
-            this.validateDelete();
             let sql = `DELETE FROM ${this.TableName} "${this.TableAlias}" `;
             if (this.joinConditions.length > 0) {
                 const tables = [];
                 for (const join of this.joinConditions) {
                     tables.push(`${join.model.TableName} as "${join.model.TableAlias}"`);
                     const query = WhereExpression_1.default.createCondition(join.conditions, this, this.vars.length);
-                    this.whereExpressions.push(query.sql);
+                    this.whereExpressions.push(query.expression);
                     if (query.vars !== undefined) {
                         this.vars = [...this.vars, ...query.vars];
                     }
@@ -601,17 +512,6 @@ class TableModel {
             }
             const datas = yield this.executeQuery(sql, this.vars);
             return datas.rowCount;
-        });
-    }
-    executeDeleteId(id) {
-        return __awaiter(this, void 0, void 0, function* () {
-            ValidateValueUtil_1.default.validateId(this.Columns, id);
-            yield this.validateDeleteId(id);
-            let sql = `DELETE FROM ${this.TableName} WHERE id = $1`;
-            const datas = yield this.executeQuery(sql, [id]);
-            if (datas.rowCount !== 1) {
-                throw new Exception_1.UnprocessableException("301", this.errorMessages.idNotExist.replace('{id}', id));
-            }
         });
     }
     executeQuery(param1, vars) {
@@ -632,7 +532,7 @@ class TableModel {
                 sql = param1;
             }
             else {
-                sql = param1.sql;
+                sql = param1.expression;
                 vars = param1.vars;
             }
             return yield this.clientQuery(sql, vars);

@@ -6,6 +6,8 @@ import WhereExpression from './SqlUtils/WhereExpression';
 import ValidateClient from './ValidateClient';
 import { DbConflictException, UnprocessableException } from '../exceptions/Exception';
 import ExpressionClient from './ExpressionClient';
+import UpdateExpression from './SqlUtils/UpdateExpression';
+import MessageUtil, { TOptionErrorMessage } from './Utils/MessageUtil';
 
 export class TableModel {
 
@@ -84,7 +86,7 @@ export class TableModel {
             sql += join.type === 'left' ? ' LEFT OUTER JOIN' : ' INNER JOIN';
             sql += ` ${join.model.TableName} as "${join.model.TableAlias}" ON `;
             const query = WhereExpression.createCondition(join.conditions, this, this.vars.length + 1);
-            sql += query.sql;
+            sql += query.expression;
             if (query.vars !== undefined) {
                 this.vars = [...this.vars, ...query.vars]
             }
@@ -137,41 +139,19 @@ export class TableModel {
         }
     }
 
-    public findId<T = {[key: string]: any}>(id: any, selectColumns: Array<string> | "*" | null, selectExpressions: Array<TSelectExpression> | null, keyFormat: TKeyFormat): Promise<T | null>;
-    public findId<T = {[key: string]: any}>(id: any, selectColumns: Array<string> | "*" | null, selectExpressions: Array<TSelectExpression> | null): Promise<T | null>;
-    public findId<T = {[key: string]: any}>(id: any, selectColumns: Array<string> | "*" | null): Promise<T | null>;
-    public findId<T = {[key: string]: any}>(id: any): Promise<T | null>;
-    public async findId<T = {[key: string]: any}>(id: any, selectColumns: Array<string> | "*" | null = "*", selectExpressions: Array<TSelectExpression> | null = null, keyFormat: TKeyFormat = 'snake'): Promise<T | null> {
-        ValidateValueUtil.validateId(this.Columns, id);
-
-        let selects: Array<string> = [];
-        if (selectColumns == "*") {
-            for (const key of Object.keys(this.Columns)) {
-                selects.push(SelectExpression.create({model: this, name: key}, null, null, keyFormat));
-            }
-        } else if (selectColumns != null) {
-            for (const key of selectColumns) {
-                selects.push(SelectExpression.create({model: this, name: key}, null, null, keyFormat));
-            }
-        }
-
-        if (selectExpressions != null) {
-            for (const expression of selectExpressions) {
-                selects.push(`${expression.expression} as "${expression.alias}"`);
-            }
-        }
-
-        const sql = `SELECT ${selects.join(',')} FROM ${this.TableName} WHERE id = $1`;
-        let datas = await this.executeQuery(sql, [id]);
-
-        return datas.rowCount == 0 ? null : datas.rows[0] as T;
-    }
-
-    public find<T = {[key: string]: any}>(pk: {[key: string]: any}, selectColumns: Array<string> | "*" | null, selectExpressions: Array<TSelectExpression> | null, keyFormat: TKeyFormat): Promise<T | null>;
-    public find<T = {[key: string]: any}>(pk: {[key: string]: any}, selectColumns: Array<string> | "*" | null, selectExpressions: Array<TSelectExpression> | null): Promise<T | null>;
-    public find<T = {[key: string]: any}>(pk: {[key: string]: any}, selectColumns: Array<string> | "*" | null): Promise<T | null>;
     public find<T = {[key: string]: any}>(pk: {[key: string]: any}): Promise<T | null>;
-    public async find<T = {[key: string]: any}>(pk: {[key: string]: any}, selectColumns: Array<string> | "*" | null = "*", selectExpressions: Array<TSelectExpression> | null = null, keyFormat: TKeyFormat = 'snake'): Promise<T | null> {
+    public find<T = {[key: string]: any}>(id: string | number | boolean): Promise<T | null>;
+    public find<T = {[key: string]: any}>(pk: {[key: string]: any}, selectColumns: Array<string> | "*" | null): Promise<T | null>;
+    public find<T = {[key: string]: any}>(id: string | number | boolean, selectColumns: Array<string> | "*" | null): Promise<T | null>;
+    public find<T = {[key: string]: any}>(pk: {[key: string]: any}, selectColumns: Array<string> | "*" | null, selectExpressions: Array<TSelectExpression> | null): Promise<T | null>;
+    public find<T = {[key: string]: any}>(id: string | number | boolean, selectColumns: Array<string> | "*" | null, selectExpressions: Array<TSelectExpression> | null): Promise<T | null>;
+    public find<T = {[key: string]: any}>(pk: {[key: string]: any}, selectColumns: Array<string> | "*" | null, selectExpressions: Array<TSelectExpression> | null, keyFormat: TKeyFormat): Promise<T | null>;
+    public find<T = {[key: string]: any}>(id: string | number | boolean, selectColumns: Array<string> | "*" | null, selectExpressions: Array<TSelectExpression> | null, keyFormat: TKeyFormat): Promise<T | null>;
+    public async find<T = {[key: string]: any}>(
+        pkOrId: string | number | boolean | {[key: string]: any}, 
+        selectColumns: Array<string> | "*" | null = "*", 
+        selectExpressions: Array<TSelectExpression> | null = null, 
+        keyFormat: TKeyFormat = 'snake'): Promise<T | null> {
 
         let selects: Array<string> = [];
         if (selectColumns == "*") {
@@ -190,23 +170,16 @@ export class TableModel {
             }
         }
 
-        const conditions = [];
-        const vars = [];
-        for (const [keyColumn, column] of Object.entries(this.Columns)) {
-            if (column.attribute !== 'primary') {
-                continue;
-            }
-
-            if (pk[keyColumn] === undefined || pk[keyColumn] === null) {
-                throw new Error(`No value is set for the primary key "${this.TableName}".${keyColumn}. Please set it in the first argument.`);
-            }
-            ValidateValueUtil.validateValue(column, pk[keyColumn]);
-            vars.push(pk[keyColumn]);
-            conditions.push(`${keyColumn} = $${vars.length}`);
+        let query: TQuery;
+        if (typeof pkOrId === 'string' || typeof pkOrId === 'number' || typeof pkOrId === 'boolean') {
+            ValidateValueUtil.validateId(this.Columns, pkOrId);
+            query = WhereExpression.createConditionPk(this, {id: pkOrId});    
+        } else {
+            query = WhereExpression.createConditionPk(this, pkOrId);
         }
  
-        const sql = `SELECT ${selects.join(',')} FROM ${this.TableName} WHERE ${conditions.join(' AND ')}`;
-        let datas = await this.executeQuery(sql, vars);
+        const sql = `SELECT ${selects.join(',')} FROM ${this.TableName} WHERE ${query.expression}`;
+        let datas = await this.executeQuery(sql, query.vars);
 
         return datas.rowCount == 0 ? null : datas.rows[0] as T;
     }
@@ -289,7 +262,7 @@ export class TableModel {
                 this.whereExpressions.push(left);
             } else {
                 const query = WhereExpression.create({model: this, name: left}, operator, right, this.vars.length + 1);
-                this.whereExpressions.push(query.sql);
+                this.whereExpressions.push(query.expression);
                 if (query.vars !== undefined) {
                     this.vars = [...this.vars, ...query.vars];
                 }
@@ -302,7 +275,7 @@ export class TableModel {
                 throw new Error(`If left is TColumnInfo, please set operator and right.`);
             } else {
                 const query = WhereExpression.create(left, operator, right, this.vars.length + 1);
-                this.whereExpressions.push(query.sql);
+                this.whereExpressions.push(query.expression);
                 if (query.vars !== undefined) {
                     this.vars = [...this.vars, ...query.vars];
                 }
@@ -312,7 +285,7 @@ export class TableModel {
 
         if (Array.isArray(left)) {
             const query = WhereExpression.createCondition(left, this, this.vars.length + 1);
-            this.whereExpressions.push(query.sql);
+            this.whereExpressions.push(query.expression);
             if (query.vars !== undefined) {
                 this.vars = [...this.vars, ...query.vars];
             }
@@ -405,62 +378,10 @@ export class TableModel {
         return { datas: data.rows as Array<T>, count: Number(countData.rows[0].count), lastPage: Math.ceil(Number(countData.rows[0].count) / this.PageCount)};
     }
 
-    private readonly errorMessageEnglish: Record<TColumnType | TColumnArrayType | 'length' | 'null' | 'notInput' | 'fk' | 'idNotExist', string> = {
-        'string': '{name} should be entered as a string or number type.',
-        'string[]': '{name} should be entered as an array of string or number types.',
-        'uuid': '{name} should be entered as a UUID.',
-        'uuid[]': '{name} should be entered as an array of UUIDs.',
-        'integer': '{name} should be entered as a number.',
-        'integer[]': '{name} should be entered as an array of numbers.',
-        'real': '{name} should be entered as a number.',
-        'real[]': '{name} should be entered as an array of numbers.',
-        'bool': '{name} should be entered as a bool type, "true", "false", 0, or 1.',
-        'bool[]': '{name} should be entered as an array of bool types, "true", "false", 0, or 1.',
-        'date': '{name} should be entered in "YYYY-MM-DD" or "YYYY-MM-DD hh:mi:ss" format or as a Date type.',
-        'date[]': '{name} should be entered as an array of dates in "YYYY-MM-DD" or "YYYY-MM-DD hh:mi:ss" format or as Date types.',
-        'time': '{name} should be entered in "hh:mi" format or "hh:mi:ss" format.',
-        'time[]': '{name} should be entered as an array of times in "hh:mi" format or "hh:mi:ss" format.',
-        'timestamp': '{name} should be entered in "YYYY-MM-DD" format, "YYYY-MM-DD hh:mi:ss" format, "YYYY-MM-DDThh:mi:ss" format, or as a Date type.',
-        'timestamp[]': '{name} should be entered as an array of timestamps in "YYYY-MM-DD" format, "YYYY-MM-DD hh:mi:ss" format, "YYYY-MM-DDThh:mi:ss" format, or as Date types.',
-        'json': '{name} should be entered as an Object or JSON string.',
-        'json[]': '{name} should be entered as an array of Objects or JSON strings.',
-        'jsonb': '{name} should be entered as an Object or JSON string.',
-        'jsonb[]': '{name} should be entered as an array of Objects or JSON strings.',
-        'length': '{name} should be entered within {length} characters.',
-        'null': '{name} is not allowed to be null.',
-        'notInput': 'Please enter {name}.',
-        'fk': 'The value of {name} does not exist in the table.',
-        'idNotExist': 'The specified ID({id}) does not exist in the table.',
-    }
-    private readonly errorMessageJapan: Record<TColumnType | TColumnArrayType | 'length' | 'null' | 'notInput' | 'fk' | 'idNotExist', string> = {
-        'string': '{name}はstringかnumberで入力してください。',
-        'string[]': '{name}はstringかnumberの配列で入力してください。',
-        'uuid': '{name}はuuidで入力してください。',
-        'uuid[]': '{name}はuuidの配列で入力してください。',
-        'integer': '{name}はnumberか半角数字のstring型で入力してください。',
-        'integer[]': '{name}はnumberか半角数字のstring型の配列で入力してください。',
-        'real': '{name}はnumberか半角数字のstring型で入力してください。',
-        'real[]': '{name}はnumberか半角数字のstring型の配列で入力してください。',
-        'bool': '{name}はbool型、"true"、"false"、0、または1で入力してください。',
-        'bool[]': '{name}はbool型、"true"、"false"、0、または1の配列で入力してください。',
-        'date': '{name}は"YYYY-MM-DD"形式、"YYYY-MM-DD hh:mi:ss"形式、またはDate型で入力してください。',
-        'date[]': '{name}は"YYYY-MM-DD"形式、"YYYY-MM-DD hh:mi:ss"形式、またはDate型の配列で入力してください。',
-        'time': '{name}は"hh:mi"形式または"hh:mi:ss"形式で入力してください。',
-        'time[]': '{name}は"hh:mi"形式または"hh:mi:ss"形式の配列で入力してください。',
-        'timestamp': '{name}は"YYYY-MM-DD"形式、"YYYY-MM-DD hh:mi:ss"形式、"YYYY-MM-DDThh:mi:ss"形式、またはDate型で入力してください。',
-        'timestamp[]': '{name}は"YYYY-MM-DD"形式、"YYYY-MM-DD hh:mi:ss"形式、"YYYY-MM-DDThh:mi:ss"形式、またはDate型の配列で入力してください。',
-        'json': '{name}はObject形またはJSON文字列で入力してください。',
-        'json[]': '{name}はObject形またはJSON文字列の配列で入力してください。',
-        'jsonb': '{name}はObject形またはJSON文字列で入力してください。',
-        'jsonb[]': '{name}はObject形またはJSON文字列の配列で入力してください。',
-        'length': '{name}は{length}文字以内で入力してください。',
-        'null': '{name}はnullを許可されていません。',
-        'notInput': '{name}を入力してください。',
-        'fk': '{name}の値がテーブルに存在しません。',
-        'idNotExist': '指定されたID({id})はテーブルに存在しません。',
-    }
+    protected readonly errorMessages: TOptionErrorMessage = 
+        process.env.TZ === 'Asia/Tokyo' ? MessageUtil.optionErrorMessageJapan : MessageUtil.optionErrorMessageEnglish;
 
-    private throwException(code: string, type: TColumnType | TColumnArrayType | 'length' | 'null' | 'notInput' | 'fk' | 'idNotExist', columnName: string, vallue: any): never {
+    private throwException(code: string, type: TColumnType | TColumnArrayType | 'length' | 'null' | 'notInput' | 'fk', columnName: string, value: any): never {
         const column = this.getColumn(columnName);
         
         let message = this.errorMessages[type];
@@ -473,9 +394,6 @@ export class TableModel {
 
         throw new UnprocessableException(code, message);
     }
-
-    protected readonly errorMessages: Record<TColumnType | TColumnArrayType | 'length' | 'null' | 'notInput' | 'fk' | 'idNotExist', string> = 
-        process.env.TZ === 'Asia/Tokyo' ? this.errorMessageJapan : this.errorMessageEnglish;
 
     protected async validateOptions(options: {[key: string]: any}, isInsert: boolean): Promise<void> {
         if (Object.keys(options).length === 0) {
@@ -523,6 +441,17 @@ export class TableModel {
 
         // 外部キー制約チェック
         if (isInsert) {
+            for (const key in this.Columns) {
+                const column = this.getColumn(key);
+                const name = (column.alias === undefined || column.alias === '') ? key : column.alias;
+                if (options[key] === undefined || options[key] === null) {
+                    // Null許容されていないカラムにNULLを入れようとしているか？
+                    if (column.attribute === "primary" || column.attribute === "noDefault") {
+                        this.throwException("005", "notInput", key, options[key]);
+                    }
+                }
+            }
+
             for (const ref of this.References) {
                 const refValues = ref.columns.map(col => options[col.target]);
                 // 全ての値がnullの場合はスキップ
@@ -533,7 +462,7 @@ export class TableModel {
                 // 一部の値がnullの場合はエラー
                 if (refValues.some(value => value === null || value === undefined)) {
                     const name = ref.columns.map(col => this.getColumn(col.target).alias ?? this.getColumn(col.target).columnName).join(',');
-                    throw new UnprocessableException("005", this.errorMessages.null.replace('{name}', name));
+                    throw new UnprocessableException("006", this.errorMessages.null.replace('{name}', name));
                 }
 
                 let refIndex = 1;
@@ -541,33 +470,14 @@ export class TableModel {
                 const datas = await this.clientQuery(sql, refValues);
                 if (datas.rows[0].count == "0") {
                     const name = ref.columns.map(col => this.getColumn(col.target).alias ?? this.getColumn(col.target).columnName).join(',');
-                    throw new DbConflictException("006", this.errorMessages.fk.replace('{name}', name));
+                    throw new DbConflictException("007", this.errorMessages.fk.replace('{name}', name));
                 }
             }
         }
     }
 
-    protected async validateInsert(options: {[key: string]: any}) : Promise<void> {
-        for (const key in this.Columns) {
-            const column = this.getColumn(key);
-            const name = (column.alias === undefined || column.alias === '') ? key : column.alias;
-            if (options[key] === undefined || options[key] === null) {
-                // Null許容されていないカラムにNULLを入れようとしているか？
-                if (column.attribute === "primary" || column.attribute === "noDefault") {
-                    this.throwException("101", "notInput", key, options[key]);
-                }
-            }
-        }
-    }
-
-    protected async validateUpdate(options: {[key: string]: any}) : Promise<void> { }
-    protected async validateUpdateId(id: any, options: {[key: string]: any}) : Promise<void> { }
-    protected async validateDelete() : Promise<void> { }
-    protected async validateDeleteId(id: any) : Promise<void> { }
-
-    public async executeInsert(options: {[key: string]: any}) : Promise<void> {
+    public async insert(options: {[key: string]: any}) : Promise<void> {
         await this.validateOptions(options, true);
-        await this.validateInsert(options);
 
         const columns: Array<string> = [];
         const vars: Array<any> = [];
@@ -586,9 +496,43 @@ export class TableModel {
         await this.executeQuery(sql, vars);
     }
 
+    public async update(pkOrId: string | number | boolean | {[key: string]: any}, options: {[key: string]: any}) : Promise<void> {
+        await this.validateOptions(options, false);
+
+        const updateSetQuery = UpdateExpression.createUpdateSet(this, options);
+        let whereQuery: TQuery;
+        if (typeof pkOrId === 'string' || typeof pkOrId === 'number' || typeof pkOrId === 'boolean') {
+            ValidateValueUtil.validateId(this.Columns, pkOrId);
+            whereQuery = WhereExpression.createConditionPk(this, {id: pkOrId}, updateSetQuery.vars);    
+        } else {
+            whereQuery = WhereExpression.createConditionPk(this, pkOrId, updateSetQuery.vars);
+        }
+
+        const sql = updateSetQuery.expression + ' WHERE ' + whereQuery.expression;
+        const data = await this.executeQuery(sql, whereQuery.vars);
+        if (data.rowCount !== 1) {
+            throw new UnprocessableException("201", this.errorMessages.find.replace('{pks}', (whereQuery.vars ?? []).join(',')));
+        }
+    }
+
+    public async delete(pkOrId: string | number | boolean | {[key: string]: any}) : Promise<void> {
+        let whereQuery: TQuery;
+        if (typeof pkOrId === 'string' || typeof pkOrId === 'number' || typeof pkOrId === 'boolean') {
+            ValidateValueUtil.validateId(this.Columns, pkOrId);
+            whereQuery = WhereExpression.createConditionPk(this, {id: pkOrId});    
+        } else {
+            whereQuery = WhereExpression.createConditionPk(this, pkOrId);
+        }
+
+        const sql = `DELETE FROM ${this.TableName} WHERE ${whereQuery.expression}`;
+        const data = await this.executeQuery(sql, whereQuery.vars);
+        if (data.rowCount !== 1) {
+            throw new UnprocessableException("301", this.errorMessages.find.replace('{pks}', (whereQuery.vars ?? []).join(',')));
+        }
+    }
+
     public async executeUpdate(options: {[key: string]: any}) : Promise<number> {
         await this.validateOptions(options, false);
-        await this.validateUpdate(options);
 
         const updateExpressions: Array<string> = [];
         for (const [key, value] of Object.entries(options)) {
@@ -606,7 +550,7 @@ export class TableModel {
                 tables.push(`${join.model.TableName} as "${join.model.TableAlias}"`);
 
                 const query = WhereExpression.createCondition(join.conditions, this, this.vars.length);
-                this.whereExpressions.push(query.sql);
+                this.whereExpressions.push(query.expression);
                 if (query.vars !== undefined) {
                     this.vars = [...this.vars, ...query.vars]
                 }
@@ -622,39 +566,7 @@ export class TableModel {
         return data.rowCount;
     }
 
-    public async executeUpdateId(id: any, options: {[key: string]: any}) : Promise<void> {
-        ValidateValueUtil.validateId(this.Columns, id);
-        await this.validateOptions(options, false);
-        await this.validateUpdateId(id, options);
-        await this.validateUpdate(options);
-
-        const updateExpressions: Array<string> = [];
-        const vars: Array<any> = [];
-
-        for (const [key, value] of Object.entries(options)) {
-            if (value === undefined) {
-                throw new Error(`The update option ${key} is undefined.`);
-            }
-
-            const column = this.getColumn(key);
-            if (column.attribute === 'primary') {
-                throw new Error(`The primary key ${this.TableName}.${key} cannot be changed.`);
-            }
-
-            vars.push(value);
-            updateExpressions.push(`${key} = $${vars.length}`);
-        }
-        vars.push(id);
-        
-        const sql = `UPDATE ${this.TableName} SET ${updateExpressions.join(',')} WHERE id = $${vars.length}`;
-        const data = await this.executeQuery(sql, vars);
-        if (data.rowCount !== 1) {
-            throw new UnprocessableException("201", this.errorMessages.idNotExist.replace('{id}', id));
-        }
-    }
-
     public async executeDelete() : Promise<number> {
-        this.validateDelete();
         let sql = `DELETE FROM ${this.TableName} "${this.TableAlias}" `;
 
         if (this.joinConditions.length > 0) {
@@ -663,7 +575,7 @@ export class TableModel {
                 tables.push(`${join.model.TableName} as "${join.model.TableAlias}"`);
 
                 const query = WhereExpression.createCondition(join.conditions, this, this.vars.length);
-                this.whereExpressions.push(query.sql);
+                this.whereExpressions.push(query.expression);
                 if (query.vars !== undefined) {
                     this.vars = [...this.vars, ...query.vars]
                 }
@@ -677,17 +589,6 @@ export class TableModel {
 
         const datas = await this.executeQuery(sql, this.vars);
         return datas.rowCount;
-    }
-
-    public async executeDeleteId(id: any) : Promise<void> {
-        ValidateValueUtil.validateId(this.Columns, id);
-        await this.validateDeleteId(id);
-        let sql = `DELETE FROM ${this.TableName} WHERE id = $1`;
-
-        const datas = await this.executeQuery(sql, [id]);
-        if (datas.rowCount !== 1) {
-            throw new UnprocessableException("301", this.errorMessages.idNotExist.replace('{id}', id));
-        }
     }
 
     protected executeQuery(param1: string, vars?: Array<any>) : Promise<any>;
@@ -710,7 +611,7 @@ export class TableModel {
         if (typeof param1 === 'string') {
             sql = param1;
         } else {
-            sql = param1.sql;
+            sql = param1.expression;
             vars = param1.vars;
         }
 

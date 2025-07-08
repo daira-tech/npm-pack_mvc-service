@@ -5,6 +5,25 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const ValidateValueUtil_1 = __importDefault(require("./ValidateValueUtil"));
 class WhereExpression {
+    static createConditionPk(model, pk, vars = null, isSetAlias = false) {
+        const conditions = [];
+        const newVars = vars === null ? [] : [...vars];
+        for (const [keyColumn, column] of Object.entries(model.Columns)) {
+            if (column.attribute !== 'primary') {
+                continue;
+            }
+            if (pk[keyColumn] === undefined || pk[keyColumn] === null) {
+                throw new Error(`No value is set for the primary key "${model.TableName}".${keyColumn}.`);
+            }
+            ValidateValueUtil_1.default.validateValue(column, pk[keyColumn]);
+            newVars.push(pk[keyColumn]);
+            conditions.push(`${isSetAlias ? `"${model.TableAlias}".` : ''}${keyColumn} = $${newVars.length}`);
+        }
+        return {
+            expression: conditions.join(' AND '),
+            vars: newVars
+        };
+    }
     /**
      * Helper method to create OR conditions
      * @param conditions Array of conditions that make up the OR condition
@@ -12,12 +31,12 @@ class WhereExpression {
      */
     static createCondition(conditions, model, varLength) {
         if (conditions.length === 0) {
-            return { sql: '' };
+            return { expression: '' };
         }
         let logicalOperator = 'AND';
         if (conditions[0] === 'AND' || conditions[0] === 'OR') {
             if (conditions.length === 1) {
-                return { sql: '' };
+                return { expression: '' };
             }
             logicalOperator = conditions[0];
             conditions.shift();
@@ -28,7 +47,7 @@ class WhereExpression {
             if (Array.isArray(condition)) {
                 // If it's an array, it's a nested condition, so call this function recursively
                 const query = this.createCondition(condition, model, varLength + vars.length);
-                expression.push(query.sql);
+                expression.push(query.expression);
                 if (query.vars !== undefined) {
                     vars = [...vars, ...query.vars];
                 }
@@ -41,20 +60,20 @@ class WhereExpression {
             }
             if (typeof condition.l === 'string') {
                 const query = this.create({ model: model, name: condition.l }, condition.o, condition.r, varLength + vars.length);
-                expression.push(query.sql);
+                expression.push(query.expression);
                 if (query.vars !== undefined) {
                     vars = [...vars, ...query.vars];
                 }
                 continue;
             }
             const query = this.create(condition.l, condition.o, condition.r, varLength + vars.length);
-            expression.push(query.sql);
+            expression.push(query.expression);
             if (query.vars !== undefined) {
                 vars = [...vars, ...query.vars];
             }
         }
         return {
-            sql: `(${expression.filter(condition => condition !== null && condition !== void 0 ? condition : '' !== '').join(` ${logicalOperator} `)})`,
+            expression: `(${expression.filter(condition => condition !== null && condition !== void 0 ? condition : '' !== '').join(` ${logicalOperator} `)})`,
             vars: vars
         };
     }
@@ -93,12 +112,12 @@ class WhereExpression {
             }
             if (operator == "=") {
                 return {
-                    sql: `${leftColumn.expression} is null`
+                    expression: `${leftColumn.expression} is null`
                 };
             }
             else if (operator == "!=") {
                 return {
-                    sql: `${leftColumn.expression} is not null`
+                    expression: `${leftColumn.expression} is not null`
                 };
             }
             else {
@@ -120,14 +139,14 @@ class WhereExpression {
             }
             if (right.length == 0) {
                 // Creating in, not in with 0 elements will cause an error, but since the data to be passed is correct and the expected return value does not change, do not search if there are 0 elements
-                return { sql: '' };
+                return { expression: '' };
             }
             // Validate values
             for (const value of right) {
                 ValidateValueUtil_1.default.validateValue(leftColumn, value);
             }
             return {
-                sql: `${leftColumn.expression} ${operator === 'in' ? '=' : '!='} ANY($${varLength})`,
+                expression: `${leftColumn.expression} ${operator === 'in' ? '=' : '!='} ANY($${varLength})`,
                 vars: [right]
             };
         }
@@ -145,16 +164,16 @@ class WhereExpression {
                 case 'like':
                 case 'ilike':
                     return {
-                        sql: `${leftColumn.expression} ${operator} '%' || ${rightColumn.expression} || '%'`
+                        expression: `${leftColumn.expression} ${operator} '%' || ${rightColumn.expression} || '%'`
                     };
                 case 'h2f_like': // half to full like
                 case 'h2f_ilike': // half to full ilike
                     return {
-                        sql: `${this.makeSqlReplaceHalfToFull(leftColumn.expression)} ${operator.replace("h2f_", "")} ${this.makeSqlReplaceHalfToFull(`'%' || ${rightColumn.expression} || '%'`)}`
+                        expression: `${this.makeSqlReplaceHalfToFull(leftColumn.expression)} ${operator.replace("h2f_", "")} ${this.makeSqlReplaceHalfToFull(`'%' || ${rightColumn.expression} || '%'`)}`
                     };
             }
             return {
-                sql: `${leftColumn.expression} ${operator} ${rightColumn.expression}`
+                expression: `${leftColumn.expression} ${operator} ${rightColumn.expression}`
             };
         }
         ValidateValueUtil_1.default.validateValue(leftColumn, right);
@@ -163,18 +182,18 @@ class WhereExpression {
             case 'like':
             case 'ilike':
                 return {
-                    sql: `${leftColumn.expression} ${operator} $${varLength}`,
+                    expression: `${leftColumn.expression} ${operator} $${varLength}`,
                     vars: [`%${right}%`]
                 };
             case 'h2f_like': // half to full like
             case 'h2f_ilike': // half to full ilike
                 return {
-                    sql: `${this.makeSqlReplaceHalfToFull(leftColumn.expression)} ${operator.replace("h2f_", "")} ${this.makeSqlReplaceHalfToFull(`$${varLength}`)}`,
+                    expression: `${this.makeSqlReplaceHalfToFull(leftColumn.expression)} ${operator.replace("h2f_", "")} ${this.makeSqlReplaceHalfToFull(`$${varLength}`)}`,
                     vars: [`%${right}%`]
                 };
         }
         return {
-            sql: `${leftColumn.expression} ${operator} $${varLength}`,
+            expression: `${leftColumn.expression} ${operator} $${varLength}`,
             vars: [right]
         };
     }
@@ -199,12 +218,12 @@ class WhereExpression {
             case '=':
                 // バリデーションチェックをする
                 return {
-                    sql: `${leftColumn.expression} ${operator} $${varLength}`,
+                    expression: `${leftColumn.expression} ${operator} $${varLength}`,
                     vars: [right]
                 };
         }
         return {
-            sql: `${leftColumn.expression} ${operator} $${varLength}`,
+            expression: `${leftColumn.expression} ${operator} $${varLength}`,
             vars: [right]
         };
     }
