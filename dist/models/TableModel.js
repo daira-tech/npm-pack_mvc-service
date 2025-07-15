@@ -339,7 +339,7 @@ class TableModel {
         }
         throw new Exception_1.UnprocessableException(code, message);
     }
-    validateOptions(options, isInsert) {
+    validateOptions(options, isInsert, pkOrId) {
         return __awaiter(this, void 0, void 0, function* () {
             if (Object.keys(options).length === 0) {
                 throw new Error('At least one key-value pair is required in options.');
@@ -432,7 +432,7 @@ class TableModel {
     update(pkOrId, options) {
         return __awaiter(this, void 0, void 0, function* () {
             var _a;
-            yield this.validateOptions(options, false);
+            yield this.validateOptions(options, false, pkOrId);
             const updateSetQuery = UpdateExpression_1.default.createUpdateSet(this, options);
             let whereQuery;
             if (typeof pkOrId === 'string' || typeof pkOrId === 'number' || typeof pkOrId === 'boolean') {

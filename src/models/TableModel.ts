@@ -400,7 +400,7 @@ export class TableModel {
         throw new UnprocessableException(code, message);
     }
 
-    protected async validateOptions(options: {[key: string]: any}, isInsert: boolean): Promise<void> {
+    protected async validateOptions(options: {[key: string]: any}, isInsert: boolean, pkOrId?: string | number | boolean | {[key: string]: any}): Promise<void> {
         if (Object.keys(options).length === 0) {
             throw new Error('At least one key-value pair is required in options.');
         }
@@ -502,7 +502,7 @@ export class TableModel {
     }
 
     public async update(pkOrId: string | number | boolean | {[key: string]: any}, options: {[key: string]: any}) : Promise<void> {
-        await this.validateOptions(options, false);
+        await this.validateOptions(options, false, pkOrId);
 
         const updateSetQuery = UpdateExpression.createUpdateSet(this, options);
         let whereQuery: TQuery;
