@@ -1,3 +1,4 @@
+import StringUtil from "../Utils/StringUtil";
 import ReqResType from "./ReqResType";
 
 export class ResponseType extends ReqResType {
@@ -219,7 +220,7 @@ export class ResponseType extends ReqResType {
                 }
             case 'uuid':
             case 'uuid?':
-                if (this.isUUID(value)) {
+                if (StringUtil.isUUID(value)) {
                     return value;
                 }
                 return undefined;

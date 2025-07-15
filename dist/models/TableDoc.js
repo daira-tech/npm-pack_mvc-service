@@ -266,7 +266,7 @@ td:nth-child(11) {
                     <td>${((_d = column.comment) !== null && _d !== void 0 ? _d : '').replace('\n', '<br>')}</td>
                     <td>
                         ${column.attribute === "primary" ? `` : `
-                        <button onclick="${addFuncName}()">Copy add column</button>
+                        <button onclick="${addFuncName}()">Copy add column</button><br>
                         <button onclick="${dropFuncName}()">Copy drop column</button>
                         `}
                     </td>

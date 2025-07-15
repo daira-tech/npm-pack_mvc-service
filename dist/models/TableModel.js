@@ -60,7 +60,12 @@ class TableModel {
     get createSqlFromJoinWhere() {
         let sql = ` FROM ${this.TableName} as "${this.TableAlias}"`;
         for (const join of this.joinConditions) {
-            sql += join.type === 'left' ? ' LEFT OUTER JOIN' : ' INNER JOIN';
+            const joins = {
+                inner: ' INNER JOIN',
+                left: ' LEFT OUTER JOIN',
+                full: ' FULL OUTER JOIN',
+            };
+            sql += joins[join.type];
             sql += ` ${join.model.TableName} as "${join.model.TableAlias}" ON `;
             const query = WhereExpression_1.default.createCondition(join.conditions, this, this.vars.length + 1);
             sql += query.expression;

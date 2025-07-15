@@ -70,7 +70,7 @@ export class TableModel {
 
     private selectExpressions: Array<string> = [];
     private joinConditions: Array<{
-        type: 'inner' | 'left',
+        type: 'inner' | 'left' | 'full',
         model: TableModel,
         conditions: Array<TNestedCondition>
     }> = [];
@@ -83,7 +83,12 @@ export class TableModel {
         let sql = ` FROM ${this.TableName} as "${this.TableAlias}"`;
 
         for (const join of this.joinConditions) {
-            sql += join.type === 'left' ? ' LEFT OUTER JOIN' : ' INNER JOIN';
+            const joins = {
+                inner: ' INNER JOIN',
+                left: ' LEFT OUTER JOIN',
+                full: ' FULL OUTER JOIN',
+            }
+            sql += joins[join.type];
             sql += ` ${join.model.TableName} as "${join.model.TableAlias}" ON `;
             const query = WhereExpression.createCondition(join.conditions, this, this.vars.length + 1);
             sql += query.expression;
@@ -248,7 +253,7 @@ export class TableModel {
      * @param joinBaseModel 結合する対象のBaseModelインスタンスを指定します。
      * @param conditions 結合条件を指定します。条件はオブジェクトまたは文字列で指定できます。
      */
-    public join(joinType: 'left' | 'inner', joinModel: TableModel, conditions: Array<TNestedCondition>): void {
+    public join(joinType: 'left' | 'inner' | 'full', joinModel: TableModel, conditions: Array<TNestedCondition>): void {
         this.joinConditions.push({type: joinType, model: joinModel, conditions: conditions});
     }
 

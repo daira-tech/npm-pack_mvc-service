@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const StringUtil_1 = __importDefault(require("../Utils/StringUtil"));
+const StringUtil_1 = __importDefault(require("../../Utils/StringUtil"));
 class SelectExpression {
     /**
      * 指定されたカラム情報と関数を使用して、SQLのSELECT文を作成します。

@@ -1,6 +1,6 @@
 import { TableModel } from "../TableModel";
 import { TAggregateFuncType, TColumnInfo, TKeyFormat } from "../Type";
-import StringUtil from "../Utils/StringUtil";
+import StringUtil from "../../Utils/StringUtil";
 
 export default class SelectExpression {
 

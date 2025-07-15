@@ -4,6 +4,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ResponseType = void 0;
+const StringUtil_1 = __importDefault(require("../Utils/StringUtil"));
 const ReqResType_1 = __importDefault(require("./ReqResType"));
 class ResponseType extends ReqResType_1.default {
     constructor() {
@@ -203,7 +204,7 @@ class ResponseType extends ReqResType_1.default {
                 }
             case 'uuid':
             case 'uuid?':
-                if (this.isUUID(value)) {
+                if (StringUtil_1.default.isUUID(value)) {
                     return value;
                 }
                 return undefined;

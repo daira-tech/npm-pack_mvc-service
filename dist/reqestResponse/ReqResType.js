@@ -115,19 +115,6 @@ class ReqResType {
         }
     }
     /**
-     * Validates if the given value is a valid UUID
-     * 与えられた値が有効なUUIDであるかどうかを検証します
-     * @param value - The value to be validated, 検証する値
-     * @returns {boolean} - Whether the value is a valid UUID, 値が有効なUUIDであるかどうか
-     */
-    isUUID(value) {
-        if (typeof value !== 'string') {
-            return false;
-        }
-        const pattern = new RegExp('^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$');
-        return pattern.test(value);
-    }
-    /**
      * 値がメールアドレス形式であるかどうかを検証します
      * Validates if the given value is in the format of an email address
      * @param value - 検証する値, The value to be validated

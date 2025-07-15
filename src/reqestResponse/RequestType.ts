@@ -1,6 +1,7 @@
 import { Request } from 'express';
 import ReqResType, { EnumType, PrimitiveType, PropertyType } from "./ReqResType";
 import { InputErrorException } from '../exceptions/Exception';
+import StringUtil from '../Utils/StringUtil';
 
 // エラーメッセージの型定義
 export interface ErrorMessageType {
@@ -568,7 +569,7 @@ export class RequestType extends ReqResType {
                 }
             case 'uuid':
             case 'uuid?':
-                if (this.isUUID(value)) {
+                if (StringUtil.isUUID(value)) {
                     return value;
                 }
                 this.throwInputError(isRequestBody ? "UUID_21" : "UUID_91", keys, value);

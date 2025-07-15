@@ -1,6 +1,6 @@
 import { TColumn, TColumnArrayType, TColumnType } from "../Type";
-import DateTimeUtil from "../Utils/DateTimeUtil";
-import StringUtil from "../Utils/StringUtil";
+import DateTimeUtil from "../../Utils/DateTimeUtil";
+import StringUtil from "../../Utils/StringUtil";
 
 export default class ValidateValueUtil {
     

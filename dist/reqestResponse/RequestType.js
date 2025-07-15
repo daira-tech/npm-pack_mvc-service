@@ -6,6 +6,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.RequestType = void 0;
 const ReqResType_1 = __importDefault(require("./ReqResType"));
 const Exception_1 = require("../exceptions/Exception");
+const StringUtil_1 = __importDefault(require("../Utils/StringUtil"));
 class RequestType extends ReqResType_1.default {
     constructor() {
         super(...arguments);
@@ -525,7 +526,7 @@ class RequestType extends ReqResType_1.default {
                 }
             case 'uuid':
             case 'uuid?':
-                if (this.isUUID(value)) {
+                if (StringUtil_1.default.isUUID(value)) {
                     return value;
                 }
                 this.throwInputError(isRequestBody ? "UUID_21" : "UUID_91", keys, value);
