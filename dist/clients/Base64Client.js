@@ -15,6 +15,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.Base64Client = void 0;
 const pdf_lib_1 = require("pdf-lib");
 const sharp_1 = __importDefault(require("sharp"));
+const type_utils_n_daira_1 = require("type-utils-n-daira");
 class Base64Client {
     constructor() { }
     // public encode(text: string): string {
@@ -150,5 +151,62 @@ class Base64Client {
             return Buffer.from(pdfBytes);
         });
     }
+    static isJpeg(value) {
+        if (type_utils_n_daira_1.ValidateStringUtil.isBase64(value) === false) {
+            return false;
+        }
+        if (value.startsWith('data:')) {
+            if (value.startsWith('data:image/jpeg,') === false && value.startsWith('data:image/jpg,') === false) {
+                return false;
+            }
+            const valueParts = value.split(',');
+            if (valueParts.length !== 2) {
+                return false;
+            }
+            return valueParts[1].startsWith(this.PREFIX_JPEG_DATA);
+        }
+        return value.startsWith(this.PREFIX_JPEG_DATA);
+    }
+    static isPng(value) {
+        if (type_utils_n_daira_1.ValidateStringUtil.isBase64(value) === false) {
+            return false;
+        }
+        if (value.startsWith('data:')) {
+            if (value.startsWith('data:image/png,') === false) {
+                return false;
+            }
+            const valueParts = value.split(',');
+            if (valueParts.length !== 2) {
+                return false;
+            }
+            return valueParts[1].startsWith(this.PREFIX_PNG_DATA);
+        }
+        return value.startsWith(this.PREFIX_PNG_DATA);
+    }
+    static tryConvertToPng(base64Value) {
+        return __awaiter(this, void 0, void 0, function* () {
+            if (type_utils_n_daira_1.ValidateStringUtil.isBase64(base64Value) === false) {
+                return false;
+            }
+            const base64Data = base64Value.startsWith('data:') ? base64Value.split(',')[1] : base64Value;
+            if (this.isPng(base64Data)) {
+                return base64Data;
+            }
+            else if (this.isJpeg(base64Data)) {
+                const buffer = Buffer.from(base64Data, 'base64');
+                try {
+                    const pngBuffer = yield (0, sharp_1.default)(buffer)
+                        .ensureAlpha().png().toBuffer();
+                    return pngBuffer.toString('base64');
+                }
+                catch (e) {
+                    return false;
+                }
+            }
+            return false;
+        });
+    }
 }
 exports.Base64Client = Base64Client;
+Base64Client.PREFIX_JPEG_DATA = '/9j/';
+Base64Client.PREFIX_PNG_DATA = 'iVBORw0KGgo';

@@ -1,5 +1,6 @@
 import { PDFDocument } from 'pdf-lib';
 import sharp from 'sharp';
+import { ValidateStringUtil } from 'type-utils-n-daira';
 
 export type TPng = 'image/png';
 export type TJpeg = 'image/jpeg';
@@ -10,6 +11,9 @@ export type TPdf = 'application/pdf';
 export type TJson = 'application/json';
 
 export class Base64Client {
+    public static readonly PREFIX_JPEG_DATA = '/9j/';
+    public static readonly PREFIX_PNG_DATA = 'iVBORw0KGgo';
+
     constructor() { }
 
     // public encode(text: string): string {
@@ -151,5 +155,69 @@ export class Base64Client {
         // PDFをバッファに変換
         const pdfBytes = await pdfDoc.save();
         return Buffer.from(pdfBytes);
+    }
+
+    public static isJpeg(value: any): value is string {
+        if (ValidateStringUtil.isBase64(value) === false) {
+            return false
+        }
+
+        if (value.startsWith('data:')) {
+            if (value.startsWith('data:image/jpeg,') === false && value.startsWith('data:image/jpg,') === false) {
+                return false;
+            }
+
+            const valueParts = value.split(',');
+            if (valueParts.length !== 2) {
+                return false;
+            }
+
+            return valueParts[1].startsWith(this.PREFIX_JPEG_DATA);
+        }
+
+        return value.startsWith(this.PREFIX_JPEG_DATA);
+    }
+
+    public static isPng(value: any): value is string {
+        if (ValidateStringUtil.isBase64(value) === false) {
+            return false
+        }
+
+        if (value.startsWith('data:')) {
+            if (value.startsWith('data:image/png,') === false) {
+                return false;
+            }
+
+            const valueParts = value.split(',');
+            if (valueParts.length !== 2) {
+                return false;
+            }
+
+            return valueParts[1].startsWith(this.PREFIX_PNG_DATA);
+        }
+
+        return value.startsWith(this.PREFIX_PNG_DATA);
+    }
+
+    public static async tryConvertToPng(base64Value: any): Promise<string | false> {
+        if (ValidateStringUtil.isBase64(base64Value) === false) {
+            return false;
+        }
+
+        const base64Data = base64Value.startsWith('data:') ? base64Value.split(',')[1] : base64Value;
+        if (this.isPng(base64Data)) {
+            return base64Data;
+        } else if (this.isJpeg(base64Data)) {
+            const buffer = Buffer.from(base64Data, 'base64');
+            try {
+                const pngBuffer = await sharp(buffer)
+                    .ensureAlpha().png().toBuffer();
+                return pngBuffer.toString('base64');
+            } catch (e) {
+                return false;
+            }
+        }
+
+        return false;
     }
 }

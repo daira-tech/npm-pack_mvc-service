@@ -4,6 +4,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ResponseType = void 0;
+const type_utils_n_daira_1 = require("type-utils-n-daira");
 const StringUtil_1 = __importDefault(require("../Utils/StringUtil"));
 const ReqResType_1 = __importDefault(require("./ReqResType"));
 class ResponseType extends ReqResType_1.default {
@@ -210,7 +211,7 @@ class ResponseType extends ReqResType_1.default {
                 return undefined;
             case 'mail':
             case 'mail?':
-                if (this.isMail(value)) {
+                if (type_utils_n_daira_1.ValidateStringUtil.isMail(value)) {
                     return value;
                 }
                 return undefined;
@@ -252,13 +253,13 @@ class ResponseType extends ReqResType_1.default {
                 return undefined;
             case 'https':
             case 'https?':
-                if (this.isHttps(value)) {
+                if (type_utils_n_daira_1.ValidateStringUtil.isHttps(value)) {
                     return value;
                 }
                 return undefined;
             case 'base64':
             case 'base64?':
-                if (this.isBase64(value)) {
+                if (type_utils_n_daira_1.ValidateStringUtil.isBase64(value)) {
                     return value;
                 }
                 return undefined;

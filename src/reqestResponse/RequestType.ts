@@ -2,6 +2,7 @@ import { Request } from 'express';
 import ReqResType, { EnumType, PrimitiveType, PropertyType } from "./ReqResType";
 import { InputErrorException } from '../exceptions/Exception';
 import StringUtil from '../Utils/StringUtil';
+import { ValidateStringUtil } from 'type-utils-n-daira';
 
 // エラーメッセージの型定義
 export interface ErrorMessageType {
@@ -575,7 +576,7 @@ export class RequestType extends ReqResType {
                 this.throwInputError(isRequestBody ? "UUID_21" : "UUID_91", keys, value);
             case 'mail':
             case 'mail?':
-                if (this.isMail(value)) {
+                if (ValidateStringUtil.isMail(value)) {
                     return value;
                 }
                 this.throwInputError(isRequestBody ? "MAIL_21" : "MAIL_91", keys, value);
@@ -611,13 +612,13 @@ export class RequestType extends ReqResType {
                 return value.replace('T', ' ');
             case 'https':
             case 'https?':
-                if (this.isHttps(value)) {
+                if (ValidateStringUtil.isHttps(value)) {
                     return value;
                 }
                 this.throwInputError(isRequestBody ? "HTTPS_21" : "HTTPS_91", keys, value);
             case 'base64':
             case 'base64?':
-                if (this.isBase64(value)) {
+                if (ValidateStringUtil.isBase64(value)) {
                     return value;
                 }
                 this.throwInputError(isRequestBody ? "BASE64_21" : "BASE64_91", keys, value);

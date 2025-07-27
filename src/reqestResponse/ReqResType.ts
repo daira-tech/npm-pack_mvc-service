@@ -152,62 +152,6 @@ export default class ReqResType {
     }
 
     /**
-     * 値がメールアドレス形式であるかどうかを検証します
-     * Validates if the given value is in the format of an email address
-     * @param value - 検証する値, The value to be validated
-     * @returns {boolean} - 値がメールアドレス形式であるかどうか, Whether the value is in the format of an email address
-     */
-    protected isMail(value: any) {
-        if (typeof value !== 'string') {
-            return false;
-        }
-
-        const pattern = new RegExp('^[a-zA-Z0-9_%+-]+([.][a-zA-Z0-9_%+-]+)*@[a-zA-Z0-9]+([-.]?[a-zA-Z0-9]+)*\\.[a-zA-Z]{2,}$');
-        return pattern.test(value);
-    }
-
-    /**
-     * 値がHTTPS URLであるかどうかを検証します
-     * Validates if the given value is an HTTPS URL
-     * @param value - 検証する値, The value to be validated
-     * @returns {boolean} - 値がHTTPS URLであるかどうか, Whether the value is an HTTPS URL
-     */
-    protected isHttps(value: any) {
-        if (typeof value !== 'string') {
-            return false;
-        }
-
-        const urlPattern = new RegExp('^(https?:\\/\\/[^\\s/$.?#].[^\\s]*)$');
-        return urlPattern.test(value);
-    }
-
-    /**
-     * 値がBase64形式であるかどうかを検証します
-     * Validates if the given value is in Base64 format
-     * @param value - 検証する値, The value to be validated
-     * @returns {boolean} - 値がBase64形式であるかどうか, Whether the value is in Base64 format
-     */
-    protected isBase64(value: any) {
-        if (typeof value !== 'string') {
-            return false;
-        }
-        
-        // base64は4倍の長さである必要がある
-        if (value.length % 4 !== 0) {
-            return false;
-        }
-        
-        // 基本的なbase64パターン
-        // 使用可能な文字
-        // ・ アルファベット（A-Z, a-z）
-        // ・ 数字（0-9）
-        // ・ +と/（基本文字）
-        // ・ =（パディング文字）
-        const base64Pattern = /^[A-Za-z0-9+/]*={0,2}$/;
-        return base64Pattern.test(value);
-    }
-
-    /**
      * プロパティの型をSwagger形式に変換します
      * Converts the property type to Swagger format
      * @param {string} value - 変換する値, The value to be converted

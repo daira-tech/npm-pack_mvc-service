@@ -1,6 +1,6 @@
 {
   "name": "pg-mvc-service",
-  "version": "2.0.3",
+  "version": "2.0.4",
   "description": "",
   "homepage": "https://github.com/n-daira/npm-pack_mvc-service#readme",
   "bugs": {
@@ -31,6 +31,7 @@
     "axios": "1.10.0",
     "crypto": "1.0.1",
     "pdf-lib": "1.17.1",
-    "sharp": "0.34.1"
+    "sharp": "0.34.1",
+    "type-utils-n-daira": "1.0.11"
   }
 }

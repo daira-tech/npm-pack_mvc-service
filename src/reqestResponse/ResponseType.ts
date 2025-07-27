@@ -1,3 +1,4 @@
+import { ValidateStringUtil } from "type-utils-n-daira";
 import StringUtil from "../Utils/StringUtil";
 import ReqResType from "./ReqResType";
 
@@ -226,7 +227,7 @@ export class ResponseType extends ReqResType {
                 return undefined;
             case 'mail':
             case 'mail?':
-                if (this.isMail(value)) {
+                if (ValidateStringUtil.isMail(value)) {
                     return value;
                 }
                 return undefined;
@@ -274,13 +275,13 @@ export class ResponseType extends ReqResType {
                 return undefined;
             case 'https':
             case 'https?':
-                if (this.isHttps(value)) {
+                if (ValidateStringUtil.isHttps(value)) {
                     return value;
                 }
                 return undefined;
             case 'base64':
             case 'base64?':
-                if (this.isBase64(value)) {
+                if (ValidateStringUtil.isBase64(value)) {
                     return value;
                 }
                 return undefined;

@@ -7,6 +7,7 @@ exports.RequestType = void 0;
 const ReqResType_1 = __importDefault(require("./ReqResType"));
 const Exception_1 = require("../exceptions/Exception");
 const StringUtil_1 = __importDefault(require("../Utils/StringUtil"));
+const type_utils_n_daira_1 = require("type-utils-n-daira");
 class RequestType extends ReqResType_1.default {
     constructor() {
         super(...arguments);
@@ -532,7 +533,7 @@ class RequestType extends ReqResType_1.default {
                 this.throwInputError(isRequestBody ? "UUID_21" : "UUID_91", keys, value);
             case 'mail':
             case 'mail?':
-                if (this.isMail(value)) {
+                if (type_utils_n_daira_1.ValidateStringUtil.isMail(value)) {
                     return value;
                 }
                 this.throwInputError(isRequestBody ? "MAIL_21" : "MAIL_91", keys, value);
@@ -565,13 +566,13 @@ class RequestType extends ReqResType_1.default {
                 return value.replace('T', ' ');
             case 'https':
             case 'https?':
-                if (this.isHttps(value)) {
+                if (type_utils_n_daira_1.ValidateStringUtil.isHttps(value)) {
                     return value;
                 }
                 this.throwInputError(isRequestBody ? "HTTPS_21" : "HTTPS_91", keys, value);
             case 'base64':
             case 'base64?':
-                if (this.isBase64(value)) {
+                if (type_utils_n_daira_1.ValidateStringUtil.isBase64(value)) {
                     return value;
                 }
                 this.throwInputError(isRequestBody ? "BASE64_21" : "BASE64_91", keys, value);
