@@ -308,6 +308,11 @@ class WhereExpression {
         }
         switch (operator) {
             case '=':
+                // =で検索すると順番まで一致させないといけないので、順番不一致でも中身があってれば一致とするようにする
+                return {
+                    expression: `(${leftColumn.expression} @> $${varLength} AND $${varLength} @> ${leftColumn.expression})`,
+                    vars: [right]
+                };
             case '@>':
             case '&&':
                 return {
@@ -345,6 +350,11 @@ class WhereExpression {
         }
         switch (operator) {
             case '=':
+                // =で検索すると順番まで一致させないといけないので、順番不一致でも中身があってれば一致とするようにする
+                return {
+                    expression: `(${leftColumn.expression} @> ${rightColumn.expression} AND ${rightColumn.expression} @> ${leftColumn.expression})`,
+                    vars: []
+                };
             case '@>':
             case '&&':
                 return {
