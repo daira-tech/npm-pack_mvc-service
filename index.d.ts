@@ -20,7 +20,6 @@ import ValidateClient from './src/models/ValidateClient';
 import { TableModel } from "./src/models/TableModel";
 export { TableModel } from "./src/models/TableModel";
 
-import { TColumnAttribute, TColumnType, TColumnArrayType, TColumn, TColumnDetail, TOperator, TColumnInfo, TQuery, TSelectExpression, TAggregateFuncType, TCondition, TNestedCondition, TSortKeyword, TKeyFormat } from './src/models/Type';
 export { TColumnAttribute, TColumnType, TColumnArrayType, TColumn, TColumnDetail, TOperator, TColumnInfo, TQuery, TSelectExpression, TAggregateFuncType, TCondition, TNestedCondition, TSortKeyword, TKeyFormat } from './src/models/Type';
 
 declare module 'pg-mvc-service' {

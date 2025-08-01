@@ -47,7 +47,7 @@ export type TColumnDetail = TColumn & {
     expression: string
 }
 
-export type TOperator = "=" | "!=" | ">" | ">=" | "<" | "<=" | "like" | "ilike" | "h2f_like" | "h2f_ilike" | "in" | "not in";
+export type TOperator = "=" | "!=" | ">" | ">=" | "<" | "<=" | "like" | "ilike" | "h2f_like" | "h2f_ilike" | "in" | "not in" | "any" | "@>" | "&&";
 export type TColumnInfo = { model: TableModel, name: string }
 export type TQuery = {expression: string, vars?: Array<any>};
 export type TSelectExpression = { expression: string, alias: string }

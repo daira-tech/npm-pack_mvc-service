@@ -83,21 +83,21 @@ class WhereExpression {
         // Are the operators correct?
         const useableOperator = {
             integer: ["=", "!=", ">", ">=", "<", "<=", "in", "not in"],
-            'integer[]': [],
+            'integer[]': ["=", "any", "@>", "&&"],
             real: ["=", "!=", ">", ">=", "<", "<="],
-            'real[]': [],
+            'real[]': ["=", "any", "@>", "&&"],
             string: ["=", "!=", "like", "ilike", "h2f_like", "h2f_ilike", "in", "not in"],
-            'string[]': [],
+            'string[]': ["=", "any", "@>", "&&"],
             uuid: ["=", "!=", "in", "not in"],
-            'uuid[]': [],
+            'uuid[]': ["=", "any", "@>", "&&"],
             bool: ["=", "!=", "in", "not in"],
-            'bool[]': [],
+            'bool[]': ["=", "any", "@>", "&&"],
             date: ["=", "!=", ">", ">=", "<", "<="],
-            'date[]': [],
+            'date[]': ["=", "any", "@>", "&&"],
             time: ["=", "!=", ">", ">=", "<", "<="],
-            'time[]': [],
+            'time[]': ["=", "any", "@>", "&&"],
             timestamp: ["=", "!=", ">", ">=", "<", "<="],
-            'timestamp[]': [],
+            'timestamp[]': ["=", "any", "@>", "&&"],
             json: [],
             'json[]': [],
             jsonb: [],
@@ -124,8 +124,15 @@ class WhereExpression {
                 throw new Error(`When comparing with null, operators other than =, != cannot be used. (${operator})`);
             }
         }
-        if (leftColumn.type.endsWith("[]")) {
-            return this.createExpression(leftColumn, operator, right, varLength);
+        const isColumnRight = right !== null && typeof right === 'object' && 'model' in right && 'name' in right;
+        const isArrayColumnLeft = leftColumn.type.endsWith("[]");
+        if (isArrayColumnLeft) {
+            if (isColumnRight) {
+                return this.createExpressionArrayColumn(leftColumn, operator, right, varLength);
+            }
+            else {
+                return this.createExpressionArrayValue(leftColumn, operator, right, varLength);
+            }
         }
         else {
             return this.createExpression(leftColumn, operator, right, varLength);
@@ -156,8 +163,9 @@ class WhereExpression {
         // If the right side value is a column specification
         if (right !== null && typeof right === 'object' && 'model' in right && 'name' in right) {
             const rightColumn = right.model.getColumn(right.name);
+            // 型の不一致エラーメッセージを改善
             if (leftColumn.type !== rightColumn.type) {
-                throw new Error(`The types of [${leftColumn.tableName}].[${leftColumn.columnName}] and [${rightColumn.tableName}].[${rightColumn.columnName}] are different.`);
+                throw new Error(`Type mismatch: column [${leftColumn.tableName}].[${leftColumn.columnName}] (${leftColumn.type}) and [${rightColumn.tableName}].[${rightColumn.columnName}] (${rightColumn.type}) must be the same type.`);
             }
             // LIKE operators are different, so handle separately
             switch (operator) {
@@ -198,34 +206,157 @@ class WhereExpression {
         };
     }
     static createExpressionArrayValue(leftColumn, operator, right, varLength) {
-        // ValidateValueUtil.validateValue(leftColumn, right);
-        // LIKE operators are different, so handle separately
-        // switch (operator) {
-        //     case 'like':
-        //     case 'ilike':
-        //         return {
-        //             sql: `${leftColumn.expression} ${operator} $${varLength}`,
-        //             vars: [`%${right}%`]
-        //         }
-        //     case 'h2f_like': // half to full like
-        //     case 'h2f_ilike': // half to full ilike
-        //         return {
-        //             sql: `${this.makeSqlReplaceHalfToFull(leftColumn.expression)} ${operator.replace("h2f_", "")} ${this.makeSqlReplaceHalfToFull(`$${varLength}`)}`,
-        //             vars: [`%${right}%`]
-        //         }
-        // }
+        // バリデーションチェック
+        switch (operator) {
+            case 'any':
+                switch (leftColumn.type) {
+                    case 'integer[]':
+                        if (ValidateValueUtil_1.default.isErrorInteger(right)) {
+                            throw new Error(`Expected integer value for array column (${leftColumn.type}), but received: ${JSON.stringify(right)}`);
+                        }
+                        break;
+                    case 'real[]':
+                        if (ValidateValueUtil_1.default.isErrorReal(right)) {
+                            throw new Error(`Expected numeric value for array column (${leftColumn.type}), but received: ${JSON.stringify(right)}`);
+                        }
+                        break;
+                    case 'string[]':
+                        if (ValidateValueUtil_1.default.isErrorString(right)) {
+                            throw new Error(`Expected string value for array column (${leftColumn.type}), but received: ${JSON.stringify(right)}`);
+                        }
+                        break;
+                    case 'uuid[]':
+                        if (ValidateValueUtil_1.default.isErrorUUID(right)) {
+                            throw new Error(`Expected UUID value for array column (${leftColumn.type}), but received: ${JSON.stringify(right)}`);
+                        }
+                        break;
+                    case 'bool[]':
+                        if (ValidateValueUtil_1.default.isErrorBool(right)) {
+                            throw new Error(`Expected boolean value for array column (${leftColumn.type}), but received: ${JSON.stringify(right)}`);
+                        }
+                        break;
+                    case 'date[]':
+                        if (ValidateValueUtil_1.default.isErrorDate(right)) {
+                            throw new Error(`Expected date value for array column (${leftColumn.type}), but received: ${JSON.stringify(right)}`);
+                        }
+                        break;
+                    case 'time[]':
+                        if (ValidateValueUtil_1.default.isErrorTime(right)) {
+                            throw new Error(`Expected time value for array column (${leftColumn.type}), but received: ${JSON.stringify(right)}`);
+                        }
+                        break;
+                    case 'timestamp[]':
+                        if (ValidateValueUtil_1.default.isErrorTimestamp(right)) {
+                            throw new Error(`Expected timestamp value for array column (${leftColumn.type}), but received: ${JSON.stringify(right)}`);
+                        }
+                        break;
+                }
+                break;
+            case '=':
+            case '@>':
+            case '&&':
+                if (Array.isArray(right) === false) {
+                    throw new Error(`Expected array format for array column (${leftColumn.type}), but received: ${JSON.stringify(right)}`);
+                }
+                for (const value of right) {
+                    switch (leftColumn.type) {
+                        case 'integer[]':
+                            if (ValidateValueUtil_1.default.isErrorInteger(value)) {
+                                throw new Error(`Expected integer value in array element, but received: ${JSON.stringify(value)}`);
+                            }
+                            break;
+                        case 'real[]':
+                            if (ValidateValueUtil_1.default.isErrorReal(value)) {
+                                throw new Error(`Expected numeric value in array element, but received: ${JSON.stringify(value)}`);
+                            }
+                            break;
+                        case 'string[]':
+                            if (ValidateValueUtil_1.default.isErrorString(value)) {
+                                throw new Error(`Expected string value in array element, but received: ${JSON.stringify(value)}`);
+                            }
+                            break;
+                        case 'uuid[]':
+                            if (ValidateValueUtil_1.default.isErrorUUID(value)) {
+                                throw new Error(`Expected UUID value in array element, but received: ${JSON.stringify(value)}`);
+                            }
+                            break;
+                        case 'bool[]':
+                            if (ValidateValueUtil_1.default.isErrorBool(value)) {
+                                throw new Error(`Expected boolean value in array element, but received: ${JSON.stringify(value)}`);
+                            }
+                            break;
+                        case 'date[]':
+                            if (ValidateValueUtil_1.default.isErrorDate(value)) {
+                                throw new Error(`Expected date value in array element, but received: ${JSON.stringify(value)}`);
+                            }
+                            break;
+                        case 'time[]':
+                            if (ValidateValueUtil_1.default.isErrorTime(value)) {
+                                throw new Error(`Expected time value in array element, but received: ${JSON.stringify(value)}`);
+                            }
+                            break;
+                        case 'timestamp[]':
+                            if (ValidateValueUtil_1.default.isErrorTimestamp(value)) {
+                                throw new Error(`Expected timestamp value in array element, but received: ${JSON.stringify(value)}`);
+                            }
+                            break;
+                    }
+                }
+                break;
+            default:
+                throw new Error(`Unsupported operator '${operator}' for array column operations.`);
+        }
         switch (operator) {
             case '=':
-                // バリデーションチェックをする
+            case '@>':
+            case '&&':
                 return {
                     expression: `${leftColumn.expression} ${operator} $${varLength}`,
                     vars: [right]
                 };
+            case 'any':
+                return {
+                    expression: `$${varLength} = ANY(${leftColumn.expression})`,
+                    vars: [right]
+                };
         }
-        return {
-            expression: `${leftColumn.expression} ${operator} $${varLength}`,
-            vars: [right]
-        };
+    }
+    static createExpressionArrayColumn(leftColumn, operator, right, varLength) {
+        const rightColumn = right.model.getColumn(right.name);
+        // バリデーションチェック
+        switch (operator) {
+            case 'any':
+                // any演算子の場合
+                if (leftColumn.type !== rightColumn.type.replace('[]', '')) {
+                    throw new Error(`Type mismatch: array column [${leftColumn.tableName}].[${leftColumn.columnName}] (${leftColumn.type}) and scalar column [${rightColumn.tableName}].[${rightColumn.columnName}] (${rightColumn.type}) are incompatible for ANY operation.`);
+                }
+                break;
+            case '=':
+            case '@>':
+            case '&&':
+                // 配列演算子の場合
+                if (leftColumn.type !== rightColumn.type) {
+                    throw new Error(`Type mismatch: array columns [${leftColumn.tableName}].[${leftColumn.columnName}] (${leftColumn.type}) and [${rightColumn.tableName}].[${rightColumn.columnName}] (${rightColumn.type}) must be the same type.`);
+                }
+                break;
+            default:
+                // サポートされていない演算子
+                throw new Error(`Operator '${operator}' is not supported for array column operations. Supported operators: =, @>, &&, ANY`);
+        }
+        switch (operator) {
+            case '=':
+            case '@>':
+            case '&&':
+                return {
+                    expression: `${leftColumn.expression} ${operator} $${rightColumn.expression}`,
+                    vars: []
+                };
+            case 'any':
+                return {
+                    expression: `$${rightColumn.expression} = ANY(${leftColumn.expression})`,
+                    vars: []
+                };
+        }
     }
     /**
      * SQL statement to convert half-width characters to full-width

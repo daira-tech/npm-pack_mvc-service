@@ -198,6 +198,52 @@ class ValidateValueUtil {
         }
         return true;
     }
+    static isErrorInteger(value) {
+        let numberValue;
+        if (typeof value === 'string') {
+            if (value.trim() === "" || isNaN(Number(value))) {
+                return true;
+            }
+            numberValue = Number(value);
+        }
+        else if (typeof value === 'number') {
+            numberValue = value;
+        }
+        else {
+            return true;
+        }
+        if (Number.isInteger(numberValue) === false) {
+            return true;
+        }
+        if (numberValue < -2147483648 || numberValue > 2147483647) {
+            return true;
+        }
+        return false;
+    }
+    static isErrorReal(value) {
+        let numberValue;
+        if (typeof value === 'string') {
+            if (value.trim() === "" || isNaN(Number(value))) {
+                return true;
+            }
+            numberValue = Number(value);
+        }
+        else if (typeof value === 'number') {
+            numberValue = value;
+        }
+        else {
+            return true;
+        }
+        // 特殊値チェック
+        if (isFinite(numberValue) === false) {
+            return true;
+        }
+        // 範囲チェック（real型の範囲）
+        if (numberValue < -3.4e38 || numberValue > 3.4e38) {
+            return true;
+        }
+        return false;
+    }
     static isErrorNumber(value) {
         if (typeof value === 'string') {
             if (value.trim() === "" || isNaN(Number(value))) {
