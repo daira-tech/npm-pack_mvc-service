@@ -11,8 +11,8 @@ export type TPdf = 'application/pdf';
 export type TJson = 'application/json';
 
 export class Base64Client {
-    public static readonly PREFIX_JPEG_DATA = '/9j/';
-    public static readonly PREFIX_PNG_DATA = 'iVBORw0KGgo';
+    public readonly PREFIX_JPEG_DATA = '/9j/';
+    public readonly PREFIX_PNG_DATA = 'iVBORw0KGgo';
 
     constructor() { }
 
@@ -157,7 +157,7 @@ export class Base64Client {
         return Buffer.from(pdfBytes);
     }
 
-    public static isJpeg(value: any): value is string {
+    public isJpeg(value: any): value is string {
         if (ValidateStringUtil.isBase64(value) === false) {
             return false
         }
@@ -178,7 +178,7 @@ export class Base64Client {
         return value.startsWith(this.PREFIX_JPEG_DATA);
     }
 
-    public static isPng(value: any): value is string {
+    public isPng(value: any): value is string {
         if (ValidateStringUtil.isBase64(value) === false) {
             return false
         }
@@ -199,7 +199,7 @@ export class Base64Client {
         return value.startsWith(this.PREFIX_PNG_DATA);
     }
 
-    public static async tryConvertToPng(base64Value: any): Promise<string | false> {
+    public async tryConvertToPng(base64Value: any): Promise<string | false> {
         if (ValidateStringUtil.isBase64(base64Value) === false) {
             return false;
         }

@@ -17,7 +17,10 @@ const pdf_lib_1 = require("pdf-lib");
 const sharp_1 = __importDefault(require("sharp"));
 const type_utils_n_daira_1 = require("type-utils-n-daira");
 class Base64Client {
-    constructor() { }
+    constructor() {
+        this.PREFIX_JPEG_DATA = '/9j/';
+        this.PREFIX_PNG_DATA = 'iVBORw0KGgo';
+    }
     // public encode(text: string): string {
     //     return Buffer.from(text).toString('base64');
     // }
@@ -151,7 +154,7 @@ class Base64Client {
             return Buffer.from(pdfBytes);
         });
     }
-    static isJpeg(value) {
+    isJpeg(value) {
         if (type_utils_n_daira_1.ValidateStringUtil.isBase64(value) === false) {
             return false;
         }
@@ -167,7 +170,7 @@ class Base64Client {
         }
         return value.startsWith(this.PREFIX_JPEG_DATA);
     }
-    static isPng(value) {
+    isPng(value) {
         if (type_utils_n_daira_1.ValidateStringUtil.isBase64(value) === false) {
             return false;
         }
@@ -183,7 +186,7 @@ class Base64Client {
         }
         return value.startsWith(this.PREFIX_PNG_DATA);
     }
-    static tryConvertToPng(base64Value) {
+    tryConvertToPng(base64Value) {
         return __awaiter(this, void 0, void 0, function* () {
             if (type_utils_n_daira_1.ValidateStringUtil.isBase64(base64Value) === false) {
                 return false;
@@ -208,5 +211,3 @@ class Base64Client {
     }
 }
 exports.Base64Client = Base64Client;
-Base64Client.PREFIX_JPEG_DATA = '/9j/';
-Base64Client.PREFIX_PNG_DATA = 'iVBORw0KGgo';
