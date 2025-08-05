@@ -220,4 +220,69 @@ export class Base64Client {
 
         return false;
     }
+
+    public async resizeImage(base64Data: string, toSize: {w: number} | {h: number} | {w: number; h: number; func: 'max' | 'min'}| {rate: number}): Promise<string> {
+        if (ValidateStringUtil.isBase64(base64Data) === false) {
+            throw new Error("The specified data is not in base64 format");
+        }
+
+        const imageBuffer = Buffer.from(base64Data, 'base64');
+        const metadata = await sharp(imageBuffer).metadata();
+        const { width, height, format } = metadata;
+        if (width === undefined || height === undefined) {
+            throw new Error("Failed to retrieve image dimensions");
+        }
+        
+        let rate = 1;
+        if ('rate' in toSize) {
+            rate = toSize.rate;
+        } else if ('w' in toSize && 'h' in toSize && 'func' in toSize) {
+            const wRate = toSize.w / width;
+            const hRate = toSize.h / height;
+            switch (toSize.func) {
+                case 'max':
+                    rate = Math.max(wRate, hRate);
+                    break;
+                case 'min':
+                    rate = Math.min(wRate, hRate);
+                    break;
+            }
+
+        } else if ('w' in toSize) {
+            rate = toSize.w / width;
+        } else if ('h' in toSize) {
+            rate = toSize.h / height;
+        }
+
+        // 画像は1倍より大きくできないので
+        if (rate >= 1 || rate <= 0) {
+            return base64Data;
+        }
+
+        let resizedImage: Buffer;
+
+        // フォーマットに応じて処理を分岐
+        const targetWidth = Math.round(width * rate);
+        const targetHeight = Math.round(height * rate);
+        if (format === 'png') {
+            resizedImage = await sharp(imageBuffer)
+                .resize(targetWidth, targetHeight, {
+                    fit: 'inside',
+                    withoutEnlargement: true
+                })
+                .png({ quality: 90 })
+                .toBuffer();
+        } else {
+            // JPEG、その他のフォーマット
+            resizedImage = await sharp(imageBuffer)
+                .resize(targetWidth, targetHeight, {
+                    fit: 'inside',
+                    withoutEnlargement: true
+                })
+                .jpeg({ quality: 90 })
+                .toBuffer();
+        }
+
+        return resizedImage.toString('base64');
+    }
 }

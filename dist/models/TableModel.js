@@ -334,7 +334,7 @@ class TableModel {
         let message = this.errorMessages[type];
         const name = (column.alias === undefined || column.alias === '') ? columnName : column.alias;
         message = message.replace('{name}', name);
-        if (message.includes("{length}") && (column.type === 'string' || column.type !== 'string[]')) {
+        if (message.includes("{length}") && (column.type === 'string' || column.type === 'string[]')) {
             message = message.replace('{length}', ((_a = column.length) !== null && _a !== void 0 ? _a : '未設定').toString());
         }
         throw new Exception_1.UnprocessableException(code, message);

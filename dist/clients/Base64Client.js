@@ -209,5 +209,68 @@ class Base64Client {
             return false;
         });
     }
+    resizeImage(base64Data, toSize) {
+        return __awaiter(this, void 0, void 0, function* () {
+            if (type_utils_n_daira_1.ValidateStringUtil.isBase64(base64Data) === false) {
+                throw new Error("The specified data is not in base64 format");
+            }
+            const imageBuffer = Buffer.from(base64Data, 'base64');
+            const metadata = yield (0, sharp_1.default)(imageBuffer).metadata();
+            const { width, height, format } = metadata;
+            if (width === undefined || height === undefined) {
+                throw new Error("Failed to retrieve image dimensions");
+            }
+            let rate = 1;
+            if ('rate' in toSize) {
+                rate = toSize.rate;
+            }
+            else if ('w' in toSize && 'h' in toSize && 'func' in toSize) {
+                const wRate = toSize.w / width;
+                const hRate = toSize.h / height;
+                switch (toSize.func) {
+                    case 'max':
+                        rate = Math.max(wRate, hRate);
+                        break;
+                    case 'min':
+                        rate = Math.min(wRate, hRate);
+                        break;
+                }
+            }
+            else if ('w' in toSize) {
+                rate = toSize.w / width;
+            }
+            else if ('h' in toSize) {
+                rate = toSize.h / height;
+            }
+            // 画像は1倍より大きくできないので
+            if (rate >= 1 || rate <= 0) {
+                return base64Data;
+            }
+            let resizedImage;
+            // フォーマットに応じて処理を分岐
+            const targetWidth = Math.round(width * rate);
+            const targetHeight = Math.round(height * rate);
+            if (format === 'png') {
+                resizedImage = yield (0, sharp_1.default)(imageBuffer)
+                    .resize(targetWidth, targetHeight, {
+                    fit: 'inside',
+                    withoutEnlargement: true
+                })
+                    .png({ quality: 90 })
+                    .toBuffer();
+            }
+            else {
+                // JPEG、その他のフォーマット
+                resizedImage = yield (0, sharp_1.default)(imageBuffer)
+                    .resize(targetWidth, targetHeight, {
+                    fit: 'inside',
+                    withoutEnlargement: true
+                })
+                    .jpeg({ quality: 90 })
+                    .toBuffer();
+            }
+            return resizedImage.toString('base64');
+        });
+    }
 }
 exports.Base64Client = Base64Client;
