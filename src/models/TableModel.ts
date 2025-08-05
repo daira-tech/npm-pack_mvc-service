@@ -393,7 +393,7 @@ export class TableModel {
 
         const name = (column.alias === undefined || column.alias === '') ? columnName : column.alias;
         message = message.replace('{name}', name);
-        if (message.includes("{length}") && (column.type === 'string' || column.type !== 'string[]')) {
+        if (message.includes("{length}") && (column.type === 'string' || column.type === 'string[]')) {
             message = message.replace('{length}', (column.length ?? '未設定').toString());
         } 
 
