@@ -66,7 +66,6 @@ export class TableModel {
     public SortKeyword: TSortKeyword = 'asc';
     public Offset?: number;
     public Limit?: number;
-    public PageCount: number = 10;
 
     private selectExpressions: Array<string> = [];
     private joinConditions: Array<{
@@ -121,12 +120,6 @@ export class TableModel {
             sql += ` OFFSET ${this.Offset}`;
         }
         return sql;
-    }
-    set OffsetPage(value: number) {
-        if (value > 0) {
-            this.Limit = this.PageCount;
-            this.Offset = (value - 1) * this.PageCount;
-        }
     }
 
     private client: PoolClient | Pool;
@@ -369,18 +362,32 @@ export class TableModel {
         return data.rows as Array<T>;
     }
 
-    public async executeSelectWithCount<T = any>(): Promise<{ datas: Array<T>, count: number, lastPage: number}> {
+    public async executeSelectForPage<T = any>(pageCount: number, currentPage: number): Promise<{ datas: Array<T>, totalCount: number, lastPage: number, isLastData: boolean}> {
         if (this.selectExpressions.length == 0) {
             this.select();
         }
 
+        this.Limit = pageCount;
+        this.Offset = (currentPage - 1) * pageCount;
+
         let sql = ` SELECT ${this.selectExpressions.join(",")} ${this.createSqlFromJoinWhereSortLimit}`;
+        let tempVars = [...this.vars]; // 後のthis.createSqlFromJoinWhereでvarの追加をしてしまうので、上の時点でvarを決定する
+        this.vars = []; // ここで初期化しないと、次のクエリで途中の連番になる
+
         let countSql = ` SELECT COUNT(*) as "count" ${this.createSqlFromJoinWhere}`;
-        let tempVars = [...this.vars];
+        
         const data = await this.executeQuery(sql, tempVars);
 
         const countData = await this.executeQuery(countSql, tempVars);
-        return { datas: data.rows as Array<T>, count: Number(countData.rows[0].count), lastPage: Math.ceil(Number(countData.rows[0].count) / this.PageCount)};
+
+        const totalCount = Number(countData.rows[0].count);
+        const lastPage = Math.ceil(Number(countData.rows[0].count) / pageCount);
+        return { 
+            datas: data.rows as Array<T>, 
+            totalCount: totalCount, 
+            lastPage: lastPage,
+            isLastData: currentPage >= lastPage
+        };
     }
 
     protected readonly errorMessages: TOptionErrorMessage = 
@@ -610,7 +617,6 @@ export class TableModel {
         this.vars = [];
         this.Offset = undefined;
         this.Limit = undefined;
-        this.PageCount = 10;
 
         let sql = '';
         if (typeof param1 === 'string') {

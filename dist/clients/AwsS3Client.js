@@ -15,12 +15,17 @@ var __asyncValues = (this && this.__asyncValues) || function (o) {
     function verb(n) { i[n] = o[n] && function (v) { return new Promise(function (resolve, reject) { v = o[n](v), settle(resolve, reject, v.done, v.value); }); }; }
     function settle(resolve, reject, d, v) { Promise.resolve(v).then(function(v) { resolve({ value: v, done: d }); }, reject); }
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.AwsS3Client = void 0;
 const client_s3_1 = require("@aws-sdk/client-s3");
 const Base64Client_1 = require("./Base64Client");
+const Exception_1 = require("../exceptions/Exception");
+const axios_1 = __importDefault(require("axios"));
 class AwsS3Client {
-    get urlPrefix() {
+    get UrlPrefix() {
         return `https://${this.bucketName}.s3.${this.region}.amazonaws.com`;
     }
     constructor(params) {
@@ -55,7 +60,7 @@ class AwsS3Client {
     }
     url(path, fileName = '') {
         path = path.replace(/^\/|\/$/g, '');
-        let url = `${this.urlPrefix}`;
+        let url = `${this.UrlPrefix}`;
         if (path !== '') {
             url += '/' + path;
         }
@@ -122,7 +127,45 @@ class AwsS3Client {
                 ContentType: type
             });
             yield this.client.send(command);
-            return `${this.urlPrefix}/${key}`;
+            return `${this.UrlPrefix}/${key}`;
+        });
+    }
+    uploadFromUrl(path, fileName, url) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                // URLからデータを取得
+                const response = yield axios_1.default.get(url, {
+                    responseType: 'arraybuffer',
+                    timeout: 30000,
+                });
+                // Content-Typeを取得
+                const contentType = response.headers['content-type'] || 'application/octet-stream';
+                const key = this.makeKey(path, fileName);
+                const command = new client_s3_1.PutObjectCommand({
+                    Bucket: this.bucketName,
+                    Key: key,
+                    Body: Buffer.from(response.data),
+                    ContentType: contentType,
+                    ContentLength: response.data.length
+                });
+                yield this.client.send(command);
+                // アップロードされたファイルのURLを返す
+                return this.url(path, fileName);
+            }
+            catch (error) {
+                if (axios_1.default.isAxiosError(error)) {
+                    if (error.response) {
+                        throw new Exception_1.UnprocessableException(`Failed to download from URL. HTTP ${error.response.status}: ${error.response.statusText}`);
+                    }
+                    else if (error.request) {
+                        throw new Exception_1.UnprocessableException('Failed to connect to the URL. Please check if the URL is accessible.');
+                    }
+                    else {
+                        throw new Exception_1.UnprocessableException('Invalid URL format.');
+                    }
+                }
+                throw new Exception_1.UnprocessableException('Failed to upload from URL.');
+            }
         });
     }
     uploadStackText(path, fileName, text) {
@@ -262,6 +305,28 @@ class AwsS3Client {
                     },
                 });
                 yield this.client.send(deleteCommand);
+            }
+        });
+    }
+    deleteFromUrl(url_1) {
+        return __awaiter(this, arguments, void 0, function* (url, isFileUrl = true) {
+            const path = url.replace(this.UrlPrefix + '/', '');
+            if (url === path) {
+                throw new Exception_1.UnprocessableException('The specified URL cannot be deleted because the bucket and region do not match.');
+            }
+            if (path.trim() === "") {
+                throw new Exception_1.UnprocessableException('This URL is invalid.');
+            }
+            if (isFileUrl) {
+                const pathSplits = path.split('/');
+                const file = pathSplits.pop();
+                if (file === undefined) {
+                    throw new Exception_1.UnprocessableException('This URL is invalid.');
+                }
+                yield this.deleteFile(pathSplits.join('/'), file);
+            }
+            else {
+                yield this.deleteDir(path);
             }
         });
     }

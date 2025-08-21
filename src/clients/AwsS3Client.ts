@@ -1,12 +1,14 @@
 import { _Object, DeleteObjectsCommand, GetObjectCommand, ListObjectsV2Command, PutObjectCommand, S3Client, ScanRange } from '@aws-sdk/client-s3';
 import { Base64Client } from './Base64Client';
+import { UnprocessableException } from '../exceptions/Exception';
+import axios from 'axios';
 
 export class AwsS3Client {
     private client: S3Client;
 
     private readonly bucketName;
     private readonly region;
-    get urlPrefix(): string {
+    get UrlPrefix(): string {
         return `https://${this.bucketName}.s3.${this.region}.amazonaws.com`;
     }
 
@@ -49,7 +51,7 @@ export class AwsS3Client {
 
     public url(path: string, fileName: string = '') {
         path = path.replace(/^\/|\/$/g, '');
-        let url = `${this.urlPrefix}`;
+        let url = `${this.UrlPrefix}`;
         if (path !== '') {
             url += '/' + path;
         }
@@ -118,7 +120,46 @@ export class AwsS3Client {
         });
         await this.client.send(command);
         
-        return `${this.urlPrefix}/${key}`;
+        return `${this.UrlPrefix}/${key}`;
+    }
+
+    public async uploadFromUrl(path: string, fileName: string, url: string): Promise<string> {
+        try {
+            // URLからデータを取得
+            const response = await axios.get(url, {
+                responseType: 'arraybuffer',
+                timeout: 30000,
+            });
+
+            // Content-Typeを取得
+            const contentType = response.headers['content-type'] || 'application/octet-stream';
+            
+            const key = this.makeKey(path, fileName);
+            const command = new PutObjectCommand({
+                Bucket: this.bucketName,
+                Key: key,
+                Body: Buffer.from(response.data),
+                ContentType: contentType,
+                ContentLength: response.data.length
+            });
+            
+            await this.client.send(command);
+            
+            // アップロードされたファイルのURLを返す
+            return this.url(path, fileName);
+            
+        } catch (error) {
+            if (axios.isAxiosError(error)) {
+                if (error.response) {
+                    throw new UnprocessableException(`Failed to download from URL. HTTP ${error.response.status}: ${error.response.statusText}`);
+                } else if (error.request) {
+                    throw new UnprocessableException('Failed to connect to the URL. Please check if the URL is accessible.');
+                } else {
+                    throw new UnprocessableException('Invalid URL format.');
+                }
+            }
+            throw new UnprocessableException('Failed to upload from URL.');
+        }
     }
 
     public async uploadStackText(path: string, fileName: string, text: string) {
@@ -232,6 +273,28 @@ export class AwsS3Client {
                 },
             });
             await this.client.send(deleteCommand);
+        }
+    }
+
+    public async deleteFromUrl(url: string, isFileUrl: boolean = true): Promise<void> {
+        const path = url.replace(this.UrlPrefix + '/', '');
+        if (url === path) {
+            throw new UnprocessableException('The specified URL cannot be deleted because the bucket and region do not match.');
+        }
+
+        if (path.trim() === "") {
+            throw new UnprocessableException('This URL is invalid.');
+        }
+
+        if (isFileUrl) {
+            const pathSplits = path.split('/');
+            const file = pathSplits.pop();
+            if (file === undefined) {
+                throw new UnprocessableException('This URL is invalid.');
+            }
+            await this.deleteFile(pathSplits.join('/'), file);
+        } else {
+            await this.deleteDir(path);
         }
     }
 }

@@ -94,12 +94,6 @@ class TableModel {
         }
         return sql;
     }
-    set OffsetPage(value) {
-        if (value > 0) {
-            this.Limit = this.PageCount;
-            this.Offset = (value - 1) * this.PageCount;
-        }
-    }
     get Client() {
         return this.client;
     }
@@ -112,7 +106,6 @@ class TableModel {
         this.references = [];
         this.IsOutputLog = false;
         this.SortKeyword = 'asc';
-        this.PageCount = 10;
         this.selectExpressions = [];
         this.joinConditions = [];
         this.whereExpressions = [];
@@ -315,17 +308,27 @@ class TableModel {
             return data.rows;
         });
     }
-    executeSelectWithCount() {
+    executeSelectForPage(pageCount, currentPage) {
         return __awaiter(this, void 0, void 0, function* () {
             if (this.selectExpressions.length == 0) {
                 this.select();
             }
+            this.Limit = pageCount;
+            this.Offset = (currentPage - 1) * pageCount;
             let sql = ` SELECT ${this.selectExpressions.join(",")} ${this.createSqlFromJoinWhereSortLimit}`;
+            let tempVars = [...this.vars]; // 後のthis.createSqlFromJoinWhereでvarの追加をしてしまうので、上の時点でvarを決定する
+            this.vars = []; // ここで初期化しないと、次のクエリで途中の連番になる
             let countSql = ` SELECT COUNT(*) as "count" ${this.createSqlFromJoinWhere}`;
-            let tempVars = [...this.vars];
             const data = yield this.executeQuery(sql, tempVars);
             const countData = yield this.executeQuery(countSql, tempVars);
-            return { datas: data.rows, count: Number(countData.rows[0].count), lastPage: Math.ceil(Number(countData.rows[0].count) / this.PageCount) };
+            const totalCount = Number(countData.rows[0].count);
+            const lastPage = Math.ceil(Number(countData.rows[0].count) / pageCount);
+            return {
+                datas: data.rows,
+                totalCount: totalCount,
+                lastPage: lastPage,
+                isLastData: currentPage >= lastPage
+            };
         });
     }
     throwException(code, type, columnName, value) {
@@ -531,7 +534,6 @@ class TableModel {
             this.vars = [];
             this.Offset = undefined;
             this.Limit = undefined;
-            this.PageCount = 10;
             let sql = '';
             if (typeof param1 === 'string') {
                 sql = param1;
