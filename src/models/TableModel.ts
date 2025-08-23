@@ -370,15 +370,20 @@ export class TableModel {
         this.Limit = pageCount;
         this.Offset = (currentPage - 1) * pageCount;
 
+
+        const tempVars = [...this.vars];
+        const tempWhereExpression = [...this.whereExpressions];
+        const tempJoinConditions = [...this.joinConditions];
+
         let sql = ` SELECT ${this.selectExpressions.join(",")} ${this.createSqlFromJoinWhereSortLimit}`;
-        let tempVars = [...this.vars]; // 後のthis.createSqlFromJoinWhereでvarの追加をしてしまうので、上の時点でvarを決定する
-        this.vars = []; // ここで初期化しないと、次のクエリで途中の連番になる
+        const data = await this.executeQuery(sql, this.vars);
 
+        this.vars = tempVars;
+        this.whereExpressions = tempWhereExpression;
+        this.joinConditions = tempJoinConditions;
         let countSql = ` SELECT COUNT(*) as "count" ${this.createSqlFromJoinWhere}`;
-        
-        const data = await this.executeQuery(sql, tempVars);
 
-        const countData = await this.executeQuery(countSql, tempVars);
+        const countData = await this.executeQuery(countSql, this.vars);
 
         const totalCount = Number(countData.rows[0].count);
         const lastPage = Math.ceil(Number(countData.rows[0].count) / pageCount);
