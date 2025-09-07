@@ -16,3 +16,8 @@ export { createTableDoc } from './models/TableDoc';
 export { MigrateTable } from './models/MigrateTable';
 export { MigrateDatabase } from './models/MigrateDatabase';
 export { migrate, rollback } from './models/MigrateRollback';
+
+// cron
+export { DayType, MonthType, DateType, HourType, MinuteSecondType } from './cron/CronType';
+export { BaseCron } from './cron/BaseCron';
+export { runCron } from './cron/CronExecuter';
