@@ -86,8 +86,16 @@ export class BaseCron {
     }
 
     public async tearDown() {
-        if (this.isExecuteRollback === false) {
-            this.rollback();
+        try {
+            if (this.isExecuteRollback === false) {
+                await this.rollback();
+            }
+        } finally {
+            // クライアント接続をリリース
+            if (this.client) {
+                this.client.release();
+                this.client = undefined;
+            }
         }
     }
 

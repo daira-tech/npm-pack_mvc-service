@@ -99,8 +99,17 @@ class BaseCron {
     }
     tearDown() {
         return __awaiter(this, void 0, void 0, function* () {
-            if (this.isExecuteRollback === false) {
-                this.rollback();
+            try {
+                if (this.isExecuteRollback === false) {
+                    yield this.rollback();
+                }
+            }
+            finally {
+                // クライアント接続をリリース
+                if (this.client) {
+                    this.client.release();
+                    this.client = undefined;
+                }
             }
         });
     }
