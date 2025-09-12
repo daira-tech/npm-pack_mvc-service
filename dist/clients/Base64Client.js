@@ -13,6 +13,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Base64Client = void 0;
+const axios_1 = __importDefault(require("axios"));
 const pdf_lib_1 = require("pdf-lib");
 const sharp_1 = __importDefault(require("sharp"));
 const type_utils_n_daira_1 = require("type-utils-n-daira");
@@ -270,6 +271,21 @@ class Base64Client {
                     .toBuffer();
             }
             return resizedImage.toString('base64');
+        });
+    }
+    fetchImageAsBase64(imageUrl) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const res = yield axios_1.default.get(imageUrl, {
+                responseType: 'arraybuffer' // これを追加
+            });
+            // Content-Typeをチェック
+            const contentType = res.headers['content-type'];
+            if (!(contentType === null || contentType === void 0 ? void 0 : contentType.startsWith('image/'))) {
+                throw new Error(`Invalid content type: ${contentType}. Expected image/*`);
+            }
+            // ArrayBufferをBufferに変換してBase64にエンコード
+            const buffer = Buffer.from(res.data);
+            return buffer.toString('base64');
         });
     }
 }

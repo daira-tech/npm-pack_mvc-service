@@ -1,3 +1,4 @@
+import axios from 'axios';
 import { PDFDocument } from 'pdf-lib';
 import sharp from 'sharp';
 import { ValidateStringUtil } from 'type-utils-n-daira';
@@ -284,5 +285,21 @@ export class Base64Client {
         }
 
         return resizedImage.toString('base64');
+    }
+
+    public async fetchImageAsBase64(imageUrl: string): Promise<string> {
+        const res = await axios.get(imageUrl, {
+            responseType: 'arraybuffer'  // これを追加
+        });
+
+        // Content-Typeをチェック
+        const contentType = res.headers['content-type'];
+        if (!contentType?.startsWith('image/')) {
+            throw new Error(`Invalid content type: ${contentType}. Expected image/*`);
+        }
+
+        // ArrayBufferをBufferに変換してBase64にエンコード
+        const buffer = Buffer.from(res.data);
+        return buffer.toString('base64');
     }
 }
