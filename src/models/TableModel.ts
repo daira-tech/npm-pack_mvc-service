@@ -126,10 +126,7 @@ export class TableModel {
     get Client(): PoolClient | Pool {
         return this.client;
     }
-    constructor(client: Pool);
-    constructor(client: Pool, tableAlias: string);
-    constructor(client: PoolClient);
-    constructor(client: PoolClient, tableAlias: string);
+
     constructor(client: Pool | PoolClient, tableAlias?: string) {
         this.client = client;
         if (tableAlias !== undefined && tableAlias.trim() !== '') {
