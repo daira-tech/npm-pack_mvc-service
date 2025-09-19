@@ -3,6 +3,11 @@ import { Base64Client } from './Base64Client';
 import { UnprocessableException } from '../exceptions/Exception';
 import axios from 'axios';
 
+type IUploadResponse = {
+    url: string;
+    fileName: string;
+}
+
 export class AwsS3Client {
     private client: S3Client;
 
@@ -96,7 +101,7 @@ export class AwsS3Client {
         await this.client.send(command);
     }
 
-    public async uploadBase64Data(path: string, fileName: string, base64Data: string) : Promise<string> {
+    public async uploadBase64Data(path: string, fileName: string, base64Data: string) : Promise<IUploadResponse> {
         const base64Client = new Base64Client();
 
         const type = base64Client.getMimeType(base64Data);
@@ -120,10 +125,13 @@ export class AwsS3Client {
         });
         await this.client.send(command);
         
-        return `${this.UrlPrefix}/${key}`;
+        return {
+            url: `${this.UrlPrefix}/${key}`,
+            fileName: fileName
+        }
     }
 
-    public async uploadFromUrl(path: string, fileName: string, url: string): Promise<string> {
+    public async uploadFromUrl(path: string, fileName: string, url: string): Promise<IUploadResponse> {
         try {
             // URLからデータを取得
             const response = await axios.get(url, {
@@ -146,8 +154,10 @@ export class AwsS3Client {
             await this.client.send(command);
             
             // アップロードされたファイルのURLを返す
-            return this.url(path, fileName);
-            
+            return {
+                url: this.url(path, fileName),
+                fileName: fileName
+            }
         } catch (error) {
             if (axios.isAxiosError(error)) {
                 if (error.response) {

@@ -127,7 +127,10 @@ class AwsS3Client {
                 ContentType: type
             });
             yield this.client.send(command);
-            return `${this.UrlPrefix}/${key}`;
+            return {
+                url: `${this.UrlPrefix}/${key}`,
+                fileName: fileName
+            };
         });
     }
     uploadFromUrl(path, fileName, url) {
@@ -150,7 +153,10 @@ class AwsS3Client {
                 });
                 yield this.client.send(command);
                 // アップロードされたファイルのURLを返す
-                return this.url(path, fileName);
+                return {
+                    url: this.url(path, fileName),
+                    fileName: fileName
+                };
             }
             catch (error) {
                 if (axios_1.default.isAxiosError(error)) {
