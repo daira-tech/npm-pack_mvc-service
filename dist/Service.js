@@ -140,6 +140,13 @@ class Service {
             });
             return;
         }
+        else if (ex instanceof Exception_1.NotFoundException) {
+            this.res.status(404).json({
+                errorCode: `${this.apiCode}-${ex.ErrorId}`,
+                errorMessage: ex.message
+            });
+            return;
+        }
         this.res.status(500).json({
             message: 'Internal server error'
         });
@@ -260,7 +267,7 @@ class Service {
             }
             catch (ex) {
                 let response = ex.response;
-                if (response && [400, 401, 403, 409, 422].includes(response.status)) {
+                if (response && [400, 401, 403, 404, 409, 422].includes(response.status)) {
                     return response;
                 }
                 throw ex;

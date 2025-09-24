@@ -121,6 +121,12 @@ export class Service {
                 errorMessage : ex.message
             });
             return;
+        } else if (ex instanceof NotFoundException) {
+            this.res.status(404).json({
+                errorCode : `${this.apiCode}-${ex.ErrorId}`,
+                errorMessage : ex.message
+            });
+            return;
         }
 
         this.res.status(500).json({
@@ -254,7 +260,7 @@ export class Service {
             }
         } catch (ex) {
             let response = (ex as any).response as AxiosResponse<TResponse>;
-            if (response && [400, 401, 403, 409, 422].includes(response.status)) {
+            if (response && [400, 401, 403, 404, 409, 422].includes(response.status)) {
                 return response;
             }
             throw ex;

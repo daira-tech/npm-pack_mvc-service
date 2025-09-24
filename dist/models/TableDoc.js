@@ -217,7 +217,7 @@ td:nth-child(11) {
             html += `
         <div class="table-wrapper">
             <div class="table-title-wrapper">
-                <div class="table-title-left">${model.TableName} ${model.TableDescription !== '' ? ` : ${model.TableDescription}` : ''}</div>
+                <div class="table-title-left">${model.Id !== "" ? `[${model.Id}] ` : ""}${model.TableName} ${model.TableDescription !== '' ? ` : ${model.TableDescription}` : ''}</div>
                 <button class="table-title-right" onclick="${createFuncName}()">Copy Create Query</button>
             </div>
             <div class="comment-wrapper">${model.Comment.replace('\n', '<br>')}</div>

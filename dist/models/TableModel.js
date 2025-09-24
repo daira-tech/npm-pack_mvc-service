@@ -22,6 +22,7 @@ const ExpressionClient_1 = __importDefault(require("./ExpressionClient"));
 const UpdateExpression_1 = __importDefault(require("./SqlUtils/UpdateExpression"));
 const MessageUtil_1 = __importDefault(require("./Utils/MessageUtil"));
 class TableModel {
+    get Id() { return this.id; }
     get DbName() { return this.dbName; }
     get TableName() {
         if (this.tableName === "") {
@@ -98,6 +99,7 @@ class TableModel {
         return this.client;
     }
     constructor(client, tableAlias) {
+        this.id = "";
         this.dbName = "default";
         this.tableName = "";
         this.tableDescription = "";
@@ -344,7 +346,16 @@ class TableModel {
         if (message.includes("{length}") && (column.type === 'string' || column.type === 'string[]')) {
             message = message.replace('{length}', ((_a = column.length) !== null && _a !== void 0 ? _a : '未設定').toString());
         }
-        throw new Exception_1.UnprocessableException(code, message);
+        this.throwUnprocessableException(code, message);
+    }
+    throwDbCoflictException(code, message) {
+        throw new Exception_1.DbConflictException(`${this.id}-${code}`, message);
+    }
+    throwUnprocessableException(code, message) {
+        throw new Exception_1.UnprocessableException(`${this.id}-${code}`, message);
+    }
+    throwNotFoundException(code, message) {
+        throw new Exception_1.NotFoundException(`${this.id}-${code}`, message);
     }
     validateOptions(options, isInsert, pkOrId) {
         return __awaiter(this, void 0, void 0, function* () {
@@ -406,14 +417,14 @@ class TableModel {
                     // 一部の値がnullの場合はエラー
                     if (refValues.some(value => value === null || value === undefined)) {
                         const name = ref.columns.map(col => { var _a; return (_a = this.getColumn(col.target).alias) !== null && _a !== void 0 ? _a : this.getColumn(col.target).columnName; }).join(',');
-                        throw new Exception_1.UnprocessableException("006", this.errorMessages.null.replace('{name}', name));
+                        this.throwUnprocessableException("006", this.errorMessages.null.replace('{name}', name));
                     }
                     let refIndex = 1;
                     const sql = `SELECT COUNT(*) as count FROM ${ref.table} WHERE ${ref.columns.map(col => `${col.ref} = $${refIndex++}`).join(" AND ")}`;
                     const datas = yield this.clientQuery(sql, refValues);
                     if (datas.rows[0].count == "0") {
                         const name = ref.columns.map(col => { var _a; return (_a = this.getColumn(col.target).alias) !== null && _a !== void 0 ? _a : this.getColumn(col.target).columnName; }).join(',');
-                        throw new Exception_1.DbConflictException("007", this.errorMessages.fk.replace('{name}', name));
+                        this.throwDbCoflictException("007", this.errorMessages.fk.replace('{name}', name));
                     }
                 }
             }
@@ -452,7 +463,7 @@ class TableModel {
             const sql = updateSetQuery.expression + ' WHERE ' + whereQuery.expression;
             const data = yield this.executeQuery(sql, whereQuery.vars);
             if (data.rowCount !== 1) {
-                throw new Exception_1.UnprocessableException("201", this.errorMessages.find.replace('{pks}', ((_a = whereQuery.vars) !== null && _a !== void 0 ? _a : []).join(',')));
+                this.throwUnprocessableException("201", this.errorMessages.find.replace('{pks}', ((_a = whereQuery.vars) !== null && _a !== void 0 ? _a : []).join(',')));
             }
         });
     }
@@ -470,7 +481,7 @@ class TableModel {
             const sql = `DELETE FROM ${this.TableName} WHERE ${whereQuery.expression}`;
             const data = yield this.executeQuery(sql, whereQuery.vars);
             if (data.rowCount !== 1) {
-                throw new Exception_1.UnprocessableException("301", this.errorMessages.find.replace('{pks}', ((_a = whereQuery.vars) !== null && _a !== void 0 ? _a : []).join(',')));
+                this.throwUnprocessableException("301", this.errorMessages.find.replace('{pks}', ((_a = whereQuery.vars) !== null && _a !== void 0 ? _a : []).join(',')));
             }
         });
     }

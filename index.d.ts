@@ -143,6 +143,12 @@ declare module 'pg-mvc-service' {
         constructor(errorId: string, message?: string);
     }
 
+    export class NotFoundException extends Error {
+        private errorId: string;
+        get ErrorId(): string;
+        constructor(errorId: string, message?: string);
+    }
+
     export class UnprocessableException extends Error {
         private errorId: string;
         get ErrorId(): string;

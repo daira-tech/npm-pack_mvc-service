@@ -4,13 +4,15 @@ import ValidateValueUtil from './SqlUtils/ValidateValueUtil';
 import SelectExpression from './SqlUtils/SelectExpression';
 import WhereExpression from './SqlUtils/WhereExpression';
 import ValidateClient from './ValidateClient';
-import { DbConflictException, UnprocessableException } from '../exceptions/Exception';
+import { DbConflictException, NotFoundException, UnprocessableException } from '../exceptions/Exception';
 import ExpressionClient from './ExpressionClient';
 import UpdateExpression from './SqlUtils/UpdateExpression';
 import MessageUtil, { TOptionErrorMessage } from './Utils/MessageUtil';
 
 export class TableModel {
 
+    protected readonly id: string = "";
+    get Id(): string { return this.id; }
     protected readonly dbName: string = "default";
     get DbName(): string { return this.dbName; }
     protected readonly tableName: string = "";
@@ -406,7 +408,19 @@ export class TableModel {
             message = message.replace('{length}', (column.length ?? '未設定').toString());
         } 
 
-        throw new UnprocessableException(code, message);
+        this.throwUnprocessableException(code, message);
+    }
+
+    protected throwDbCoflictException(code: string, message: string): never {
+        throw new DbConflictException(`${this.id}-${code}`, message);
+    }
+
+    protected throwUnprocessableException(code: string, message: string): never {
+        throw new UnprocessableException(`${this.id}-${code}`, message);
+    }
+
+    protected throwNotFoundException(code: string, message: string): never {
+        throw new NotFoundException(`${this.id}-${code}`, message);
     }
 
     protected async validateOptions(options: {[key: string]: any}, isInsert: boolean, pkOrId?: string | number | boolean | {[key: string]: any}): Promise<void> {
@@ -476,7 +490,7 @@ export class TableModel {
                 // 一部の値がnullの場合はエラー
                 if (refValues.some(value => value === null || value === undefined)) {
                     const name = ref.columns.map(col => this.getColumn(col.target).alias ?? this.getColumn(col.target).columnName).join(',');
-                    throw new UnprocessableException("006", this.errorMessages.null.replace('{name}', name));
+                    this.throwUnprocessableException("006", this.errorMessages.null.replace('{name}', name));
                 }
 
                 let refIndex = 1;
@@ -484,7 +498,7 @@ export class TableModel {
                 const datas = await this.clientQuery(sql, refValues);
                 if (datas.rows[0].count == "0") {
                     const name = ref.columns.map(col => this.getColumn(col.target).alias ?? this.getColumn(col.target).columnName).join(',');
-                    throw new DbConflictException("007", this.errorMessages.fk.replace('{name}', name));
+                    this.throwDbCoflictException("007", this.errorMessages.fk.replace('{name}', name))
                 }
             }
         }
@@ -525,7 +539,7 @@ export class TableModel {
         const sql = updateSetQuery.expression + ' WHERE ' + whereQuery.expression;
         const data = await this.executeQuery(sql, whereQuery.vars);
         if (data.rowCount !== 1) {
-            throw new UnprocessableException("201", this.errorMessages.find.replace('{pks}', (whereQuery.vars ?? []).join(',')));
+            this.throwUnprocessableException("201", this.errorMessages.find.replace('{pks}', (whereQuery.vars ?? []).join(',')));
         }
     }
 
@@ -541,7 +555,7 @@ export class TableModel {
         const sql = `DELETE FROM ${this.TableName} WHERE ${whereQuery.expression}`;
         const data = await this.executeQuery(sql, whereQuery.vars);
         if (data.rowCount !== 1) {
-            throw new UnprocessableException("301", this.errorMessages.find.replace('{pks}', (whereQuery.vars ?? []).join(',')));
+            this.throwUnprocessableException("301", this.errorMessages.find.replace('{pks}', (whereQuery.vars ?? []).join(',')));
         }
     }
 

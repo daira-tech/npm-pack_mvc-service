@@ -1,5 +1,5 @@
 export { Service } from './Service';
-export { MaintenanceException, AuthException, InputErrorException, ForbiddenException, DbConflictException, UnprocessableException } from './exceptions/Exception';
+export { MaintenanceException, AuthException, InputErrorException, ForbiddenException, DbConflictException, UnprocessableException, NotFoundException } from './exceptions/Exception';
 export { createSwagger } from './documents/Swagger';
 export { AwsS3Client } from './clients/AwsS3Client';
 export { Base64Client } from './clients/Base64Client';
