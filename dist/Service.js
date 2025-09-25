@@ -44,12 +44,12 @@ class Service {
         this.response = new ResponseType_1.ResponseType();
         this.isTest = process.env.NODE_ENV === 'test';
         this.tags = [];
-        this.dbUser = this.isTest ? process.env.TEST_DB_USER : process.env.DB_USER;
-        this.dbHost = this.isTest ? process.env.TEST_DB_HOST : process.env.DB_HOST;
-        this.dbName = this.isTest ? process.env.TEST_DB_DATABASE : process.env.DB_DATABASE;
-        this.dbPassword = this.isTest ? process.env.TEST_DB_PASSWORD : process.env.DB_PASSWORD;
-        this.dbPort = this.isTest ? process.env.TEST_DB_PORT : process.env.DB_PORT;
-        this.dbIsSslConnect = (this.isTest ? process.env.TEST_DB_IS_SSL : process.env.DB_IS_SSL) === 'true';
+        this.dbUser = process.env.DB_USER;
+        this.dbHost = process.env.DB_HOST;
+        this.dbName = process.env.DB_DATABASE;
+        this.dbPassword = process.env.DB_PASSWORD;
+        this.dbPort = process.env.DB_PORT;
+        this.dbIsSslConnect = process.env.DB_IS_SSL === 'true';
         this.isExecuteRollback = false;
         this.req = request;
         this.res = response;
@@ -147,9 +147,16 @@ class Service {
             });
             return;
         }
-        this.res.status(500).json({
-            message: 'Internal server error'
-        });
+        if (this.isTest) {
+            this.res.status(500).json({
+                message: ex.stack
+            });
+        }
+        else {
+            this.res.status(500).json({
+                message: 'Internal server error'
+            });
+        }
         return;
     }
     get Pool() {

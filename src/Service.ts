@@ -45,12 +45,12 @@ export class Service {
         await this.middleware();
     }
 
-    protected dbUser?: string = this.isTest ? process.env.TEST_DB_USER : process.env.DB_USER;
-    protected dbHost?: string = this.isTest ? process.env.TEST_DB_HOST : process.env.DB_HOST;
-    protected dbName?: string = this.isTest ? process.env.TEST_DB_DATABASE : process.env.DB_DATABASE;
-    protected dbPassword?: string = this.isTest ? process.env.TEST_DB_PASSWORD : process.env.DB_PASSWORD;
-    protected dbPort?: string | number = this.isTest ? process.env.TEST_DB_PORT : process.env.DB_PORT;
-    protected dbIsSslConnect: boolean = (this.isTest ? process.env.TEST_DB_IS_SSL : process.env.DB_IS_SSL) === 'true';
+    protected dbUser?: string = process.env.DB_USER;
+    protected dbHost?: string = process.env.DB_HOST;
+    protected dbName?: string = process.env.DB_DATABASE;
+    protected dbPassword?: string = process.env.DB_PASSWORD;
+    protected dbPort?: string | number = process.env.DB_PORT;
+    protected dbIsSslConnect: boolean = process.env.DB_IS_SSL === 'true';
     private setPool(): Pool {
         if (this.dbUser === undefined) {
             throw new Error("Database user is not configured");
@@ -129,9 +129,16 @@ export class Service {
             return;
         }
 
-        this.res.status(500).json({
-            message : 'Internal server error'
-        });
+        if (this.isTest) {
+            this.res.status(500).json({
+                message : ex.stack
+            });
+        } else {
+            this.res.status(500).json({
+                message : 'Internal server error'
+            });
+        }
+
         return;
     }
 
