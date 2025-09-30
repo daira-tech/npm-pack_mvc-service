@@ -83,15 +83,20 @@ export default class SelectExpression {
      * @returns The SQL string converted to the specified format.
      *          指定された形式に変換されたSQLの文字列。
      */
-    static createDateTime(column: string | TColumnInfo, to: 'date' | 'time' | 'datetime') {
-        const columnQuery = typeof column === 'string' ? column : column.model.getColumn(column.name).expression;
+    public static createDateTime(column: TColumnInfo, to: 'date' | 'time' | 'datetime') {
+        const columnInfo = column.model.getColumn(column.name);
+
+        if (['date', 'time', 'timestamp'].includes(columnInfo.type) === false) {
+            return '';
+        }
+
         switch (to) {
             case 'date':
-                return `to_char(${columnQuery}, 'YYYY-MM-DD')`;
+                return `to_char(${columnInfo.expression}, 'YYYY-MM-DD')`;
             case 'datetime':
-                return `to_char(${columnQuery}, 'YYYY-MM-DD HH24:mi:ss')`;
+                return `to_char(${columnInfo.expression}, 'YYYY-MM-DD HH24:mi:ss')`;
             case 'time':
-                return `to_char(${columnQuery}, 'HH24:mi:ss')`;
+                return `to_char(${columnInfo.expression}, 'HH24:mi:ss')`;
         }
     }
 }

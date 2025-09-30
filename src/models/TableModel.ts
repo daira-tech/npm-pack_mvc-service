@@ -240,6 +240,42 @@ export class TableModel {
     }
 
     /**
+     * 指定されたカラム情報がNULLの場合に、指定された値に変換して選択します。
+     * 
+     * @param columnInfo カラム情報。文字列または{name: string, model: TableModel}のオブジェクト。
+     * @param toValue NULLの場合に変換する値。
+     * @param alias 結果セットで使用するエイリアス名。
+     */
+    public selectNullToValue(columnInfo: string | {name: string, model: TableModel}, toValue: any, alias: string) {
+        this.vars.push(toValue);
+
+        if (typeof columnInfo === 'string') {
+            columnInfo = {name: columnInfo, model: this}
+        }
+
+        const column = columnInfo.model.getColumn(columnInfo.name);
+        this.selectExpressions.push(`COALESCE(${column.expression}, $${this.vars.length}) as "${alias}"`)
+    }
+
+
+    /**
+     * 指定されたカラムを特定のフォーマットの日付情報に変換し、SELECT句で使用します。
+     * 
+     * @param column カラム情報。文字列または{name: string, model: TableModel}のオブジェクト。
+     * @param to 変換先のフォーマットを指定します。'date'、'time'、'datetime'のいずれか。
+     * @param alias 結果セットで使用するエイリアス名。
+     */
+    public selectDateAsFormat(column: string | {name: string, model: TableModel}, to: 'date' | 'time' | 'datetime', alias: string) {
+        column = typeof column === 'string' ? {name: column, model: this} : column;
+        const columnInfo = column.model.getColumn(column.name);
+
+        if (['date', 'time', 'timestamp'].includes(columnInfo.type) === false) {
+            throw new Error('The first argument of the selectDateAsFormat method must specify a column of type date, time, or timestamp.');
+        }
+        this.selectExpressions.push(`${SelectExpression.createDateTime(column, to)} as "${alias}"`);
+    }
+
+    /**
      * 指定された条件に基づいてテーブルを結合します。
      * @param joinType 結合の種類を指定します
      * @param joinBaseModel 結合する対象のBaseModelインスタンスを指定します。
