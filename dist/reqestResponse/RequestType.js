@@ -33,7 +33,8 @@ class RequestType extends ReqResType_1.default {
             INVALID_DATETIME: '{property} must be a string in "YYYY-MM-DD hh:mi:ss" or "YYYY-MM-DDThh:mi:ss" format and a valid date and time. ({value})',
             INVALID_BASE64: '{property} must be in Base64 format. ({value})',
             INVALID_ENUM: '{property} must be in {enums}. ({value})',
-            INVALID_DICTIONAY: '{property} must be a valid dictionary key. ({value})',
+            INVALID_MAP_NUMBER: '{property} must be a valid number for a map key. ({value})',
+            INVALID_MAP_STRING: '{property} must be a valid string for a map key. ({value})',
         };
         this.ERROR_MESSAGE_JAPAN = {
             REQUIRED: '{property}は必須項目です。',
@@ -51,7 +52,8 @@ class RequestType extends ReqResType_1.default {
             INVALID_DATETIME: '{property}は"YYYY-MM-DD hh:mi:ss"または"YYYY-MM-DDThh:mi:ss"形式のstring型で入力してください。（{value}）',
             INVALID_BASE64: '{property}はBase64形式のstring型で入力してください。（{value}）',
             INVALID_ENUM: '{property}は{enums}のいずれかの値で入力してください。（{value}）',
-            INVALID_DICTIONAY: '{property}は有効なKey-Value形式で入力してください。（{value}）'
+            INVALID_MAP_NUMBER: '{property} は有効な数値のマップキーでなければなりません。({value})',
+            INVALID_MAP_STRING: '{property} は有効な文字列のマップキーでなければなりません。({value})',
         };
         this.ERROR_MESSAGE = process.env.TZ === 'Asia/Tokyo' ? this.ERROR_MESSAGE_JAPAN : this.ERROR_MESSAGE_ENGLISH;
         this.paramProperties = [];
@@ -166,7 +168,10 @@ class RequestType extends ReqResType_1.default {
             "STRING_41": this.ERROR_MESSAGE.INVALID_STRING,
             "ENUM_41": this.ERROR_MESSAGE.INVALID_ENUM,
             "ENUM_42": this.ERROR_MESSAGE.INVALID_ENUM,
-            "DICTIONARY_51": this.ERROR_MESSAGE.INVALID_DICTIONAY,
+            "MAP_01": this.ERROR_MESSAGE.INVALID_MAP_NUMBER, // // tODO : mapのエラーメッセージどうするか
+            "MAP_02": this.ERROR_MESSAGE.INVALID_MAP_STRING,
+            "MAP_11": this.ERROR_MESSAGE.INVALID_MAP_NUMBER,
+            "MAP_12": this.ERROR_MESSAGE.INVALID_MAP_STRING,
             "NUMBER_91": this.ERROR_MESSAGE.INVALID_NUMBER,
             "BOOL_91": this.ERROR_MESSAGE.INVALID_BOOL,
             "BOOL_92": this.ERROR_MESSAGE.INVALID_BOOL,
@@ -277,8 +282,34 @@ class RequestType extends ReqResType_1.default {
                         }
                     }
                     break;
-                case 'dictionary':
-                case 'dictionary?':
+                case 'map':
+                case 'map?':
+                    // tODO : ここは共通化したい
+                    const mapData = {};
+                    for (const [mapKey, mapValue] of Object.entries(value)) {
+                        switch (this.properties[key].mapType) {
+                            case 'number':
+                            case 'number?':
+                                if (this.isNumber(mapValue) === false) {
+                                    this.throwInputError("MAP_01", [key], value);
+                                }
+                                mapData[mapKey] = Number(mapValue);
+                                break;
+                            case 'string':
+                            case 'string?':
+                                switch (typeof mapValue) {
+                                    case 'number':
+                                        mapData[mapKey] = mapValue.toString();
+                                        break;
+                                    case 'string':
+                                        mapData[mapKey] = mapValue;
+                                        break;
+                                    default:
+                                        this.throwInputError("MAP_02", [key], value);
+                                }
+                        }
+                    }
+                    this.changeBody([key], mapData);
                     break;
                 case 'enum':
                 case 'enum?':
@@ -391,44 +422,39 @@ class RequestType extends ReqResType_1.default {
                         this.setEnum([...keys, i], value);
                     }
                     break;
+                case 'map':
+                case 'map?':
+                    const mapData = {};
+                    for (const [mapKey, mapValue] of Object.entries(values[i])) {
+                        switch (property.item.mapType) {
+                            case 'number':
+                            case 'number?':
+                                if (this.isNumber(mapValue) === false) {
+                                    this.throwInputError("MAP_11", [...keys, i], values[i]);
+                                }
+                                mapData[mapKey] = Number(mapValue);
+                                break;
+                            case 'string':
+                            case 'string?':
+                                switch (typeof mapValue) {
+                                    case 'number':
+                                        mapData[mapKey] = mapValue.toString();
+                                        break;
+                                    case 'string':
+                                        mapData[mapKey] = mapValue;
+                                        break;
+                                    default:
+                                        this.throwInputError("MAP_12", [...keys, i], values[i]);
+                                }
+                        }
+                    }
+                    this.changeBody([...keys, i], mapData);
+                    break;
                 default:
                     this.convertInput([...keys, i], values[i]);
                     break;
             }
         }
-    }
-    setDictionary(keys, values) {
-        // const property = this.getProperty(keys);
-        // for (let i = 0;i < values.length; i++) {
-        //     // NULL Check
-        //     if (values[i] === undefined || values[i] === null || (property.properties.type.replace("?", "") !== "string" && values[i] === "")) {
-        //         if (property.properties.type.endsWith('?')) {
-        //             this.changeBody([...keys, i], values[i] === undefined ? undefined : null);
-        //             continue;
-        //         } else {
-        //             this.throwInputError("DICTIONARY_51", [...keys, i], "");
-        //         }
-        //     }
-        //     switch (property.properties.type) {
-        //         case 'object':
-        //         case 'object?':
-        //             this.setObject([...keys, i], values[i]);
-        //             break;
-        //         case 'array':
-        //         case 'array?':
-        //             this.setArray([...keys, i], values[i]);
-        //             break;
-        //         case 'enum':
-        //         case 'enum?':
-        //             for (const value of values) {
-        //                 this.setEnum([...keys, i], value);
-        //             }
-        //             break;
-        //         default:
-        //             this.convertInput([...keys, i], values[i]);
-        //             break;
-        //     }
-        // }
     }
     /**
      * Set the value of the request body to the specified path.
@@ -506,6 +532,34 @@ class RequestType extends ReqResType_1.default {
                 case 'enum':
                 case 'enum?':
                     this.setEnum([...keys, key], value);
+                    break;
+                case 'map':
+                case 'map?':
+                    const mapData = {};
+                    for (const [mapKey, mapValue] of Object.entries(value)) {
+                        switch (property.properties[key].mapType) {
+                            case 'number':
+                            case 'number?':
+                                if (this.isNumber(mapValue) === false) {
+                                    this.throwInputError("MAP_11", [key], value);
+                                }
+                                mapData[mapKey] = Number(mapValue);
+                                break;
+                            case 'string':
+                            case 'string?':
+                                switch (typeof mapValue) {
+                                    case 'number':
+                                        mapData[mapKey] = mapValue.toString();
+                                        break;
+                                    case 'string':
+                                        mapData[mapKey] = mapValue;
+                                        break;
+                                    default:
+                                        this.throwInputError("MAP_12", [key], value);
+                                }
+                        }
+                    }
+                    this.changeBody([...keys, key], mapData);
                     break;
                 default:
                     this.convertInput([...keys, key], value);

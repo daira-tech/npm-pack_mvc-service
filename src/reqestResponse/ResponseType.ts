@@ -60,20 +60,17 @@ export class ResponseType extends ReqResType {
         let resData: {[key: string]: any} = {};
         const data = this.getData(keys);
 
-        console.log("getObject-keys", keys.join(','))
         const objectProperty = this.getProperty(keys);
         if (objectProperty.type !== 'object' && objectProperty.type !== 'object?') {
             throw new Error(`getObjectメソッドでObject型以外が入力された場合はエラー\n keys: ${keys.join(',')}`);
         }
 
         for (const key of Object.keys(objectProperty.properties)) {
-            console.log("getObject-key : ", key);
             if (key in data === false || data[key] === undefined) {
                 continue;
             }
 
             const property = objectProperty.properties[key];
-            console.log("getObject-props : ", property);
             if (data[key] === null || (property.type.replace("?", "") !== "string" && data[key] === "")) {
                 resData[key] = property.type.endsWith('?') ? null : undefined;
                 continue;
@@ -82,7 +79,6 @@ export class ResponseType extends ReqResType {
             switch (property.type) {
                 case 'object':
                 case 'object?':
-                    console.log("getObject-next-keys : ", [...keys, key]);
                     resData[key] = this.getObject([...keys, key]);
                     break;
                 case 'array':
@@ -278,8 +274,8 @@ export class ResponseType extends ReqResType {
                     return value;
                 }
                 return undefined;
-            case 'dictionary':
-            case 'dictionary?':
+            case 'map':
+            case 'map?':
                 // if (Object.keys(property.enums).includes(value)) {
                 //     return value;
                 // }
@@ -336,8 +332,8 @@ export class ResponseType extends ReqResType {
                 case 'array?':
                     ymlString += this.makeSwaggerPropertyFromArray([key], tabCount + 1);
                     break;
-                case 'dictionary':
-                case 'dictionary?':
+                case 'map':
+                case 'map?':
                     ymlString += this.makeSwaggerPropertyFromDictionary([key], tabCount + 1);
                     break;
             }
@@ -381,8 +377,8 @@ export class ResponseType extends ReqResType {
                 case 'array?':
                     ymlString += this.makeSwaggerPropertyFromArray([...keys, key], tabCount + 2);
                     break;
-                case 'dictionary':
-                case 'dictionary?':
+                case 'map':
+                case 'map?':
                     ymlString += this.makeSwaggerPropertyFromDictionary([...keys, key], tabCount + 2);
                     break;
             }
@@ -420,8 +416,8 @@ export class ResponseType extends ReqResType {
             case 'array?':
                 ymlString += this.makeSwaggerPropertyFromArray([...keys, 0], tabCount + 1);
                 break;
-            case 'dictionary':
-            case 'dictionary?':
+            case 'map':
+            case 'map?':
                 ymlString += this.makeSwaggerPropertyFromDictionary([...keys, 0], tabCount + 1);
                 break;
         }

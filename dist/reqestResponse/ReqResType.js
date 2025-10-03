@@ -202,8 +202,8 @@ class ReqResType {
         if (property.type === 'enum' || property.type === 'enum?') {
             propertyType = property.enumType;
         }
-        else if (property.type === 'dictionary' || property.type === 'dictionary?') {
-            propertyType = property.dictionaryType;
+        else if (property.type === 'map' || property.type === 'map?') {
+            propertyType = property.mapType;
         }
         propertyType = propertyType.replace('?', '');
         propertyType = propertyType.replace('number', 'integer');

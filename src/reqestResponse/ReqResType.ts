@@ -18,10 +18,10 @@ export type ArrayType = {
     description?: string;
     item: PropertyType;
 };
-export type DictionaryType = {
-    type: 'dictionary' | 'dictionary?';
+export type MapType = {
+    type: 'map' | 'map?';
     description?: string;
-    dictionaryType: 'string' | 'number' | 'string?' | 'number?';
+    mapType: 'string' | 'number' | 'string?' | 'number?';
 };
 export type EnumType = {
     type: 'enum' | 'enum?';
@@ -30,7 +30,7 @@ export type EnumType = {
     enums: {[key: string | number]: string};
 };
 
-export type PropertyType = PrimitiveType | ObjectType | ArrayType | EnumType | DictionaryType;
+export type PropertyType = PrimitiveType | ObjectType | ArrayType | EnumType | MapType;
 
 export default class ReqResType {
 
@@ -252,8 +252,8 @@ export default class ReqResType {
         let propertyType: string = property.type;
         if (property.type === 'enum' || property.type === 'enum?') {
             propertyType = property.enumType;
-        } else if (property.type === 'dictionary' || property.type === 'dictionary?') {
-            propertyType = property.dictionaryType;
+        } else if (property.type === 'map' || property.type === 'map?') {
+            propertyType = property.mapType;
         }
         propertyType = propertyType.replace('?', '');
         propertyType = propertyType.replace('number', 'integer');

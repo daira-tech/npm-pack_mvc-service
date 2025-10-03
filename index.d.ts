@@ -2,7 +2,7 @@ import { AxiosResponse } from "axios";
 import { Request, Response } from 'express';
 import { Pool, PoolClient } from 'pg';
 import { ErrorMessageType, IncomingHttpHeaders } from './src/reqestResponse/RequestType';
-import { ArrayType, EnumType, ObjectType, PrimitiveType } from './src/reqestResponse/ReqResType';
+import { ArrayType, EnumType, MapType, ObjectType, PrimitiveType } from './src/reqestResponse/ReqResType';
 
 import { MethodType } from './src/Service';
 export { MethodType } from './src/Service';
@@ -90,7 +90,7 @@ declare module 'pg-mvc-service' {
     }
     export function createSwagger(services: Service[], name: string, url: string, params: Array<IParams>): string;
 
-    export type PropertyType =  PrimitiveType | ObjectType | ArrayType | EnumType;
+    export type PropertyType =  PrimitiveType | ObjectType | ArrayType | EnumType | MapType;
 
     export class RequestType {
         constructor();
