@@ -1,5 +1,5 @@
 import { Request } from 'express';
-import ReqResType, { EnumType, PrimitiveType, PropertyType } from "./ReqResType";
+import ReqResType, { ArrayType, EnumType, PrimitiveType, PropertyType } from "./ReqResType";
 import { InputErrorException } from '../exceptions/Exception';
 import StringUtil from '../Utils/StringUtil';
 import { ValidateStringUtil } from 'type-utils-n-daira';
@@ -892,6 +892,33 @@ export class RequestType extends ReqResType {
 
         return ymlString;
     }
+
+    // private makeSwaggerPropertyFromDictionary(keys: Array<string | number>, tabCount: number): string {
+
+    //     const property = this.getProperty(keys).properties;
+
+    //     const space = '  '.repeat(tabCount);
+
+    //     let ymlString = `${space}items:\n`;
+    //     ymlString += `${space}  type: ${this.replaceFromPropertyTypeToSwagger(property)}\n`;
+    //     if ((property.description ?? '') !== '') {
+    //         const descJoin = `\n${space}    `;
+    //         ymlString += `${space}  description: |${descJoin}${property.description.replaceAll('\n', descJoin)}\n`;
+    //     }
+
+    //     switch (property.type) {
+    //         case 'object':
+    //         case 'object?':
+    //             ymlString += this.makeSwaggerProperyFromObject([...keys, 0], tabCount + 1);
+    //             break;
+    //         case 'array':
+    //         case 'array?':
+    //             ymlString += this.makeSwaggerPropertyFromArray([...keys, 0], tabCount + 1);
+    //             break;
+    //     }
+
+    //     return ymlString;
+    // }
 }
 
 // Requestのheaderで定義されているIFをそのまま拝借

@@ -1,6 +1,6 @@
 import { ValidateStringUtil } from "type-utils-n-daira";
 import StringUtil from "../Utils/StringUtil";
-import ReqResType from "./ReqResType";
+import ReqResType, { ArrayType } from "./ReqResType";
 
 export class ResponseType extends ReqResType {
 
@@ -291,6 +291,12 @@ export class ResponseType extends ReqResType {
                     return value;
                 }
                 return undefined;
+            case 'dictionary':
+            case 'dictionary?':
+                // if (Object.keys(property.enums).includes(value)) {
+                //     return value;
+                // }
+                return undefined;
             default:
                 return undefined;
         }
@@ -385,6 +391,10 @@ export class ResponseType extends ReqResType {
                 case 'array?':
                     ymlString += this.makeSwaggerPropertyFromArray([...keys, key], tabCount + 2);
                     break;
+                case 'dictionary':
+                case 'dictionary?':
+                    ymlString += this.makeSwaggerPropertyFromDictionary([...keys, key], tabCount + 2);
+                    break;
             }
         }
 
@@ -417,6 +427,10 @@ export class ResponseType extends ReqResType {
             case 'array?':
                 ymlString += this.makeSwaggerPropertyFromArray([...keys, 0], tabCount + 1);
                 break;
+            case 'dictionary':
+            case 'dictionary?':
+                ymlString += this.makeSwaggerPropertyFromDictionary([...keys, 0], tabCount + 1);
+                break;
         }
 
         return ymlString;
@@ -430,7 +444,7 @@ export class ResponseType extends ReqResType {
      */
     private makeSwaggerPropertyFromDictionary(keys: Array<string | number>, tabCount: number): string {
 
-        const property = this.getProperty(keys).properties;
+        const property = this.getProperty(keys);
         const space = '  '.repeat(tabCount);
         let ymlString = `${space}properties:\n`;
         ymlString += `${space}  key:\n`;

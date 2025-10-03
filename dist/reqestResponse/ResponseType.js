@@ -269,6 +269,12 @@ class ResponseType extends ReqResType_1.default {
                     return value;
                 }
                 return undefined;
+            case 'dictionary':
+            case 'dictionary?':
+                // if (Object.keys(property.enums).includes(value)) {
+                //     return value;
+                // }
+                return undefined;
             default:
                 return undefined;
         }
@@ -351,6 +357,10 @@ class ResponseType extends ReqResType_1.default {
                 case 'array?':
                     ymlString += this.makeSwaggerPropertyFromArray([...keys, key], tabCount + 2);
                     break;
+                case 'dictionary':
+                case 'dictionary?':
+                    ymlString += this.makeSwaggerPropertyFromDictionary([...keys, key], tabCount + 2);
+                    break;
             }
         }
         return ymlString;
@@ -379,6 +389,10 @@ class ResponseType extends ReqResType_1.default {
             case 'array?':
                 ymlString += this.makeSwaggerPropertyFromArray([...keys, 0], tabCount + 1);
                 break;
+            case 'dictionary':
+            case 'dictionary?':
+                ymlString += this.makeSwaggerPropertyFromDictionary([...keys, 0], tabCount + 1);
+                break;
         }
         return ymlString;
     }
@@ -389,17 +403,11 @@ class ResponseType extends ReqResType_1.default {
  * @returns {string} Swagger format property definition, Swagger形式のプロパティ定義
  */
     makeSwaggerPropertyFromDictionary(keys, tabCount) {
-        const property = this.getProperty(keys).properties;
+        const property = this.getProperty(keys);
         const space = '  '.repeat(tabCount);
         let ymlString = `${space}properties:\n`;
         ymlString += `${space}  key:\n`;
         ymlString += `${space}    type: ${this.replaceFromPropertyTypeToSwagger(property)}\n`;
-        // let ymlString = `${space}items:\n`;
-        // ymlString += `${space}  type: ${this.replaceFromPropertyTypeToSwagger(property)}\n`;
-        // if (property.description !== undefined) {
-        //     const joinSpace = `\n${space}    `;
-        //     ymlString += `${space}  description: |${joinSpace}${property.description.replaceAll("\n", joinSpace)}\n`;
-        // }
         return ymlString;
     }
 }

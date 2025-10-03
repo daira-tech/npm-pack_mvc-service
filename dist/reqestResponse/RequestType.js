@@ -55,6 +55,27 @@ class RequestType extends ReqResType_1.default {
         };
         this.ERROR_MESSAGE = process.env.TZ === 'Asia/Tokyo' ? this.ERROR_MESSAGE_JAPAN : this.ERROR_MESSAGE_ENGLISH;
         this.paramProperties = [];
+        // private makeSwaggerPropertyFromDictionary(keys: Array<string | number>, tabCount: number): string {
+        //     const property = this.getProperty(keys).properties;
+        //     const space = '  '.repeat(tabCount);
+        //     let ymlString = `${space}items:\n`;
+        //     ymlString += `${space}  type: ${this.replaceFromPropertyTypeToSwagger(property)}\n`;
+        //     if ((property.description ?? '') !== '') {
+        //         const descJoin = `\n${space}    `;
+        //         ymlString += `${space}  description: |${descJoin}${property.description.replaceAll('\n', descJoin)}\n`;
+        //     }
+        //     switch (property.type) {
+        //         case 'object':
+        //         case 'object?':
+        //             ymlString += this.makeSwaggerProperyFromObject([...keys, 0], tabCount + 1);
+        //             break;
+        //         case 'array':
+        //         case 'array?':
+        //             ymlString += this.makeSwaggerPropertyFromArray([...keys, 0], tabCount + 1);
+        //             break;
+        //     }
+        //     return ymlString;
+        // }
     }
     get paramPath() {
         return this.paramProperties.map(property => `/{${property.key}}`).join("");
