@@ -43,6 +43,10 @@ class ResponseType extends ReqResType_1.default {
                 case 'array?':
                     data[key] = this.getArray([key]);
                     break;
+                case 'map':
+                case 'map?':
+                    data[key] = this.getMap([key]);
+                    break;
                 default:
                     data[key] = this.getValue([key]);
                     break;
@@ -81,6 +85,10 @@ class ResponseType extends ReqResType_1.default {
                 case 'array?':
                     resData[key] = this.getArray([...keys, key]);
                     break;
+                case 'map':
+                case 'map?':
+                    resData[key] = this.getMap([...keys, key]);
+                    break;
                 default:
                     resData[key] = this.getValue([...keys, key]);
                     break;
@@ -114,12 +122,57 @@ class ResponseType extends ReqResType_1.default {
                 case 'array?':
                     resData.push(this.getArray([...keys, i]));
                     break;
+                case 'map':
+                case 'map?':
+                    resData.push(this.getMap([...keys, i]));
+                    break;
                 default:
                     resData.push(this.getValue([...keys, i]));
                     break;
             }
         }
         return resData;
+    }
+    /**
+ * Retrieve array type data
+ * 配列型のデータを取得
+ * @param {Array.<string|number>} keys - Path to the property, プロパティへのパス
+ * @returns {Array<any> | undefined} Retrieved array data, 取得された配列データ
+ */
+    getMap(keys) {
+        const data = this.getData(keys);
+        if (data === undefined) {
+            return undefined;
+        }
+        const mapProperty = this.getProperty(keys);
+        if (mapProperty.type !== 'map' && mapProperty.type !== 'map?') {
+            throw new Error(`getMapメソッドでMap型以外が入力された場合はエラー\n keys: ${keys.join(',')}`);
+        }
+        const mapData = {};
+        for (const [key, value] of Object.entries(data)) {
+            switch (mapProperty.mapType) {
+                case 'number':
+                case 'number?':
+                    if (this.isNumber(value) === false) {
+                        continue;
+                    }
+                    mapData[key] = Number(value);
+                    break;
+                case 'string':
+                case 'string?':
+                    switch (typeof value) {
+                        case 'number':
+                            mapData[key] = value.toString();
+                            break;
+                        case 'string':
+                            mapData[key] = value;
+                            break;
+                        default:
+                            continue;
+                    }
+            }
+        }
+        return mapData;
     }
     /**
      * Retrieve data based on the provided keys
