@@ -21,6 +21,7 @@ export interface ErrorMessageType {
     INVALID_DATETIME: string;
     INVALID_BASE64: string;
     INVALID_ENUM: string;
+    INVALID_DICTIONAY: string;
 }
 
 export class RequestType extends ReqResType {
@@ -46,7 +47,8 @@ export class RequestType extends ReqResType {
         INVALID_TIME: '{property} must be a string in "hh:mi" format and a valid time. ({value})',
         INVALID_DATETIME: '{property} must be a string in "YYYY-MM-DD hh:mi:ss" or "YYYY-MM-DDThh:mi:ss" format and a valid date and time. ({value})',
         INVALID_BASE64: '{property} must be in Base64 format. ({value})',
-        INVALID_ENUM: '{property} must be in {enums}. ({value})'
+        INVALID_ENUM: '{property} must be in {enums}. ({value})',
+        INVALID_DICTIONAY: '{property} must be a valid dictionary key. ({value})',
     }
     private readonly ERROR_MESSAGE_JAPAN: ErrorMessageType = {
         REQUIRED: '{property}は必須項目です。',
@@ -63,7 +65,8 @@ export class RequestType extends ReqResType {
         INVALID_TIME: '{property}は"hh:mi"形式のstring型で入力してください。（{value}）',
         INVALID_DATETIME: '{property}は"YYYY-MM-DD hh:mi:ss"または"YYYY-MM-DDThh:mi:ss"形式のstring型で入力してください。（{value}）',
         INVALID_BASE64: '{property}はBase64形式のstring型で入力してください。（{value}）',
-        INVALID_ENUM: '{property}は{enums}のいずれかの値で入力してください。（{value}）'
+        INVALID_ENUM: '{property}は{enums}のいずれかの値で入力してください。（{value}）',
+        INVALID_DICTIONAY: '{property}は有効なKey-Value形式で入力してください。（{value}）'
     }
     protected readonly ERROR_MESSAGE: ErrorMessageType = process.env.TZ === 'Asia/Tokyo' ? this.ERROR_MESSAGE_JAPAN : this.ERROR_MESSAGE_ENGLISH;
 
@@ -138,6 +141,7 @@ export class RequestType extends ReqResType {
         "TIME_21" | "DATETIME_21" | "DATETIME_22" | "HTTPS_21" | "BASE64_21" | 
         "REQUIRE_31" | 
         "ENUM_41" | "ENUM_42" | "NUMBER_41" | "STRING_41" |
+        "DICTIONARY_51" |
         "NUMBER_91" | "BOOL_91" | "BOOL_92" | "BOOL_93" | "STRING_91" | "UUID_91" | "MAIL_91" | "DATE_91" | "DATE_92" |
         "TIME_91" | "DATETIME_91" | "DATETIME_92" | "HTTPS_91" | "BASE64_91"
         , keys: Array<string | number>, value: any): never {
@@ -170,6 +174,7 @@ export class RequestType extends ReqResType {
             "STRING_41": this.ERROR_MESSAGE.INVALID_STRING,
             "ENUM_41": this.ERROR_MESSAGE.INVALID_ENUM,
             "ENUM_42": this.ERROR_MESSAGE.INVALID_ENUM,
+            "DICTIONARY_51": this.ERROR_MESSAGE.INVALID_DICTIONAY,
             "NUMBER_91": this.ERROR_MESSAGE.INVALID_NUMBER,
             "BOOL_91": this.ERROR_MESSAGE.INVALID_BOOL,
             "BOOL_92": this.ERROR_MESSAGE.INVALID_BOOL,
@@ -279,6 +284,9 @@ export class RequestType extends ReqResType {
                             this.throwInputError("ARRAY_01", [key], value);
                         }
                     }
+                    break;
+                case 'dictionary':
+                case 'dictionary?':
                     break;
                 case 'enum':
                 case 'enum?':
@@ -397,6 +405,42 @@ export class RequestType extends ReqResType {
                     break;
             }
         }
+    }
+
+    private setDictionary(keys: Array<string | number>, values: any) {
+        // const property = this.getProperty(keys);
+        // for (let i = 0;i < values.length; i++) {
+
+        //     // NULL Check
+        //     if (values[i] === undefined || values[i] === null || (property.properties.type.replace("?", "") !== "string" && values[i] === "")) {
+        //         if (property.properties.type.endsWith('?')) {
+        //             this.changeBody([...keys, i], values[i] === undefined ? undefined : null);
+        //             continue;
+        //         } else {
+        //             this.throwInputError("DICTIONARY_51", [...keys, i], "");
+        //         }
+        //     }
+
+        //     switch (property.properties.type) {
+        //         case 'object':
+        //         case 'object?':
+        //             this.setObject([...keys, i], values[i]);
+        //             break;
+        //         case 'array':
+        //         case 'array?':
+        //             this.setArray([...keys, i], values[i]);
+        //             break;
+        //         case 'enum':
+        //         case 'enum?':
+        //             for (const value of values) {
+        //                 this.setEnum([...keys, i], value);
+        //             }
+        //             break;
+        //         default:
+        //             this.convertInput([...keys, i], values[i]);
+        //             break;
+        //     }
+        // }
     }
 
     /**

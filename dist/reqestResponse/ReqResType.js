@@ -125,6 +125,9 @@ class ReqResType {
         if (property.type === 'enum' || property.type === 'enum?') {
             propertyType = property.enumType;
         }
+        else if (property.type === 'dictionary' || property.type === 'dictionary?') {
+            propertyType = property.dictionaryType;
+        }
         propertyType = propertyType.replace('?', '');
         propertyType = propertyType.replace('number', 'integer');
         propertyType = propertyType.replace(/datetime|date|time|uuid|mail|https|base64/g, 'string');

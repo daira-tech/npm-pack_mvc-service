@@ -343,6 +343,10 @@ export class ResponseType extends ReqResType {
                 case 'array?':
                     ymlString += this.makeSwaggerPropertyFromArray([key], tabCount + 1);
                     break;
+                case 'dictionary':
+                case 'dictionary?':
+                    ymlString += this.makeSwaggerPropertyFromDictionary([key], tabCount + 1);
+                    break;
             }
         }
 
@@ -414,6 +418,23 @@ export class ResponseType extends ReqResType {
                 ymlString += this.makeSwaggerPropertyFromArray([...keys, 0], tabCount + 1);
                 break;
         }
+
+        return ymlString;
+    }
+
+        /**
+     * Generates Swagger properties from array type properties
+     * 配列型のプロパティからSwaggerのプロパティを生成
+     * @param {Array.<string|number>} keys - Path to the properties, プロパティへのパス
+     * @returns {string} Swagger format property definition, Swagger形式のプロパティ定義
+     */
+    private makeSwaggerPropertyFromDictionary(keys: Array<string | number>, tabCount: number): string {
+
+        const property = this.getProperty(keys).properties;
+        const space = '  '.repeat(tabCount);
+        let ymlString = `${space}properties:\n`;
+        ymlString += `${space}  key:\n`;
+        ymlString += `${space}    type: ${this.replaceFromPropertyTypeToSwagger(property)}\n`;
 
         return ymlString;
     }
