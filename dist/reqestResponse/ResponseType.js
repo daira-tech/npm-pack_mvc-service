@@ -152,14 +152,12 @@ class ResponseType extends ReqResType_1.default {
         for (const [key, value] of Object.entries(data)) {
             switch (mapProperty.mapType) {
                 case 'number':
-                case 'number?':
                     if (this.isNumber(value) === false) {
                         continue;
                     }
                     mapData[key] = Number(value);
                     break;
                 case 'string':
-                case 'string?':
                     switch (typeof value) {
                         case 'number':
                             mapData[key] = value.toString();
@@ -169,6 +167,21 @@ class ResponseType extends ReqResType_1.default {
                             break;
                         default:
                             continue;
+                    }
+                case 'bool':
+                    switch (typeof value) {
+                        case 'boolean':
+                            mapData[key] = value;
+                        case 'number':
+                            if (value === 0 || value === 1) {
+                                mapData[key] = value === 1;
+                            }
+                            break;
+                        case 'string':
+                            if (value !== 'true' && value !== 'false') {
+                                mapData[key] = value === 'true';
+                            }
+                            break;
                     }
             }
         }

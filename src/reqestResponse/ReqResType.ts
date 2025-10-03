@@ -21,7 +21,7 @@ export type ArrayType = {
 export type MapType = {
     type: 'map' | 'map?';
     description?: string;
-    mapType: 'string' | 'number' | 'string?' | 'number?';
+    mapType: 'string' | 'number' | 'bool';
 };
 export type EnumType = {
     type: 'enum' | 'enum?';

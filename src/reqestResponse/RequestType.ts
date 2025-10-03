@@ -23,6 +23,7 @@ export interface ErrorMessageType {
     INVALID_ENUM: string;
     INVALID_MAP_NUMBER: string;
     INVALID_MAP_STRING: string;
+    INVALID_MAP_BOOL: string;
 }
 
 export class RequestType extends ReqResType {
@@ -51,6 +52,7 @@ export class RequestType extends ReqResType {
         INVALID_ENUM: '{property} must be in {enums}. ({value})',
         INVALID_MAP_NUMBER: '{property} must be a valid number for a map key. ({value})',
         INVALID_MAP_STRING: '{property} must be a valid string for a map key. ({value})',
+        INVALID_MAP_BOOL: '{property} must be a valid boolean for a map key. ({value})',
     }
     private readonly ERROR_MESSAGE_JAPAN: ErrorMessageType = {
         REQUIRED: '{property}は必須項目です。',
@@ -70,6 +72,7 @@ export class RequestType extends ReqResType {
         INVALID_ENUM: '{property}は{enums}のいずれかの値で入力してください。（{value}）',
         INVALID_MAP_NUMBER: '{property} は有効な数値のマップキーでなければなりません。({value})',
         INVALID_MAP_STRING: '{property} は有効な文字列のマップキーでなければなりません。({value})',
+        INVALID_MAP_BOOL: '{property} は有効なboolのマップキーでなければなりません。({value})',
     }
     protected readonly ERROR_MESSAGE: ErrorMessageType = process.env.TZ === 'Asia/Tokyo' ? this.ERROR_MESSAGE_JAPAN : this.ERROR_MESSAGE_ENGLISH;
 
@@ -144,7 +147,8 @@ export class RequestType extends ReqResType {
         "TIME_21" | "DATETIME_21" | "DATETIME_22" | "HTTPS_21" | "BASE64_21" | 
         "REQUIRE_31" | 
         "ENUM_41" | "ENUM_42" | "NUMBER_41" | "STRING_41" |
-        "MAP_01" | "MAP_02" | "MAP_11" | "MAP_12" |
+        "MAP_01" | "MAP_02" | "MAP_03" | "MAP_04" | "MAP_05" | "MAP_11" | "MAP_12" | "MAP_13" | "MAP_14" | "MAP_15" |
+        "MAP_31" | "MAP_32" | "MAP_33" | "MAP_34" | "MAP_35" |
         "NUMBER_91" | "BOOL_91" | "BOOL_92" | "BOOL_93" | "STRING_91" | "UUID_91" | "MAIL_91" | "DATE_91" | "DATE_92" |
         "TIME_91" | "DATETIME_91" | "DATETIME_92" | "HTTPS_91" | "BASE64_91"
         , keys: Array<string | number>, value: any): never {
@@ -179,8 +183,19 @@ export class RequestType extends ReqResType {
             "ENUM_42": this.ERROR_MESSAGE.INVALID_ENUM,
             "MAP_01": this.ERROR_MESSAGE.INVALID_MAP_NUMBER, // // tODO : mapのエラーメッセージどうするか
             "MAP_02": this.ERROR_MESSAGE.INVALID_MAP_STRING,
+            "MAP_03": this.ERROR_MESSAGE.INVALID_MAP_BOOL,
+            "MAP_04": this.ERROR_MESSAGE.INVALID_MAP_BOOL,
+            "MAP_05": this.ERROR_MESSAGE.INVALID_MAP_BOOL,
             "MAP_11": this.ERROR_MESSAGE.INVALID_MAP_NUMBER,
             "MAP_12": this.ERROR_MESSAGE.INVALID_MAP_STRING,
+            "MAP_13": this.ERROR_MESSAGE.INVALID_MAP_BOOL,
+            "MAP_14": this.ERROR_MESSAGE.INVALID_MAP_BOOL,
+            "MAP_15": this.ERROR_MESSAGE.INVALID_MAP_BOOL,
+            "MAP_31": this.ERROR_MESSAGE.INVALID_MAP_NUMBER,
+            "MAP_32": this.ERROR_MESSAGE.INVALID_MAP_STRING,
+            "MAP_33": this.ERROR_MESSAGE.INVALID_MAP_BOOL,
+            "MAP_34": this.ERROR_MESSAGE.INVALID_MAP_BOOL,
+            "MAP_35": this.ERROR_MESSAGE.INVALID_MAP_BOOL,
             "NUMBER_91": this.ERROR_MESSAGE.INVALID_NUMBER,
             "BOOL_91": this.ERROR_MESSAGE.INVALID_BOOL,
             "BOOL_92": this.ERROR_MESSAGE.INVALID_BOOL,
@@ -294,18 +309,16 @@ export class RequestType extends ReqResType {
                 case 'map':
                 case 'map?':
                     // tODO : ここは共通化したい
-                    const mapData: {[key: string]: string | number} = {};
+                    const mapData: {[key: string]: string | number | boolean} = {};
                     for (const [mapKey, mapValue] of Object.entries(value)) {
                         switch (this.properties[key].mapType) {
                             case 'number':
-                            case 'number?':
                                 if (this.isNumber(mapValue) === false) {
                                     this.throwInputError("MAP_01", [key], value);
                                 }
                                 mapData[mapKey] = Number(mapValue);
                                 break;
                             case 'string':
-                            case 'string?':
                                 switch (typeof mapValue) {
                                     case 'number':
                                         mapData[mapKey] = mapValue.toString();
@@ -316,6 +329,28 @@ export class RequestType extends ReqResType {
                                     default:
                                         this.throwInputError("MAP_02", [key], value);   
                                 }
+                                break;
+                            case 'bool':
+                                switch (typeof mapValue) {
+                                    case 'boolean':
+                                        mapData[mapKey] = mapValue;
+                                        break;
+                                    case 'number':
+                                        if (mapValue !== 0 && mapValue !== 1) {
+                                            this.throwInputError("MAP_03", [key], mapValue);
+                                        }
+                                        mapData[mapKey] = mapValue === 1;
+                                        break;
+                                    case 'string':
+                                        if (mapValue !== 'true' && mapValue !== 'false') {
+                                            this.throwInputError("MAP_04", [key], mapValue);
+                                        }
+                                        mapData[mapKey] = mapValue === 'true';
+                                        break;
+                                    default:
+                                        this.throwInputError("MAP_05", [key], mapValue);
+                                }
+                                break;
                         }
                     }
 
@@ -442,18 +477,16 @@ export class RequestType extends ReqResType {
                     break;
                 case 'map':
                 case 'map?':
-                    const mapData: {[key: string]: string | number} = {};
+                    const mapData: {[key: string]: string | number | boolean} = {};
                     for (const [mapKey, mapValue] of Object.entries(values[i])) {
                         switch (property.item.mapType) {
                             case 'number':
-                            case 'number?':
                                 if (this.isNumber(mapValue) === false) {
-                                    this.throwInputError("MAP_11", [...keys, i], values[i]);
+                                    this.throwInputError("MAP_31", [...keys, i], values[i]);
                                 }
                                 mapData[mapKey] = Number(mapValue);
                                 break;
                             case 'string':
-                            case 'string?':
                                 switch (typeof mapValue) {
                                     case 'number':
                                         mapData[mapKey] = mapValue.toString();
@@ -462,8 +495,30 @@ export class RequestType extends ReqResType {
                                         mapData[mapKey] = mapValue;
                                         break;
                                     default:
-                                        this.throwInputError("MAP_12", [...keys, i], values[i]);
+                                        this.throwInputError("MAP_32", [...keys, i], values[i]);
                                 }
+                                break;
+                            case 'bool':
+                                switch (typeof mapValue) {
+                                    case 'boolean':
+                                        mapData[mapKey] = mapValue;
+                                        break;
+                                    case 'number':
+                                        if (mapValue !== 0 && mapValue !== 1) {
+                                            this.throwInputError("MAP_33", keys, mapValue);
+                                        }
+                                        mapData[mapKey] = mapValue === 1;
+                                        break;
+                                    case 'string':
+                                        if (mapValue !== 'true' && mapValue !== 'false') {
+                                            this.throwInputError("MAP_34", keys, mapValue);
+                                        }
+                                        mapData[mapKey] = mapValue === 'true';
+                                        break;
+                                    default:
+                                        this.throwInputError("MAP_35", keys, mapValue);
+                                }
+                                break;
                         }
                     }
 
@@ -557,18 +612,16 @@ export class RequestType extends ReqResType {
                     break;
                 case 'map':
                 case 'map?':
-                    const mapData: {[key: string]: string | number} = {};
+                    const mapData: {[key: string]: string | number | boolean} = {};
                     for (const [mapKey, mapValue] of Object.entries(value)) {
                         switch (property.properties[key].mapType) {
                             case 'number':
-                            case 'number?':
                                 if (this.isNumber(mapValue) === false) {
                                     this.throwInputError("MAP_11", [key], value);
                                 }
                                 mapData[mapKey] = Number(mapValue);
                                 break;
                             case 'string':
-                            case 'string?':
                                 switch (typeof mapValue) {
                                     case 'number':
                                         mapData[mapKey] = mapValue.toString();
@@ -579,6 +632,28 @@ export class RequestType extends ReqResType {
                                     default:
                                         this.throwInputError("MAP_12", [key], value);   
                                 }
+                                break;
+                            case 'bool':
+                                switch (typeof mapValue) {
+                                    case 'boolean':
+                                        mapData[mapKey] = mapValue;
+                                        break;
+                                    case 'number':
+                                        if (mapValue !== 0 && mapValue !== 1) {
+                                            this.throwInputError("MAP_13", keys, mapValue);
+                                        }
+                                        mapData[mapKey] = mapValue === 1;
+                                        break;
+                                    case 'string':
+                                        if (mapValue !== 'true' && mapValue !== 'false') {
+                                            this.throwInputError("MAP_14", keys, mapValue);
+                                        }
+                                        mapData[mapKey] = mapValue === 'true';
+                                        break;
+                                    default:
+                                        this.throwInputError("MAP_15", keys, mapValue);
+                                }
+                                break;
                         }
                     }
 

@@ -162,18 +162,16 @@ export class ResponseType extends ReqResType {
             throw new Error(`getMapメソッドでMap型以外が入力された場合はエラー\n keys: ${keys.join(',')}`);
         }
 
-        const mapData: {[key: string]: string | number} = {};
+        const mapData: {[key: string]: string | number | boolean} = {};
         for (const [key, value] of Object.entries(data)) {
             switch (mapProperty.mapType) {
                 case 'number':
-                case 'number?':
                     if (this.isNumber(value) === false) {
                         continue;
                     }
                     mapData[key] = Number(value);
                     break;
                 case 'string':
-                case 'string?':
                     switch (typeof value) {
                         case 'number':
                             mapData[key] = value.toString();
@@ -184,6 +182,21 @@ export class ResponseType extends ReqResType {
                         default:
                             continue;
                     }
+                    case 'bool':
+                        switch (typeof value) {
+                            case 'boolean':
+                                mapData[key] = value;
+                            case 'number':
+                                if (value === 0 || value === 1) {
+                                    mapData[key] = value === 1;
+                                }
+                                break;
+                            case 'string':
+                                if (value !== 'true' && value !== 'false') {
+                                    mapData[key] = value === 'true';
+                                }
+                                break;
+                        }
             }
         }
 
