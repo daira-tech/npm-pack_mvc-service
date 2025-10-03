@@ -1,6 +1,6 @@
 import { ValidateStringUtil } from "type-utils-n-daira";
 import StringUtil from "../Utils/StringUtil";
-import ReqResType, { ArrayType } from "./ReqResType";
+import ReqResType, { PropertyType } from "./ReqResType";
 
 export class ResponseType extends ReqResType {
 
@@ -60,13 +60,20 @@ export class ResponseType extends ReqResType {
         let resData: {[key: string]: any} = {};
         const data = this.getData(keys);
 
-        const properties = this.getProperty(keys).properties;
-        for (const key of Object.keys(properties)) {
+        console.log("getObject-keys", keys.join(','))
+        const objectProperty = this.getProperty(keys);
+        if (objectProperty.type !== 'object' && objectProperty.type !== 'object?') {
+            throw new Error(`getObjectメソッドでObject型以外が入力された場合はエラー\n keys: ${keys.join(',')}`);
+        }
+
+        for (const key of Object.keys(objectProperty.properties)) {
+            console.log("getObject-key : ", key);
             if (key in data === false || data[key] === undefined) {
                 continue;
             }
 
-            const property = properties[key];
+            const property = objectProperty.properties[key];
+            console.log("getObject-props : ", property);
             if (data[key] === null || (property.type.replace("?", "") !== "string" && data[key] === "")) {
                 resData[key] = property.type.endsWith('?') ? null : undefined;
                 continue;
@@ -75,6 +82,7 @@ export class ResponseType extends ReqResType {
             switch (property.type) {
                 case 'object':
                 case 'object?':
+                    console.log("getObject-next-keys : ", [...keys, key]);
                     resData[key] = this.getObject([...keys, key]);
                     break;
                 case 'array':
@@ -103,10 +111,14 @@ export class ResponseType extends ReqResType {
             return undefined;
         }
 
-        const properties = this.getProperty(keys).properties;
+        const arrayProperty = this.getProperty(keys);
+        if (arrayProperty.type !== 'array' && arrayProperty.type !== 'array?') {
+            throw new Error(`getArrayメソッドでArray型以外が入力された場合はエラー\n keys: ${keys.join(',')}`);
+        }
+
         let resData: Array<any> = [];
         for (let i = 0;i < data.length; i++) {
-            switch (properties.type) {
+            switch (arrayProperty.item.type) {
                 case 'object':
                 case 'object?':
                     resData.push(this.getObject([...keys, i]));
@@ -122,31 +134,6 @@ export class ResponseType extends ReqResType {
         }
 
         return resData;
-    }
-
-    /**
-     * Retrieve property type data
-     * プロパティ型のデータを取得
-     * @param {Array.<string|number>} keys - Path to the property, プロパティへのパス
-     * @returns {any} Retrieved property data, 取得されたプロパティデータ
-     */
-    private getProperty(keys: Array<string | number>) {
-        let property: any = this.properties;
-        for (let i = 0;i < keys.length;i++) {
-            const key = keys[i];
-            if (typeof key === 'number') {
-                property = property.properties;
-                continue;
-            }
-
-            if (i === 0) {
-                property = property[key];
-            } else {
-                property = property.properties[key];
-            }
-        }
-
-        return property;
     }
 
     /**
@@ -369,12 +356,15 @@ export class ResponseType extends ReqResType {
      */
     private makeSwaggerProperyFromObject(keys: Array<string | number>, tabCount: number): string {
 
+        const objectProperty = this.getProperty(keys);
+        if (objectProperty.type !== 'object' && objectProperty.type !== 'object?') {
+            throw new Error(`makeSwaggerProperyFromObjectメソッドでObject型以外が入力された場合はエラー\n keys: ${keys.join(',')}`);
+        }
+
         const space = '  '.repeat(tabCount);
         let ymlString = `${space}properties:\n`;
-
-        const properties = this.getProperty(keys).properties;
-        for (const key of Object.keys(properties)) {
-            const property = properties[key];
+        for (const key of Object.keys(objectProperty.properties)) {
+            const property = objectProperty.properties[key];
 
             ymlString += `${space}  ${key}:\n`;
             ymlString += `${space}    type: ${this.replaceFromPropertyTypeToSwagger(property)}\n`;
@@ -409,16 +399,19 @@ export class ResponseType extends ReqResType {
      */
     private makeSwaggerPropertyFromArray(keys: Array<string | number>, tabCount: number): string {
 
-        const property = this.getProperty(keys).properties;
-        const space = '  '.repeat(tabCount);
-
-        let ymlString = `${space}items:\n`;
-        ymlString += `${space}  type: ${this.replaceFromPropertyTypeToSwagger(property)}\n`;
-        if (property.description !== undefined) {
-            const joinSpace = `\n${space}    `;
-            ymlString += `${space}  description: |${joinSpace}${property.description.replaceAll("\n", joinSpace)}\n`;
+        const arrayProperty = this.getProperty(keys);
+        if (arrayProperty.type !== 'array' && arrayProperty.type !== 'array?') {
+            throw new Error(`getArrayメソッドでArray型以外が入力された場合はエラー\n keys: ${keys.join(',')}`);
         }
-        switch (property.type) {
+
+        const space = '  '.repeat(tabCount);
+        let ymlString = `${space}items:\n`;
+        ymlString += `${space}  type: ${this.replaceFromPropertyTypeToSwagger(arrayProperty.item)}\n`;
+        if (arrayProperty.item.description !== undefined) {
+            const joinSpace = `\n${space}    `;
+            ymlString += `${space}  description: |${joinSpace}${arrayProperty.item.description.replaceAll("\n", joinSpace)}\n`;
+        }
+        switch (arrayProperty.item.type) {
             case 'object':
             case 'object?':
                 ymlString += this.makeSwaggerProperyFromObject([...keys, 0], tabCount + 1);

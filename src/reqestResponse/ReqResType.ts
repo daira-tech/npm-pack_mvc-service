@@ -16,7 +16,7 @@ export type ObjectType = {
 export type ArrayType = {
     type: 'array' | 'array?';
     description?: string;
-    properties: PropertyType;
+    item: PropertyType;
 };
 export type DictionaryType = {
     type: 'dictionary' | 'dictionary?';
@@ -36,6 +36,90 @@ export default class ReqResType {
 
     protected properties: { [key: string]: PropertyType; } = {};
 
+
+    /**
+     * Retrieve the property definition corresponding to the specified key path.
+     * 指定されたキーパスに対応するプロパティ定義を取得します。
+     * @param {Array<string | number>} keys - Access path to the property (array of strings or index numbers)
+     * プロパティへのアクセスパス（文字列またはインデックス番号の配列）
+     * @returns {BaseType} Property definition object
+     * プロパティ定義オブジェクト
+     */
+    // protected getProperty(keys: Array<string | number>) {
+    //     let property: any = this.properties;
+    //     for (let i = 0;i < keys.length;i++) {
+    //         const key = keys[i];
+    //         if (typeof key === 'number') {
+    //             property = property.properties;
+    //             continue;
+    //         }
+
+    //         if (i === 0) {
+    //             property = property[key];
+    //         } else {
+    //             property = property.properties[key];
+    //         }
+    //     }
+
+    //     return property;
+    // }
+    /**
+     * Retrieve property type data
+     * プロパティ型のデータを取得
+     * @param {Array.<string|number>} keys - Path to the property, プロパティへのパス
+     * @returns {any} Retrieved property data, 取得されたプロパティデータ
+     */
+    protected getProperty(keys: Array<string | number>) {
+        if (keys.length === 0) {
+            throw new Error(`getPropertyメソッドでは1以上のkeysからしか入力を受け付けない。`);
+        }
+
+        const firstKey = keys[0];
+        let property = this.properties[firstKey];
+
+        for (let i = 1;i < keys.length;i++) {
+            const key = keys[i];
+            if (typeof key === 'number') {
+                if (property.type === 'array' || property.type === 'array?') {
+                    property = property.item;
+                    continue;
+                } else {
+                    throw new Error(`getPropertyでnumber型のINPUTにも関わらず、array以外のtypeの場合のエラー\nキー一覧：${keys.join(',')} エラーキー：${key}`);
+                }
+            }
+
+            switch (property.type) {
+                case 'array':
+                case 'array?':
+                    if (typeof key !== 'number') {
+                        throw new Error(`getPropertyでnumber型のINPUTで、array以外の場合はエラー\nキー一覧：${keys.join(',')} エラーキー：${key}`);
+                    }
+                    property = property.item;
+                    continue;
+                case 'object':
+                case 'object?':
+                    if (typeof key !== 'string') {
+                        throw new Error(`getPropertyでnumber型のINPUTで、arrayの場合はエラー\nキー一覧：${keys.join(',')} エラーキー：${key}`);
+                    }
+                    property = property.properties[key];
+                    continue;
+                // case 'dictionary':
+                // case 'dictionary?':
+                //     if (typeof key !== 'string') {
+                //         throw new Error(`getPropertyでnumber型のINPUTで、arrayの場合はエラー\nキー一覧：${keys.join(',')} エラーキー：${key}`);
+                //     }
+                //     property = property.properties[key];
+                //     continue;
+                default:
+                    throw new Error(`getPropertyでarray,object以外のtypeを読み込もうとしている。\nキー一覧：${keys.join(',')} エラーキー：${key}`);
+                    // property = property[key];
+                    // continue;
+            }
+        }
+
+        return property;
+    }
+    
     /**
      * Checks if the value is a valid date-time format
      * 値が有効な日付時間形式かどうかを確認します

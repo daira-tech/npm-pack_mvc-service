@@ -136,6 +136,7 @@ class RequestType extends ReqResType_1.default {
      * @returns {string} The generated error message. 生成されたエラーメッセージ
      */
     throwInputError(code, keys, value) {
+        var _a;
         const list = {
             "REQUIRE_00": this.ERROR_MESSAGE.REQUIRED,
             "REQUIRE_01": this.ERROR_MESSAGE.REQUIRED,
@@ -184,7 +185,7 @@ class RequestType extends ReqResType_1.default {
         let errorMessage = list[code];
         if (code === "ENUM_41" || code === "ENUM_42") {
             const property = this.getProperty(keys);
-            errorMessage = errorMessage.replace('{enums}', Object.keys(property.enums).join(','));
+            errorMessage = errorMessage.replace('{enums}', Object.keys((_a = property.enums) !== null && _a !== void 0 ? _a : '').join(','));
         }
         errorMessage = errorMessage.replace("{property}", keys.join('.')).replace("{value}", value);
         throw new Exception_1.InputErrorException(code, errorMessage);
@@ -221,7 +222,7 @@ class RequestType extends ReqResType_1.default {
                     // GET,DELETEメソッドの場合、?array=1&array=2で配列となるが、
                     // ?array=1のみで終わる場合は配列にならないため、直接配列にしている
                     // この処理で空文字やnullが入った場合の対処をここで行う
-                    const itemProperty = this.properties[key].properties;
+                    const itemProperty = this.properties[key].item;
                     if (itemProperty.type.endsWith('?')) {
                         const tempValue = this.data[key];
                         this.data[key] = [];
@@ -269,7 +270,7 @@ class RequestType extends ReqResType_1.default {
                         if (request.method === 'GET' || request.method === 'DELETE') {
                             // GET,DELETEメソッドの場合、?array=1&array=2で配列となるが、
                             // ?array=1のみで終わる場合は配列にならないため、直接配列にしている
-                            this.data[key] = [this.convertValue(this.properties[key].properties.type, value, [key, 0], true)];
+                            this.data[key] = [this.convertValue(this.properties[key].item.type, value, [key, 0], true)];
                         }
                         else {
                             this.throwInputError("ARRAY_01", [key], value);
@@ -307,6 +308,9 @@ class RequestType extends ReqResType_1.default {
      */
     setEnum(keys, value) {
         const property = this.getProperty(keys);
+        if (property.type !== 'enum' && property.type !== 'enum?') {
+            throw new Error(`setEnumメソッドでEnum型以外が入力された場合はエラー\n keys: ${keys.join(',')}`);
+        }
         const enumType = property.enumType;
         if (value === undefined || value === null || (typeof value === 'string' && value === '')) {
             if (enumType.endsWith('?')) {
@@ -358,10 +362,13 @@ class RequestType extends ReqResType_1.default {
      */
     setArray(keys, values) {
         const property = this.getProperty(keys);
+        if (property.type !== 'array' && property.type !== 'array?') {
+            throw new Error(`setArrayメソッドでArray型以外が入力された場合はエラー\n keys: ${keys.join(',')}`);
+        }
         for (let i = 0; i < values.length; i++) {
             // NULL Check
-            if (values[i] === undefined || values[i] === null || (property.properties.type.replace("?", "") !== "string" && values[i] === "")) {
-                if (property.properties.type.endsWith('?')) {
+            if (values[i] === undefined || values[i] === null || (property.item.type.replace("?", "") !== "string" && values[i] === "")) {
+                if (property.item.type.endsWith('?')) {
                     this.changeBody([...keys, i], values[i] === undefined ? undefined : null);
                     continue;
                 }
@@ -369,7 +376,7 @@ class RequestType extends ReqResType_1.default {
                     this.throwInputError("REQUIRE_31", [...keys, i], "");
                 }
             }
-            switch (property.properties.type) {
+            switch (property.item.type) {
                 case 'object':
                 case 'object?':
                     this.setObject([...keys, i], values[i]);
@@ -424,31 +431,6 @@ class RequestType extends ReqResType_1.default {
         // }
     }
     /**
-     * Retrieve the property definition corresponding to the specified key path.
-     * 指定されたキーパスに対応するプロパティ定義を取得します。
-     * @param {Array<string | number>} keys - Access path to the property (array of strings or index numbers)
-     * プロパティへのアクセスパス（文字列またはインデックス番号の配列）
-     * @returns {BaseType} Property definition object
-     * プロパティ定義オブジェクト
-     */
-    getProperty(keys) {
-        let property = this.properties;
-        for (let i = 0; i < keys.length; i++) {
-            const key = keys[i];
-            if (typeof key === 'number') {
-                property = property.properties;
-                continue;
-            }
-            if (i === 0) {
-                property = property[key];
-            }
-            else {
-                property = property.properties[key];
-            }
-        }
-        return property;
-    }
-    /**
      * Set the value of the request body to the specified path.
      * Automatically create intermediate objects or arrays as needed.
      * リクエストボディの値を指定されたパスに設定します。
@@ -487,6 +469,9 @@ class RequestType extends ReqResType_1.default {
      */
     setObject(keys, values) {
         const property = this.getProperty(keys);
+        if (property.type !== 'object' && property.type !== 'object?') {
+            throw new Error(`setObjectメソッドでObject型以外が入力された場合はエラー\n keys: ${keys.join(',')}`);
+        }
         for (const key of Object.keys(property.properties)) {
             // NULL Check
             if (key in values === false || values[key] === null || values[key] === "") {
@@ -764,12 +749,15 @@ class RequestType extends ReqResType_1.default {
      * Swagger形式のプロパティ定義
      */
     makeSwaggerProperyFromObject(keys, tabCount) {
-        var _a;
+        var _a, _b;
+        const objectProperty = this.getProperty(keys);
+        if (objectProperty.type !== 'object' && objectProperty.type !== 'object?') {
+            throw new Error(`setObjectメソッドでObject型以外が入力された場合はエラー\n keys: ${keys.join(',')}`);
+        }
         const space = '  '.repeat(tabCount);
         let ymlString = `${space}properties:\n`;
-        const properties = this.getProperty(keys).properties;
-        for (const key of Object.keys(properties)) {
-            const property = properties[key];
+        for (const key of Object.keys(objectProperty.properties)) {
+            const property = objectProperty.properties[key];
             ymlString += `${space}  ${key}:\n`;
             ymlString += `${space}    type: ${this.replaceFromPropertyTypeToSwagger(property)}\n`;
             const descJoin = `\n${space}      `;
@@ -779,7 +767,7 @@ class RequestType extends ReqResType_1.default {
                 ymlString += `${Object.entries(property.enums).map(([key, value]) => `${descJoin}- ${key}: ${value}`)}\n`;
             }
             else if (((_a = property.description) !== null && _a !== void 0 ? _a : '') !== '') {
-                ymlString += `${space}    description: |${descJoin}${property.description.replaceAll('\n', descJoin)}\n`;
+                ymlString += `${space}    description: |${descJoin}${((_b = property.description) !== null && _b !== void 0 ? _b : "").replaceAll('\n', descJoin)}\n`;
             }
             if (property.type === 'enum' || property.type === 'enum?') {
                 ymlString += `${space}    nullable: ${property.enumType.endsWith('?')}\n`;
@@ -813,16 +801,19 @@ class RequestType extends ReqResType_1.default {
      * Swagger形式のプロパティ定義
      */
     makeSwaggerPropertyFromArray(keys, tabCount) {
-        var _a;
-        const property = this.getProperty(keys).properties;
+        var _a, _b;
+        const arrayProperty = this.getProperty(keys);
+        if (arrayProperty.type !== 'array' && arrayProperty.type !== 'array?') {
+            throw new Error(`getArrayメソッドでArray型以外が入力された場合はエラー\n keys: ${keys.join(',')}`);
+        }
         const space = '  '.repeat(tabCount);
         let ymlString = `${space}items:\n`;
-        ymlString += `${space}  type: ${this.replaceFromPropertyTypeToSwagger(property)}\n`;
-        if (((_a = property.description) !== null && _a !== void 0 ? _a : '') !== '') {
+        ymlString += `${space}  type: ${this.replaceFromPropertyTypeToSwagger(arrayProperty.item)}\n`;
+        if (((_a = arrayProperty.item.description) !== null && _a !== void 0 ? _a : '') !== '') {
             const descJoin = `\n${space}    `;
-            ymlString += `${space}  description: |${descJoin}${property.description.replaceAll('\n', descJoin)}\n`;
+            ymlString += `${space}  description: |${descJoin}${((_b = arrayProperty.item.description) !== null && _b !== void 0 ? _b : '').replaceAll('\n', descJoin)}\n`;
         }
-        switch (property.type) {
+        switch (arrayProperty.item.type) {
             case 'object':
             case 'object?':
                 ymlString += this.makeSwaggerProperyFromObject([...keys, 0], tabCount + 1);
