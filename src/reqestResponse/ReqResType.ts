@@ -103,13 +103,6 @@ export default class ReqResType {
                     }
                     property = property.properties[key];
                     continue;
-                // case 'dictionary':
-                // case 'dictionary?':
-                //     if (typeof key !== 'string') {
-                //         throw new Error(`getPropertyでnumber型のINPUTで、arrayの場合はエラー\nキー一覧：${keys.join(',')} エラーキー：${key}`);
-                //     }
-                //     property = property.properties[key];
-                //     continue;
                 default:
                     throw new Error(`getPropertyでarray,object以外のtypeを読み込もうとしている。\nキー一覧：${keys.join(',')} エラーキー：${key}`);
                     // property = property[key];

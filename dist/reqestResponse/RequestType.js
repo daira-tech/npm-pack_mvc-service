@@ -454,35 +454,7 @@ class RequestType extends ReqResType_1.default {
                     break;
                 case 'enum':
                 case 'enum?':
-                    const toEnumValue = [];
-                    for (const value of values) {
-                        switch (property.item.enumType) {
-                            case 'number':
-                            case 'number?':
-                                if (this.isNumber(value) === false) {
-                                    this.throwInputError("NUMBER_31", keys, value);
-                                }
-                                toEnumValue.push(Number(value));
-                                break;
-                            case 'string':
-                            case 'string?':
-                                switch (typeof value) {
-                                    case 'number':
-                                        toEnumValue.push(value.toString());
-                                        break;
-                                    case 'string':
-                                        toEnumValue.push(value);
-                                        break;
-                                    default:
-                                        this.throwInputError("STRING_31", keys, value);
-                                }
-                                break;
-                        }
-                        if (Object.keys(property.item.enums).includes(value.toString()) === false) {
-                            this.throwInputError("ENUM_32", keys, value);
-                        }
-                        this.setEnum([...keys, i], value);
-                    }
+                    this.setEnum([...keys, i], values[i]);
                     break;
                 case 'map':
                 case 'map?':
