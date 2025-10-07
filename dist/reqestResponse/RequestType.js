@@ -166,6 +166,9 @@ class RequestType extends ReqResType_1.default {
             "HTTPS_21": this.ERROR_MESSAGE.INVALID_HTTPS,
             "BASE64_21": this.ERROR_MESSAGE.INVALID_BASE64,
             "REQUIRE_31": this.ERROR_MESSAGE.REQUIRED,
+            "NUMBER_31": this.ERROR_MESSAGE.INVALID_NUMBER,
+            "STRING_31": this.ERROR_MESSAGE.INVALID_STRING,
+            "ENUM_32": this.ERROR_MESSAGE.INVALID_ENUM,
             "NUMBER_41": this.ERROR_MESSAGE.INVALID_NUMBER,
             "STRING_41": this.ERROR_MESSAGE.INVALID_STRING,
             "ENUM_41": this.ERROR_MESSAGE.INVALID_ENUM,
@@ -201,7 +204,7 @@ class RequestType extends ReqResType_1.default {
             "BASE64_91": this.ERROR_MESSAGE.INVALID_BASE64,
         };
         let errorMessage = list[code];
-        if (code === "ENUM_41" || code === "ENUM_42") {
+        if (code === "ENUM_32" || code === "ENUM_41" || code === "ENUM_42") {
             const property = this.getProperty(keys);
             errorMessage = errorMessage.replace('{enums}', Object.keys((_a = property.enums) !== null && _a !== void 0 ? _a : '').join(','));
         }
@@ -451,7 +454,33 @@ class RequestType extends ReqResType_1.default {
                     break;
                 case 'enum':
                 case 'enum?':
+                    const toEnumValue = [];
                     for (const value of values) {
+                        switch (property.item.enumType) {
+                            case 'number':
+                            case 'number?':
+                                if (this.isNumber(value) === false) {
+                                    this.throwInputError("NUMBER_31", keys, value);
+                                }
+                                toEnumValue.push(Number(value));
+                                break;
+                            case 'string':
+                            case 'string?':
+                                switch (typeof value) {
+                                    case 'number':
+                                        toEnumValue.push(value.toString());
+                                        break;
+                                    case 'string':
+                                        toEnumValue.push(value);
+                                        break;
+                                    default:
+                                        this.throwInputError("STRING_31", keys, value);
+                                }
+                                break;
+                        }
+                        if (Object.keys(property.item.enums).includes(value.toString()) === false) {
+                            this.throwInputError("ENUM_32", keys, value);
+                        }
                         this.setEnum([...keys, i], value);
                     }
                     break;

@@ -146,7 +146,7 @@ export class RequestType extends ReqResType {
         "NUMBER_21" | "BOOL_21" | "BOOL_22" | "BOOL_23" | "STRING_21" | "UUID_21" | "MAIL_21" | "DATE_21" | "DATE_22" |
         "TIME_21" | "DATETIME_21" | "DATETIME_22" | "HTTPS_21" | "BASE64_21" | 
         "REQUIRE_31" | 
-        "ENUM_41" | "ENUM_42" | "NUMBER_41" | "STRING_41" |
+        "ENUM_32" | "NUMBER_31" | "STRING_31" | "ENUM_41" | "ENUM_42" | "NUMBER_41" | "STRING_41" |
         "MAP_01" | "MAP_02" | "MAP_03" | "MAP_04" | "MAP_05" | "MAP_11" | "MAP_12" | "MAP_13" | "MAP_14" | "MAP_15" |
         "MAP_31" | "MAP_32" | "MAP_33" | "MAP_34" | "MAP_35" |
         "NUMBER_91" | "BOOL_91" | "BOOL_92" | "BOOL_93" | "STRING_91" | "UUID_91" | "MAIL_91" | "DATE_91" | "DATE_92" |
@@ -177,6 +177,9 @@ export class RequestType extends ReqResType {
             "HTTPS_21": this.ERROR_MESSAGE.INVALID_HTTPS,
             "BASE64_21": this.ERROR_MESSAGE.INVALID_BASE64,
             "REQUIRE_31": this.ERROR_MESSAGE.REQUIRED,
+            "NUMBER_31": this.ERROR_MESSAGE.INVALID_NUMBER,
+            "STRING_31": this.ERROR_MESSAGE.INVALID_STRING,
+            "ENUM_32": this.ERROR_MESSAGE.INVALID_ENUM,
             "NUMBER_41": this.ERROR_MESSAGE.INVALID_NUMBER,
             "STRING_41": this.ERROR_MESSAGE.INVALID_STRING,
             "ENUM_41": this.ERROR_MESSAGE.INVALID_ENUM,
@@ -213,7 +216,7 @@ export class RequestType extends ReqResType {
         }
 
         let errorMessage =  list[code];
-        if (code === "ENUM_41" || code === "ENUM_42") {
+        if (code === "ENUM_32" || code === "ENUM_41" || code === "ENUM_42") {
             const property = this.getProperty(keys) as EnumType;
             errorMessage = errorMessage.replace('{enums}', Object.keys(property.enums ?? '').join(','));
         }
@@ -471,7 +474,34 @@ export class RequestType extends ReqResType {
                     break;
                 case 'enum':
                 case 'enum?':
-                    for (const value of values) {
+                    const toEnumValue = [];
+                    for (const value of values) {                
+                        switch (property.item.enumType) {
+                            case 'number':
+                            case 'number?':
+                                if (this.isNumber(value) === false) {
+                                    this.throwInputError("NUMBER_31", keys, value);
+                                }
+                                toEnumValue.push(Number(value));
+                                break;
+                            case 'string':
+                            case 'string?':
+                                switch (typeof value) {
+                                    case 'number':
+                                        toEnumValue.push(value.toString());
+                                        break;
+                                    case 'string':
+                                        toEnumValue.push(value);
+                                        break;
+                                    default:
+                                        this.throwInputError("STRING_31", keys, value);
+                                }
+                                break;
+                        }
+                
+                        if (Object.keys(property.item.enums).includes(value.toString()) === false) {
+                            this.throwInputError("ENUM_32", keys, value);
+                        }
                         this.setEnum([...keys, i], value);
                     }
                     break;
