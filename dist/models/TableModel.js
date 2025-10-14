@@ -454,7 +454,7 @@ class TableModel {
                     const datas = yield this.clientQuery(sql, refValues);
                     if (datas.rows[0].count == "0") {
                         const name = ref.columns.map(col => { var _a; return (_a = this.getColumn(col.target).alias) !== null && _a !== void 0 ? _a : this.getColumn(col.target).columnName; }).join(',');
-                        this.throwDbCoflictException("007", this.errorMessages.fk.replace('{name}', name));
+                        this.throwUnprocessableException("007", this.errorMessages.fk.replace('{name}', name));
                     }
                 }
             }

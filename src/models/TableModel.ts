@@ -534,7 +534,7 @@ export class TableModel {
                 const datas = await this.clientQuery(sql, refValues);
                 if (datas.rows[0].count == "0") {
                     const name = ref.columns.map(col => this.getColumn(col.target).alias ?? this.getColumn(col.target).columnName).join(',');
-                    this.throwDbCoflictException("007", this.errorMessages.fk.replace('{name}', name))
+                    this.throwUnprocessableException("007", this.errorMessages.fk.replace('{name}', name))
                 }
             }
         }
