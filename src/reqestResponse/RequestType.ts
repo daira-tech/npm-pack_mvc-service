@@ -1,5 +1,5 @@
 import { Request } from 'express';
-import ReqResType, { EnumType, PrimitiveType } from "./ReqResType";
+import ReqResType, { EnumType, NumberType, PrimitiveType, PropertyType, StringType } from "./ReqResType";
 import { InputErrorException } from '../exceptions/Exception';
 import StringUtil from '../Utils/StringUtil';
 import { ValidateStringUtil } from 'type-utils-n-daira';
@@ -11,8 +11,11 @@ export interface ErrorMessageType {
     INVALID_OBJECT: string;
     INVALID_ARRAY: string;
     INVALID_NUMBER: string;
+    INVALID_NUMBER_MIN: string;
+    INVALID_NUMBER_MAX: string;
     INVALID_BOOL: string;
     INVALID_STRING: string;
+    INVALID_STRING_MAX_LENGTH: string;
     INVALID_UUID: string;
     INVALID_MAIL: string;
     INVALID_HTTPS: string;
@@ -40,8 +43,11 @@ export class RequestType extends ReqResType {
         INVALID_OBJECT: '{property} must be of type Object. ({value})',
         INVALID_ARRAY: '{property} must be of type Array. ({value})',
         INVALID_NUMBER: '{property} must be of type number. ({value})',
+        INVALID_NUMBER_MAX: '{property} must be less than or equal to {max}. ({value})',
+        INVALID_NUMBER_MIN: '{property} must be greater than or equal to {min}. ({value})',
         INVALID_BOOL: '{property} must be of type bool or a string with true, false, or a number with 0, 1. ({value})',
         INVALID_STRING: '{property} must be of type string. ({value})',
+        INVALID_STRING_MAX_LENGTH: '{property} must be less than or equal to {maxLength} characters. ({value})',
         INVALID_UUID: '{property} must be a UUID. ({value})',
         INVALID_MAIL: '{property} must be an email. ({value})',
         INVALID_HTTPS: '{property} must be an https or http URL. ({value})',
@@ -60,8 +66,11 @@ export class RequestType extends ReqResType {
         INVALID_OBJECT: '{property}はobject型で入力してください。（{value}）',
         INVALID_ARRAY: '{property}はarray型で入力してください。（{value}）',
         INVALID_NUMBER: '{property}はnumber型または半角数値のstring型で入力してください。（{value}）',
+        INVALID_NUMBER_MAX: '{property}は{max}以下の値で入力してください。（{value}）',
+        INVALID_NUMBER_MIN: '{property}は{min}以上の値で入力してください。（{value}）',
         INVALID_BOOL: '{property}はboolean型またはtrue、falseのstring型または0、1のnumber型で入力してください。（{value}）',
         INVALID_STRING: '{property}はstring型で入力してください。（{value}）',
+        INVALID_STRING_MAX_LENGTH: '{property}は{maxLength}文字以内で入力してください。（{value}）',
         INVALID_UUID: '{property}はUUID形式のstring型で入力してください。（{value}）',
         INVALID_MAIL: '{property}はメールアドレス形式のstring型で入力してください。（{value}）',
         INVALID_HTTPS: '{property}はhttpsまたはhttpのURL形式のstring型で入力してください。（{value}）',
@@ -76,7 +85,7 @@ export class RequestType extends ReqResType {
     }
     protected readonly ERROR_MESSAGE: ErrorMessageType = process.env.TZ === 'Asia/Tokyo' ? this.ERROR_MESSAGE_JAPAN : this.ERROR_MESSAGE_ENGLISH;
 
-    protected paramProperties: Array<(PrimitiveType | EnumType) & { key: string }> = []
+    protected paramProperties: Array<(PrimitiveType | StringType | NumberType | EnumType) & { key: string }> = []
     get paramPath(): string {
         return this.paramProperties.map(property => `/{${property.key}}`).join("");
     }
@@ -123,7 +132,7 @@ export class RequestType extends ReqResType {
                     throw new Error(`${key} is not set in paramProperties.`);                  
                 }
                 const property = this.paramProperties[index];
-                this.params[key] = this.convertValue(property.type, value, [key, `(pathIndex: ${index})`], false);
+                this.params[key] = this.convertValue(property, value, [key, `(pathIndex: ${index})`], false);
             }
         }
         this.params = request.params ?? {};
@@ -143,13 +152,13 @@ export class RequestType extends ReqResType {
     private throwInputError(code: 
         "REQUIRE_00" | "REQUIRE_01" | "OBJECT_01" | "ARRAY_01" | "UNNECESSARY_01" | 
         "REQUIRE_11" | "OBJECT_11" | "ARRAY_11" | "UNNECESSARY_11" |
-        "NUMBER_21" | "BOOL_21" | "BOOL_22" | "BOOL_23" | "STRING_21" | "UUID_21" | "MAIL_21" | "DATE_21" | "DATE_22" |
+        "NUMBER_21" | "NUMBER_22" | "NUMBER_23" | "BOOL_21" | "BOOL_22" | "BOOL_23" | "STRING_21" | "STRING_22" | "UUID_21" | "MAIL_21" | "DATE_21" | "DATE_22" |
         "TIME_21" | "DATETIME_21" | "DATETIME_22" | "HTTPS_21" | "BASE64_21" | 
         "REQUIRE_31" | 
-        "ENUM_32" | "NUMBER_31" | "STRING_31" | "ENUM_41" | "ENUM_42" | "NUMBER_41" | "STRING_41" |
+        "ENUM_32" | "ENUM_41" | "ENUM_42" | "NUMBER_41" | "STRING_41" |
         "MAP_01" | "MAP_02" | "MAP_03" | "MAP_04" | "MAP_05" | "MAP_11" | "MAP_12" | "MAP_13" | "MAP_14" | "MAP_15" |
         "MAP_31" | "MAP_32" | "MAP_33" | "MAP_34" | "MAP_35" |
-        "NUMBER_91" | "BOOL_91" | "BOOL_92" | "BOOL_93" | "STRING_91" | "UUID_91" | "MAIL_91" | "DATE_91" | "DATE_92" |
+        "NUMBER_91" | "NUMBER_92" | "NUMBER_93" | "BOOL_91" | "BOOL_92" | "BOOL_93" | "STRING_91" | "STRING_92" | "UUID_91" | "MAIL_91" | "DATE_91" | "DATE_92" |
         "TIME_91" | "DATETIME_91" | "DATETIME_92" | "HTTPS_91" | "BASE64_91"
         , keys: Array<string | number>, value: any): never {
         const list = {
@@ -163,10 +172,13 @@ export class RequestType extends ReqResType {
             "ARRAY_11": this.ERROR_MESSAGE.INVALID_ARRAY,
             "UNNECESSARY_11": this.ERROR_MESSAGE.UNNECESSARY,
             "NUMBER_21": this.ERROR_MESSAGE.INVALID_NUMBER,
+            "NUMBER_22": this.ERROR_MESSAGE.INVALID_NUMBER_MIN,
+            "NUMBER_23": this.ERROR_MESSAGE.INVALID_NUMBER_MAX,
             "BOOL_21": this.ERROR_MESSAGE.INVALID_BOOL,
             "BOOL_22": this.ERROR_MESSAGE.INVALID_BOOL,
             "BOOL_23": this.ERROR_MESSAGE.INVALID_BOOL,
             "STRING_21": this.ERROR_MESSAGE.INVALID_STRING,
+            "STRING_22": this.ERROR_MESSAGE.INVALID_STRING_MAX_LENGTH,
             "UUID_21": this.ERROR_MESSAGE.INVALID_UUID,
             "MAIL_21": this.ERROR_MESSAGE.INVALID_MAIL,
             "DATE_21": this.ERROR_MESSAGE.INVALID_DATE,
@@ -177,8 +189,6 @@ export class RequestType extends ReqResType {
             "HTTPS_21": this.ERROR_MESSAGE.INVALID_HTTPS,
             "BASE64_21": this.ERROR_MESSAGE.INVALID_BASE64,
             "REQUIRE_31": this.ERROR_MESSAGE.REQUIRED,
-            "NUMBER_31": this.ERROR_MESSAGE.INVALID_NUMBER,
-            "STRING_31": this.ERROR_MESSAGE.INVALID_STRING,
             "ENUM_32": this.ERROR_MESSAGE.INVALID_ENUM,
             "NUMBER_41": this.ERROR_MESSAGE.INVALID_NUMBER,
             "STRING_41": this.ERROR_MESSAGE.INVALID_STRING,
@@ -200,10 +210,13 @@ export class RequestType extends ReqResType {
             "MAP_34": this.ERROR_MESSAGE.INVALID_MAP_BOOL,
             "MAP_35": this.ERROR_MESSAGE.INVALID_MAP_BOOL,
             "NUMBER_91": this.ERROR_MESSAGE.INVALID_NUMBER,
+            "NUMBER_92": this.ERROR_MESSAGE.INVALID_NUMBER_MIN,
+            "NUMBER_93": this.ERROR_MESSAGE.INVALID_NUMBER_MAX,
             "BOOL_91": this.ERROR_MESSAGE.INVALID_BOOL,
             "BOOL_92": this.ERROR_MESSAGE.INVALID_BOOL,
             "BOOL_93": this.ERROR_MESSAGE.INVALID_BOOL,
             "STRING_91": this.ERROR_MESSAGE.INVALID_STRING,
+            "STRING_92": this.ERROR_MESSAGE.INVALID_STRING_MAX_LENGTH,
             "UUID_91": this.ERROR_MESSAGE.INVALID_UUID,
             "MAIL_91": this.ERROR_MESSAGE.INVALID_MAIL,
             "DATE_91": this.ERROR_MESSAGE.INVALID_DATE,
@@ -216,9 +229,21 @@ export class RequestType extends ReqResType {
         }
 
         let errorMessage =  list[code];
-        if (code === "ENUM_32" || code === "ENUM_41" || code === "ENUM_42") {
-            const property = this.getProperty(keys) as EnumType;
-            errorMessage = errorMessage.replace('{enums}', Object.keys(property.enums ?? '').join(','));
+        const property = this.getProperty(keys);
+        switch (property.type) {
+            case 'enum':
+            case 'enum?':
+                errorMessage = errorMessage.replace('{enums}', Object.keys(property.enums ?? '').join(','));
+                break;
+            case 'string':
+            case 'string?':
+                errorMessage = errorMessage.replace('{maxLength}', (property.maxLength ?? '[未指定]').toString());
+                break;
+            case 'number':
+            case 'number?':
+                errorMessage = errorMessage.replace('{max}', (property.max ?? '[未指定]').toString());
+                errorMessage = errorMessage.replace('{min}', (property.min ?? '[未指定]').toString());
+                break;
         }
 
         errorMessage = errorMessage.replace("{property}", keys.join('.')).replace("{value}", value);
@@ -303,7 +328,42 @@ export class RequestType extends ReqResType {
                         if (request.method === 'GET' || request.method === 'DELETE') {
                             // GET,DELETEメソッドの場合、?array=1&array=2で配列となるが、
                             // ?array=1のみで終わる場合は配列にならないため、直接配列にしている
-                            this.data[key] = [this.convertValue(this.properties[key].item.type, value, [key, 0], true)];
+                            const type = this.properties[key].item.type;
+                            if (type === 'object' || type === 'object?' || type === 'array' || type === 'array?' || type === 'map' || type === 'map?') {
+                                throw new Error("GETまたはDELETEメソッドでは配列型にobject, array, mapを使用することはできません。");
+                            }
+
+                            if (type === 'enum' || type === 'enum?') {
+                                const tempProp = {
+                                    type: type,
+                                    description: this.properties[key].item.description,
+                                    enumType: this.properties[key].item.enumType,
+                                    enums: this.properties[key].item.enums,
+                                };
+                                this.data[key] = [this.convertValue(tempProp, value, [key, 0], true)];
+                            } else if (type === 'string' || type === 'string?') {
+                                const tempProp = {
+                                    type: type,
+                                    description: this.properties[key].item.description,
+                                    maxLength: this.properties[key].item.maxLength,
+                                };
+                                this.data[key] = [this.convertValue(tempProp, value, [key, 0], true)];
+                            } else if (type === 'number' || type === 'number?') {
+                                const tempProp = {
+                                    type: type,
+                                    description: this.properties[key].item.description,
+                                    max: this.properties[key].item.max,
+                                    min: this.properties[key].item.min,
+                                };
+                                this.data[key] = [this.convertValue(tempProp, value, [key, 0], true)];
+                            } else {
+                                const tempProp = {
+                                    type: type,
+                                    description: this.properties[key].item.description
+                                };
+                                this.data[key] = [this.convertValue(tempProp, value, [key, 0], true)];
+                            }
+                            
                         } else {
                             this.throwInputError("ARRAY_01", [key], value);
                         }
@@ -680,7 +740,7 @@ export class RequestType extends ReqResType {
      * 指定された型に基づいて入力値を変換します。
      * 型変換に失敗した場合は例外をスローします。
      * 
-     * @param {string} type - The type to convert to (e.g., 'number', 'boolean', 'string', 'date', 'time', 'datetime')
+     * @param {string} property - The type to convert to (e.g., 'number', 'boolean', 'string', 'date', 'time', 'datetime')
      *                        変換する型（例: 'number', 'boolean', 'string', 'date', 'time', 'datetime'）
      * @param {any} value - The value to convert
      *                      変換する値
@@ -689,15 +749,23 @@ export class RequestType extends ReqResType {
      * @returns {any} The converted value, 変換された値
      * @throws {InputErrorException} Thrown if type conversion fails, 型変換に失敗した場合にスローされます
      */
-    private convertValue(type: string, value: any, keys: Array<string | number>, isRequestBody: boolean) {
+    private convertValue(property: PropertyType, value: any, keys: Array<string | number>, isRequestBody: boolean) {
 
-        switch (type) {
+        switch (property.type) {
             case 'number':
             case 'number?':
                 if (this.isNumber(value) === false) {
                     this.throwInputError(isRequestBody ? "NUMBER_21" : "NUMBER_91", keys, value);
                 }
-                return Number(value);
+                const numberValue = Number(value);
+                if (property.min !== undefined && numberValue < property.min) {
+                    this.throwInputError(isRequestBody ? "NUMBER_21" : "NUMBER_91", keys, value);
+                }
+
+                if (property.max !== undefined && numberValue > property.max) {
+                    this.throwInputError(isRequestBody ? "NUMBER_21" : "NUMBER_91", keys, value);
+                }
+                return numberValue;
             case 'boolean':
             case 'boolean?':
                 switch (typeof value) {
@@ -718,14 +786,22 @@ export class RequestType extends ReqResType {
                 }
             case 'string':
             case 'string?':
+                let stringValue: string = "";
                 switch (typeof value) {
                     case 'number':
-                        return value.toString();
+                        stringValue = value.toString();
+                        break;
                     case 'string':
-                        return value;
+                        stringValue = value;
+                        break;
                     default:
                         this.throwInputError(isRequestBody ? "STRING_21" : "STRING_91", keys, value);
                 }
+
+                if (property.maxLength !== undefined && stringValue.length > property.maxLength) {
+                    this.throwInputError(isRequestBody ? "STRING_22" : "STRING_92", keys, value);
+                }
+                return stringValue;
             case 'uuid':
             case 'uuid?':
                 if (StringUtil.isUUID(value)) {
@@ -799,7 +875,7 @@ export class RequestType extends ReqResType {
      */
     private convertInput(keys: Array<string | number>, value: any) {
         const property = this.getProperty(keys);
-        this.changeBody(keys, this.convertValue(property.type, value, keys, true));
+        this.changeBody(keys, this.convertValue(property, value, keys, true));
     }
 
 

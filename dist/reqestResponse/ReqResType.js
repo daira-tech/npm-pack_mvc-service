@@ -5,30 +5,6 @@ class ReqResType {
         this.properties = {};
     }
     /**
-     * Retrieve the property definition corresponding to the specified key path.
-     * 指定されたキーパスに対応するプロパティ定義を取得します。
-     * @param {Array<string | number>} keys - Access path to the property (array of strings or index numbers)
-     * プロパティへのアクセスパス（文字列またはインデックス番号の配列）
-     * @returns {BaseType} Property definition object
-     * プロパティ定義オブジェクト
-     */
-    // protected getProperty(keys: Array<string | number>) {
-    //     let property: any = this.properties;
-    //     for (let i = 0;i < keys.length;i++) {
-    //         const key = keys[i];
-    //         if (typeof key === 'number') {
-    //             property = property.properties;
-    //             continue;
-    //         }
-    //         if (i === 0) {
-    //             property = property[key];
-    //         } else {
-    //             property = property.properties[key];
-    //         }
-    //     }
-    //     return property;
-    // }
-    /**
      * Retrieve property type data
      * プロパティ型のデータを取得
      * @param {Array.<string|number>} keys - Path to the property, プロパティへのパス

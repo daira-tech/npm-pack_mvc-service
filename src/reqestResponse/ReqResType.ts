@@ -1,10 +1,21 @@
 type PrimitiveKeyType = 
-'string' | 'number' | 'boolean' | 'date' | 'datetime' | 'time' | 'uuid' | 'mail' | 'https' | 'base64' |
-'string?' | 'number?' | 'boolean?' | 'date?' | 'datetime?' | 'time?' | 'uuid?' | 'mail?' | 'https?' | 'base64?';
+'boolean' | 'date' | 'datetime' | 'time' | 'uuid' | 'mail' | 'https' | 'base64' |
+'boolean?' | 'date?' | 'datetime?' | 'time?' | 'uuid?' | 'mail?' | 'https?' | 'base64?';
 
 export type PrimitiveType = {
     type: PrimitiveKeyType;
     description?: string;
+};
+export type StringType = {
+    type: 'string' | 'string?';
+    description?: string;
+    maxLength?: number;
+};
+export type NumberType = {
+    type: 'number' | 'number?';
+    description?: string;
+    max?: number;
+    min?: number;
 };
 export type ObjectType = {
     type: 'object' | 'object?';
@@ -30,39 +41,12 @@ export type EnumType = {
     enums: {[key: string | number]: string};
 };
 
-export type PropertyType = PrimitiveType | ObjectType | ArrayType | EnumType | MapType;
+export type PropertyType = PrimitiveType | StringType | NumberType | ObjectType | ArrayType | EnumType | MapType;
 
 export default class ReqResType {
 
     protected properties: { [key: string]: PropertyType; } = {};
 
-
-    /**
-     * Retrieve the property definition corresponding to the specified key path.
-     * 指定されたキーパスに対応するプロパティ定義を取得します。
-     * @param {Array<string | number>} keys - Access path to the property (array of strings or index numbers)
-     * プロパティへのアクセスパス（文字列またはインデックス番号の配列）
-     * @returns {BaseType} Property definition object
-     * プロパティ定義オブジェクト
-     */
-    // protected getProperty(keys: Array<string | number>) {
-    //     let property: any = this.properties;
-    //     for (let i = 0;i < keys.length;i++) {
-    //         const key = keys[i];
-    //         if (typeof key === 'number') {
-    //             property = property.properties;
-    //             continue;
-    //         }
-
-    //         if (i === 0) {
-    //             property = property[key];
-    //         } else {
-    //             property = property.properties[key];
-    //         }
-    //     }
-
-    //     return property;
-    // }
     /**
      * Retrieve property type data
      * プロパティ型のデータを取得
