@@ -200,10 +200,6 @@ class Service {
             if (this.client !== undefined) {
                 yield this.client.release();
             }
-            if (this.isTest) {
-                // In tests, the connection is terminated because it is shut down every time
-                yield this.Pool.end();
-            }
         });
     }
     get S3Client() {

@@ -182,11 +182,6 @@ export class Service {
         if (this.client !== undefined) {
             await this.client.release();
         }
-
-        if (this.isTest) {
-            // In tests, the connection is terminated because it is shut down every time
-            await this.Pool.end();
-        }
     }
 
     private s3Client?: AwsS3Client;
