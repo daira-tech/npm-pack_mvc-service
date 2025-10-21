@@ -28,6 +28,7 @@ class RequestType extends ReqResType_1.default {
             INVALID_BOOL: '{property} must be of type bool or a string with true, false, or a number with 0, 1. ({value})',
             INVALID_STRING: '{property} must be of type string. ({value})',
             INVALID_STRING_MAX_LENGTH: '{property} must be less than or equal to {maxLength} characters. ({value})',
+            INVALID_STRING_REG_EXP: '{property} is invalid because it does not match the pattern {regExp}. ({value})',
             INVALID_UUID: '{property} must be a UUID. ({value})',
             INVALID_MAIL: '{property} must be an email. ({value})',
             INVALID_HTTPS: '{property} must be an https or http URL. ({value})',
@@ -51,6 +52,7 @@ class RequestType extends ReqResType_1.default {
             INVALID_BOOL: '{property}はboolean型またはtrue、falseのstring型または0、1のnumber型で入力してください。（{value}）',
             INVALID_STRING: '{property}はstring型で入力してください。（{value}）',
             INVALID_STRING_MAX_LENGTH: '{property}は{maxLength}文字以内で入力してください。（{value}）',
+            INVALID_STRING_REG_EXP: '{property} は {regExp} のパターンに一致しないため無効です。（{value}）',
             INVALID_UUID: '{property}はUUID形式のstring型で入力してください。（{value}）',
             INVALID_MAIL: '{property}はメールアドレス形式のstring型で入力してください。（{value}）',
             INVALID_HTTPS: '{property}はhttpsまたはhttpのURL形式のstring型で入力してください。（{value}）',
@@ -146,7 +148,7 @@ class RequestType extends ReqResType_1.default {
      * @returns {string} The generated error message. 生成されたエラーメッセージ
      */
     throwInputError(code, keys, value) {
-        var _a, _b, _c, _d;
+        var _a, _b, _c, _d, _e;
         const list = {
             "REQUIRE_00": this.ERROR_MESSAGE.REQUIRED,
             "REQUIRE_01": this.ERROR_MESSAGE.REQUIRED,
@@ -165,6 +167,7 @@ class RequestType extends ReqResType_1.default {
             "BOOL_23": this.ERROR_MESSAGE.INVALID_BOOL,
             "STRING_21": this.ERROR_MESSAGE.INVALID_STRING,
             "STRING_22": this.ERROR_MESSAGE.INVALID_STRING_MAX_LENGTH,
+            "STRING_23": this.ERROR_MESSAGE.INVALID_STRING_REG_EXP,
             "UUID_21": this.ERROR_MESSAGE.INVALID_UUID,
             "MAIL_21": this.ERROR_MESSAGE.INVALID_MAIL,
             "DATE_21": this.ERROR_MESSAGE.INVALID_DATE,
@@ -203,6 +206,7 @@ class RequestType extends ReqResType_1.default {
             "BOOL_93": this.ERROR_MESSAGE.INVALID_BOOL,
             "STRING_91": this.ERROR_MESSAGE.INVALID_STRING,
             "STRING_92": this.ERROR_MESSAGE.INVALID_STRING_MAX_LENGTH,
+            "STRING_93": this.ERROR_MESSAGE.INVALID_STRING_REG_EXP,
             "UUID_91": this.ERROR_MESSAGE.INVALID_UUID,
             "MAIL_91": this.ERROR_MESSAGE.INVALID_MAIL,
             "DATE_91": this.ERROR_MESSAGE.INVALID_DATE,
@@ -223,11 +227,12 @@ class RequestType extends ReqResType_1.default {
             case 'string':
             case 'string?':
                 errorMessage = errorMessage.replace('{maxLength}', ((_b = property.maxLength) !== null && _b !== void 0 ? _b : '[未指定]').toString());
+                errorMessage = errorMessage.replace('{regExp}', ((_c = property.regExp) !== null && _c !== void 0 ? _c : '[未指定]').toString());
                 break;
             case 'number':
             case 'number?':
-                errorMessage = errorMessage.replace('{max}', ((_c = property.max) !== null && _c !== void 0 ? _c : '[未指定]').toString());
-                errorMessage = errorMessage.replace('{min}', ((_d = property.min) !== null && _d !== void 0 ? _d : '[未指定]').toString());
+                errorMessage = errorMessage.replace('{max}', ((_d = property.max) !== null && _d !== void 0 ? _d : '[未指定]').toString());
+                errorMessage = errorMessage.replace('{min}', ((_e = property.min) !== null && _e !== void 0 ? _e : '[未指定]').toString());
                 break;
         }
         errorMessage = errorMessage.replace("{property}", keys.join('.')).replace("{value}", value);
@@ -331,6 +336,7 @@ class RequestType extends ReqResType_1.default {
                                     type: type,
                                     description: this.properties[key].item.description,
                                     maxLength: this.properties[key].item.maxLength,
+                                    regExp: this.properties[key].item.regExp
                                 };
                                 this.data[key] = [this.convertValue(tempProp, value, [key, 0], true)];
                             }
@@ -768,6 +774,9 @@ class RequestType extends ReqResType_1.default {
                 }
                 if (property.maxLength !== undefined && stringValue.length > property.maxLength) {
                     this.throwInputError(isRequestBody ? "STRING_22" : "STRING_92", keys, value);
+                }
+                if (property.regExp !== undefined && property.regExp.test(stringValue) === false) {
+                    this.throwInputError(isRequestBody ? "STRING_23" : "STRING_93", keys, value);
                 }
                 return stringValue;
             case 'uuid':

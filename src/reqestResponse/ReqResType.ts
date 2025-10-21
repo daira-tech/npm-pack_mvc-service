@@ -10,6 +10,7 @@ export type StringType = {
     type: 'string' | 'string?';
     description?: string;
     maxLength?: number;
+    regExp?: RegExp;
 };
 export type NumberType = {
     type: 'number' | 'number?';

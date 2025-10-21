@@ -16,6 +16,7 @@ export interface ErrorMessageType {
     INVALID_BOOL: string;
     INVALID_STRING: string;
     INVALID_STRING_MAX_LENGTH: string;
+    INVALID_STRING_REG_EXP: string;
     INVALID_UUID: string;
     INVALID_MAIL: string;
     INVALID_HTTPS: string;
@@ -48,6 +49,7 @@ export class RequestType extends ReqResType {
         INVALID_BOOL: '{property} must be of type bool or a string with true, false, or a number with 0, 1. ({value})',
         INVALID_STRING: '{property} must be of type string. ({value})',
         INVALID_STRING_MAX_LENGTH: '{property} must be less than or equal to {maxLength} characters. ({value})',
+        INVALID_STRING_REG_EXP: '{property} is invalid because it does not match the pattern {regExp}. ({value})',
         INVALID_UUID: '{property} must be a UUID. ({value})',
         INVALID_MAIL: '{property} must be an email. ({value})',
         INVALID_HTTPS: '{property} must be an https or http URL. ({value})',
@@ -71,6 +73,7 @@ export class RequestType extends ReqResType {
         INVALID_BOOL: '{property}はboolean型またはtrue、falseのstring型または0、1のnumber型で入力してください。（{value}）',
         INVALID_STRING: '{property}はstring型で入力してください。（{value}）',
         INVALID_STRING_MAX_LENGTH: '{property}は{maxLength}文字以内で入力してください。（{value}）',
+        INVALID_STRING_REG_EXP: '{property} は {regExp} のパターンに一致しないため無効です。（{value}）',
         INVALID_UUID: '{property}はUUID形式のstring型で入力してください。（{value}）',
         INVALID_MAIL: '{property}はメールアドレス形式のstring型で入力してください。（{value}）',
         INVALID_HTTPS: '{property}はhttpsまたはhttpのURL形式のstring型で入力してください。（{value}）',
@@ -152,13 +155,13 @@ export class RequestType extends ReqResType {
     private throwInputError(code: 
         "REQUIRE_00" | "REQUIRE_01" | "OBJECT_01" | "ARRAY_01" | "UNNECESSARY_01" | 
         "REQUIRE_11" | "OBJECT_11" | "ARRAY_11" | "UNNECESSARY_11" |
-        "NUMBER_21" | "NUMBER_22" | "NUMBER_23" | "BOOL_21" | "BOOL_22" | "BOOL_23" | "STRING_21" | "STRING_22" | "UUID_21" | "MAIL_21" | "DATE_21" | "DATE_22" |
+        "NUMBER_21" | "NUMBER_22" | "NUMBER_23" | "BOOL_21" | "BOOL_22" | "BOOL_23" | "STRING_21" | "STRING_22" | "STRING_23" | "UUID_21" | "MAIL_21" | "DATE_21" | "DATE_22" |
         "TIME_21" | "DATETIME_21" | "DATETIME_22" | "HTTPS_21" | "BASE64_21" | 
         "REQUIRE_31" | 
         "ENUM_32" | "ENUM_41" | "ENUM_42" | "NUMBER_41" | "STRING_41" |
         "MAP_01" | "MAP_02" | "MAP_03" | "MAP_04" | "MAP_05" | "MAP_11" | "MAP_12" | "MAP_13" | "MAP_14" | "MAP_15" |
         "MAP_31" | "MAP_32" | "MAP_33" | "MAP_34" | "MAP_35" |
-        "NUMBER_91" | "NUMBER_92" | "NUMBER_93" | "BOOL_91" | "BOOL_92" | "BOOL_93" | "STRING_91" | "STRING_92" | "UUID_91" | "MAIL_91" | "DATE_91" | "DATE_92" |
+        "NUMBER_91" | "NUMBER_92" | "NUMBER_93" | "BOOL_91" | "BOOL_92" | "BOOL_93" | "STRING_91" | "STRING_92" | "STRING_93" | "UUID_91" | "MAIL_91" | "DATE_91" | "DATE_92" |
         "TIME_91" | "DATETIME_91" | "DATETIME_92" | "HTTPS_91" | "BASE64_91"
         , keys: Array<string | number>, value: any): never {
         const list = {
@@ -179,6 +182,7 @@ export class RequestType extends ReqResType {
             "BOOL_23": this.ERROR_MESSAGE.INVALID_BOOL,
             "STRING_21": this.ERROR_MESSAGE.INVALID_STRING,
             "STRING_22": this.ERROR_MESSAGE.INVALID_STRING_MAX_LENGTH,
+            "STRING_23": this.ERROR_MESSAGE.INVALID_STRING_REG_EXP,
             "UUID_21": this.ERROR_MESSAGE.INVALID_UUID,
             "MAIL_21": this.ERROR_MESSAGE.INVALID_MAIL,
             "DATE_21": this.ERROR_MESSAGE.INVALID_DATE,
@@ -217,6 +221,7 @@ export class RequestType extends ReqResType {
             "BOOL_93": this.ERROR_MESSAGE.INVALID_BOOL,
             "STRING_91": this.ERROR_MESSAGE.INVALID_STRING,
             "STRING_92": this.ERROR_MESSAGE.INVALID_STRING_MAX_LENGTH,
+            "STRING_93": this.ERROR_MESSAGE.INVALID_STRING_REG_EXP,
             "UUID_91": this.ERROR_MESSAGE.INVALID_UUID,
             "MAIL_91": this.ERROR_MESSAGE.INVALID_MAIL,
             "DATE_91": this.ERROR_MESSAGE.INVALID_DATE,
@@ -238,6 +243,7 @@ export class RequestType extends ReqResType {
             case 'string':
             case 'string?':
                 errorMessage = errorMessage.replace('{maxLength}', (property.maxLength ?? '[未指定]').toString());
+                errorMessage = errorMessage.replace('{regExp}', (property.regExp ?? '[未指定]').toString());
                 break;
             case 'number':
             case 'number?':
@@ -346,6 +352,7 @@ export class RequestType extends ReqResType {
                                     type: type,
                                     description: this.properties[key].item.description,
                                     maxLength: this.properties[key].item.maxLength,
+                                    regExp: this.properties[key].item.regExp
                                 };
                                 this.data[key] = [this.convertValue(tempProp, value, [key, 0], true)];
                             } else if (type === 'number' || type === 'number?') {
@@ -801,6 +808,11 @@ export class RequestType extends ReqResType {
                 if (property.maxLength !== undefined && stringValue.length > property.maxLength) {
                     this.throwInputError(isRequestBody ? "STRING_22" : "STRING_92", keys, value);
                 }
+
+                if (property.regExp !== undefined && property.regExp.test(stringValue) === false) {
+                    this.throwInputError(isRequestBody ? "STRING_23" : "STRING_93", keys, value);
+                }
+
                 return stringValue;
             case 'uuid':
             case 'uuid?':
