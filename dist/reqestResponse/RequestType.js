@@ -219,7 +219,7 @@ class RequestType extends ReqResType_1.default {
         };
         let errorMessage = list[code];
         const property = this.getProperty(keys);
-        switch (property.type) {
+        switch (property === null || property === void 0 ? void 0 : property.type) {
             case 'enum':
             case 'enum?':
                 errorMessage = errorMessage.replace('{enums}', Object.keys((_a = property.enums) !== null && _a !== void 0 ? _a : '').join(','));

@@ -235,7 +235,7 @@ export class RequestType extends ReqResType {
 
         let errorMessage =  list[code];
         const property = this.getProperty(keys);
-        switch (property.type) {
+        switch (property?.type) {
             case 'enum':
             case 'enum?':
                 errorMessage = errorMessage.replace('{enums}', Object.keys(property.enums ?? '').join(','));
