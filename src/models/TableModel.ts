@@ -613,7 +613,7 @@ export class TableModel {
             for (const join of this.joinConditions) {
                 tables.push(`${join.model.TableName} as "${join.model.TableAlias}"`);
 
-                const query = WhereExpression.createCondition(join.conditions, this, this.vars.length);
+                const query = WhereExpression.createCondition(join.conditions, this, this.vars.length + 1);
                 this.whereExpressions.push(query.expression);
                 if (query.vars !== undefined) {
                     this.vars = [...this.vars, ...query.vars]
@@ -638,7 +638,7 @@ export class TableModel {
             for (const join of this.joinConditions) {
                 tables.push(`${join.model.TableName} as "${join.model.TableAlias}"`);
 
-                const query = WhereExpression.createCondition(join.conditions, this, this.vars.length);
+                const query = WhereExpression.createCondition(join.conditions, this, this.vars.length + 1);
                 this.whereExpressions.push(query.expression);
                 if (query.vars !== undefined) {
                     this.vars = [...this.vars, ...query.vars]
