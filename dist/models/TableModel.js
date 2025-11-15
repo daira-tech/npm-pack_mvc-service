@@ -15,7 +15,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.TableModel = void 0;
 const ValidateValueUtil_1 = __importDefault(require("./SqlUtils/ValidateValueUtil"));
 const SelectExpression_1 = __importDefault(require("./SqlUtils/SelectExpression"));
-const WhereExpression_1 = __importDefault(require("./SqlUtils/WhereExpression"));
+const WhereExpression_1 = require("./SqlUtils/WhereExpression");
 const ValidateClient_1 = __importDefault(require("./ValidateClient"));
 const Exception_1 = require("../exceptions/Exception");
 const ExpressionClient_1 = __importDefault(require("./ExpressionClient"));
@@ -68,7 +68,7 @@ class TableModel {
             };
             sql += joins[join.type];
             sql += ` ${join.model.TableName} as "${join.model.TableAlias}" ON `;
-            const query = WhereExpression_1.default.createCondition(join.conditions, this, this.vars.length + 1);
+            const query = WhereExpression_1.WhereExpression.createCondition(join.conditions, this, this.vars.length + 1);
             sql += query.expression;
             if (query.vars !== undefined) {
                 this.vars = [...this.vars, ...query.vars];
@@ -141,10 +141,10 @@ class TableModel {
             let query;
             if (typeof pkOrId === 'string' || typeof pkOrId === 'number' || typeof pkOrId === 'boolean') {
                 ValidateValueUtil_1.default.validateId(this.Columns, pkOrId);
-                query = WhereExpression_1.default.createConditionPk(this, { id: pkOrId });
+                query = WhereExpression_1.WhereExpression.createConditionPk(this, { id: pkOrId });
             }
             else {
-                query = WhereExpression_1.default.createConditionPk(this, pkOrId);
+                query = WhereExpression_1.WhereExpression.createConditionPk(this, pkOrId);
             }
             const sql = `SELECT ${selects.join(',')} FROM ${this.TableName} WHERE ${query.expression}`;
             let datas = yield this.executeQuery(sql, query.vars);
@@ -241,13 +241,25 @@ class TableModel {
     join(joinType, joinModel, conditions) {
         this.joinConditions.push({ type: joinType, model: joinModel, conditions: conditions });
     }
-    where(left, operator, right) {
-        if (typeof left === 'string') {
-            if (operator === undefined || right === undefined) {
-                this.whereExpressions.push(left);
+    where(param1, param2, right) {
+        if (typeof param1 === 'string') {
+            if (param2 === undefined || right === undefined || Array.isArray(param2)) {
+                if (Array.isArray(param2)) {
+                    let expression = param1;
+                    const startIndex = this.vars.length + 1;
+                    expression = expression.replace(/\$(\d+)/g, (match, num) => {
+                        const originalNum = parseInt(num, 10);
+                        return `$${startIndex + originalNum - 1}`;
+                    });
+                    this.vars = [...this.vars, ...param2];
+                    this.whereExpressions.push(expression);
+                }
+                else {
+                    this.whereExpressions.push(param1);
+                }
             }
             else {
-                const query = WhereExpression_1.default.create({ model: this, name: left }, operator, right, this.vars.length + 1);
+                const query = WhereExpression_1.WhereExpression.create({ model: this, name: param1 }, param2, right, this.vars.length + 1);
                 this.whereExpressions.push(query.expression);
                 if (query.vars !== undefined) {
                     this.vars = [...this.vars, ...query.vars];
@@ -255,12 +267,12 @@ class TableModel {
             }
             return;
         }
-        if ('model' in left && 'name' in left) {
-            if (operator === undefined || right === undefined) {
-                throw new Error(`If left is TColumnInfo, please set operator and right.`);
+        if ('model' in param1 && 'name' in param1) {
+            if (param2 === undefined || right === undefined || Array.isArray(param2)) {
+                throw new Error(`If left is TColumnInfo, please set operator and right. Do not pass an array to operator.`);
             }
             else {
-                const query = WhereExpression_1.default.create(left, operator, right, this.vars.length + 1);
+                const query = WhereExpression_1.WhereExpression.create(param1, param2, right, this.vars.length + 1);
                 this.whereExpressions.push(query.expression);
                 if (query.vars !== undefined) {
                     this.vars = [...this.vars, ...query.vars];
@@ -268,8 +280,8 @@ class TableModel {
             }
             return;
         }
-        if (Array.isArray(left)) {
-            const query = WhereExpression_1.default.createCondition(left, this, this.vars.length + 1);
+        if (Array.isArray(param1)) {
+            const query = WhereExpression_1.WhereExpression.createCondition(param1, this, this.vars.length + 1);
             this.whereExpressions.push(query.expression);
             if (query.vars !== undefined) {
                 this.vars = [...this.vars, ...query.vars];
@@ -485,10 +497,10 @@ class TableModel {
             let whereQuery;
             if (typeof pkOrId === 'string' || typeof pkOrId === 'number' || typeof pkOrId === 'boolean') {
                 ValidateValueUtil_1.default.validateId(this.Columns, pkOrId);
-                whereQuery = WhereExpression_1.default.createConditionPk(this, { id: pkOrId }, updateSetQuery.vars);
+                whereQuery = WhereExpression_1.WhereExpression.createConditionPk(this, { id: pkOrId }, updateSetQuery.vars);
             }
             else {
-                whereQuery = WhereExpression_1.default.createConditionPk(this, pkOrId, updateSetQuery.vars);
+                whereQuery = WhereExpression_1.WhereExpression.createConditionPk(this, pkOrId, updateSetQuery.vars);
             }
             const sql = updateSetQuery.expression + ' WHERE ' + whereQuery.expression;
             const data = yield this.executeQuery(sql, whereQuery.vars);
@@ -503,10 +515,10 @@ class TableModel {
             let whereQuery;
             if (typeof pkOrId === 'string' || typeof pkOrId === 'number' || typeof pkOrId === 'boolean') {
                 ValidateValueUtil_1.default.validateId(this.Columns, pkOrId);
-                whereQuery = WhereExpression_1.default.createConditionPk(this, { id: pkOrId });
+                whereQuery = WhereExpression_1.WhereExpression.createConditionPk(this, { id: pkOrId });
             }
             else {
-                whereQuery = WhereExpression_1.default.createConditionPk(this, pkOrId);
+                whereQuery = WhereExpression_1.WhereExpression.createConditionPk(this, pkOrId);
             }
             const sql = `DELETE FROM ${this.TableName} WHERE ${whereQuery.expression}`;
             const data = yield this.executeQuery(sql, whereQuery.vars);
@@ -530,7 +542,7 @@ class TableModel {
                 const tables = [];
                 for (const join of this.joinConditions) {
                     tables.push(`${join.model.TableName} as "${join.model.TableAlias}"`);
-                    const query = WhereExpression_1.default.createCondition(join.conditions, this, this.vars.length + 1);
+                    const query = WhereExpression_1.WhereExpression.createCondition(join.conditions, this, this.vars.length + 1);
                     this.whereExpressions.push(query.expression);
                     if (query.vars !== undefined) {
                         this.vars = [...this.vars, ...query.vars];
@@ -552,7 +564,7 @@ class TableModel {
                 const tables = [];
                 for (const join of this.joinConditions) {
                     tables.push(`${join.model.TableName} as "${join.model.TableAlias}"`);
-                    const query = WhereExpression_1.default.createCondition(join.conditions, this, this.vars.length + 1);
+                    const query = WhereExpression_1.WhereExpression.createCondition(join.conditions, this, this.vars.length + 1);
                     this.whereExpressions.push(query.expression);
                     if (query.vars !== undefined) {
                         this.vars = [...this.vars, ...query.vars];

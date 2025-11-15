@@ -2,7 +2,7 @@ import { Pool, PoolClient } from 'pg';
 import { TAggregateFuncType, TColumn, TColumnArrayType, TColumnDetail, TColumnInfo, TColumnType, TKeyFormat, TNestedCondition, TOperator, TQuery, TSelectExpression, TSortKeyword } from "./Type";
 import ValidateValueUtil from './SqlUtils/ValidateValueUtil';
 import SelectExpression from './SqlUtils/SelectExpression';
-import WhereExpression from './SqlUtils/WhereExpression';
+import { WhereExpression } from './SqlUtils/WhereExpression';
 import ValidateClient from './ValidateClient';
 import { DbConflictException, NotFoundException, UnprocessableException } from '../exceptions/Exception';
 import ExpressionClient from './ExpressionClient';
@@ -286,15 +286,27 @@ export class TableModel {
     }
 
     public where(expression: string): void;
+    public where(expression: string, vars: Array<any>): void;
     public where(conditions: Array<TNestedCondition>): void;
     public where(left: string, operator: TOperator, right: TColumnInfo | any): void;
     public where(left: TColumnInfo, operator: TOperator, right: TColumnInfo | any): void;
-    public where(left: string | TColumnInfo | Array<TNestedCondition>, operator?: TOperator, right?: TColumnInfo | any): void {
-        if (typeof left === 'string') {
-            if (operator === undefined || right === undefined) {
-                this.whereExpressions.push(left);
+    public where(param1: string | TColumnInfo | Array<TNestedCondition>, param2?: Array<any> | TOperator, right?: TColumnInfo | any): void {
+        if (typeof param1 === 'string') {
+            if (param2 === undefined || right === undefined || Array.isArray(param2)) {
+                if (Array.isArray(param2)) {
+                    let expression = param1;
+                    const startIndex = this.vars.length + 1;
+                    expression = expression.replace(/\$(\d+)/g, (match, num) => {
+                        const originalNum = parseInt(num, 10);
+                        return `$${startIndex + originalNum - 1}`;
+                    });
+                    this.vars = [...this.vars, ...param2];
+                    this.whereExpressions.push(expression);
+                } else {
+                    this.whereExpressions.push(param1);
+                }
             } else {
-                const query = WhereExpression.create({model: this, name: left}, operator, right, this.vars.length + 1);
+                const query = WhereExpression.create({model: this, name: param1}, param2, right, this.vars.length + 1);
                 this.whereExpressions.push(query.expression);
                 if (query.vars !== undefined) {
                     this.vars = [...this.vars, ...query.vars];
@@ -303,11 +315,11 @@ export class TableModel {
             return;
         }
 
-        if ('model' in left && 'name' in left) {
-            if (operator === undefined || right === undefined) {
-                throw new Error(`If left is TColumnInfo, please set operator and right.`);
+        if ('model' in param1 && 'name' in param1) {
+            if (param2 === undefined || right === undefined || Array.isArray(param2)) {
+                throw new Error(`If left is TColumnInfo, please set operator and right. Do not pass an array to operator.`);
             } else {
-                const query = WhereExpression.create(left, operator, right, this.vars.length + 1);
+                const query = WhereExpression.create(param1, param2, right, this.vars.length + 1);
                 this.whereExpressions.push(query.expression);
                 if (query.vars !== undefined) {
                     this.vars = [...this.vars, ...query.vars];
@@ -316,8 +328,8 @@ export class TableModel {
             return;
         }
 
-        if (Array.isArray(left)) {
-            const query = WhereExpression.createCondition(left, this, this.vars.length + 1);
+        if (Array.isArray(param1)) {
+            const query = WhereExpression.createCondition(param1, this, this.vars.length + 1);
             this.whereExpressions.push(query.expression);
             if (query.vars !== undefined) {
                 this.vars = [...this.vars, ...query.vars];

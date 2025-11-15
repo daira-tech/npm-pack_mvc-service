@@ -20,6 +20,9 @@ import ValidateClient from './src/models/ValidateClient';
 import { TableModel } from "./src/models/TableModel";
 export { TableModel } from "./src/models/TableModel";
 
+import { WhereExpression } from './src/models/SqlUtils/WhereExpression';
+export { WhereExpression } from './src/models/SqlUtils/WhereExpression';
+
 export { TColumnAttribute, TColumnType, TColumnArrayType, TColumn, TColumnDetail, TOperator, TColumnInfo, TQuery, TSelectExpression, TAggregateFuncType, TCondition, TNestedCondition, TSortKeyword, TKeyFormat } from './src/models/Type';
 
 export { DayType, MonthType, DateType, HourType, MinuteSecondType } from './src/cron/CronType';

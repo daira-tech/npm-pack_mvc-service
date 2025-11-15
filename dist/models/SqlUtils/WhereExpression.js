@@ -3,6 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.WhereExpression = void 0;
 const ValidateValueUtil_1 = __importDefault(require("./ValidateValueUtil"));
 class WhereExpression {
     static createConditionPk(model, pk, vars = null, isSetAlias = false) {
@@ -177,7 +178,7 @@ class WhereExpression {
                 case 'h2f_like': // half to full like
                 case 'h2f_ilike': // half to full ilike
                     return {
-                        expression: `${this.makeSqlReplaceHalfToFull(leftColumn.expression)} ${operator.replace("h2f_", "")} ${this.makeSqlReplaceHalfToFull(`'%' || ${rightColumn.expression} || '%'`)}`
+                        expression: `${this.makeSqlNormalizeCharVariants(leftColumn.expression, { halfToFull: true })} ${operator.replace("h2f_", "")} ${this.makeSqlNormalizeCharVariants(`'%' || ${rightColumn.expression} || '%'`, { halfToFull: true })}`
                     };
             }
             return {
@@ -196,7 +197,7 @@ class WhereExpression {
             case 'h2f_like': // half to full like
             case 'h2f_ilike': // half to full ilike
                 return {
-                    expression: `${this.makeSqlReplaceHalfToFull(leftColumn.expression)} ${operator.replace("h2f_", "")} ${this.makeSqlReplaceHalfToFull(`$${varLength}`)}`,
+                    expression: `${this.makeSqlNormalizeCharVariants(leftColumn.expression, { halfToFull: true })} ${operator.replace("h2f_", "")} ${this.makeSqlNormalizeCharVariants(`$${varLength}`, { halfToFull: true })}`,
                     vars: [`%${right}%`]
                 };
         }
@@ -373,16 +374,47 @@ class WhereExpression {
      * @param {string} columnName Column name
      * @returns SQL statement
      */
-    static makeSqlReplaceHalfToFull(columnNameOrValue) {
-        let objs = {
-            '０１２３４５６７８９': '0123456789',
-            'アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲンヴガギグゲゴザジズゼゾダヂヅデドバビブベボパピプペポァィゥェォャュョッー、。・「」゛゜': 'ｱｲｳｴｵｶｷｸｹｺｻｼｽｾｿﾀﾁﾂﾃﾄﾅﾆﾇﾈﾉﾊﾋﾌﾍﾎﾏﾐﾑﾒﾓﾔﾕﾖﾗﾘﾙﾚﾛﾜｦﾝｳﾞｶﾞｷﾞｸﾞｹﾞｺﾞｻﾞｼﾞｽﾞｾﾞｿﾞﾀﾞﾁﾞﾂﾞﾃﾞﾄﾞﾊﾊﾋﾞﾌﾞﾍﾞﾎﾞﾊﾟﾋﾟﾌﾟﾍﾟﾎﾟｧｨｩｪｫｬｭｮｯｰ､｡･｢｣ ﾞ ﾟ',
-            'ＡＢＣＤＥＦＧＨＩＪＫＬＭＮＯＰＱＲＳＴＵＶＷＸＹＺ': 'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
-            'ａｂｃｄｅｆｇｈｉｊｋｌｍｎｏｐｑｒｓｔｕｖｗｘｙｚ': 'abcdefghijklmnopqrstuvwxyz'
-        };
-        let sql = columnNameOrValue;
+    static makeSqlNormalizeCharVariants(expression, replaceOption) {
+        var _a;
+        if (replaceOption === true) {
+            replaceOption = {
+                halfToFull: true,
+                hiraganaToKatakana: true,
+                numeric: true
+            };
+        }
+        if ((replaceOption === null || replaceOption === void 0 ? void 0 : replaceOption.numeric) === true) {
+            replaceOption.numeric = {
+                japanese: true
+            };
+        }
+        const objs = {};
+        if ((replaceOption === null || replaceOption === void 0 ? void 0 : replaceOption.hiraganaToKatakana) === true) {
+            objs['あいうえおかきくけこさしすせそたちつてとなにぬねのはひふへほまみむめもやゆよらりるれろわをんゔがぎぐげござじずぜぞだぢづでどばびぶべぼぱぴぷぺぽぁぃぅぇぉゃゅょっー、。・「」゛゜']
+                = 'アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲンヴガギグゲゴザジズゼゾダヂヅデドバビブベボパピプペポァィゥェォャュョッー、。・「」゛゜';
+        }
+        if (((_a = replaceOption === null || replaceOption === void 0 ? void 0 : replaceOption.numeric) === null || _a === void 0 ? void 0 : _a.japanese) === true) {
+            objs['零〇'] = '00';
+            objs['一壱弌'] = '111';
+            objs['二弐'] = '22';
+            objs['三参'] = '33';
+            objs['四肆'] = '44';
+            objs['五伍'] = '55';
+            objs['六陸'] = '66';
+            objs['七漆'] = '77';
+            objs['八捌'] = '88';
+            objs['九玖'] = '99';
+        }
+        if ((replaceOption === null || replaceOption === void 0 ? void 0 : replaceOption.halfToFull) === true) {
+            objs['０１２３４５６７８９'] = '0123456789';
+            objs['アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲンヴガギグゲゴザジズゼゾダヂヅデドバビブベボパピプペポァィゥェォャュョッー、。・「」゛゜']
+                = 'ｱｲｳｴｵｶｷｸｹｺｻｼｽｾｿﾀﾁﾂﾃﾄﾅﾆﾇﾈﾉﾊﾋﾌﾍﾎﾏﾐﾑﾒﾓﾔﾕﾖﾗﾘﾙﾚﾛﾜｦﾝｳﾞｶﾞｷﾞｸﾞｹﾞｺﾞｻﾞｼﾞｽﾞｾﾞｿﾞﾀﾞﾁﾞﾂﾞﾃﾞﾄﾞﾊﾊﾋﾞﾌﾞﾍﾞﾎﾞﾊﾟﾋﾟﾌﾟﾍﾟﾎﾟｧｨｩｪｫｬｭｮｯｰ､｡･｢｣ ﾞ ﾟ';
+            objs['ＡＢＣＤＥＦＧＨＩＪＫＬＭＮＯＰＱＲＳＴＵＶＷＸＹＺ'] = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+            objs['ａｂｃｄｅｆｇｈｉｊｋｌｍｎｏｐｑｒｓｔｕｖｗｘｙｚ'] = 'abcdefghijklmnopqrstuvwxyz';
+        }
+        let sql = expression;
         Object.keys(objs).forEach(key => sql = `TRANSLATE(${sql} ,'${key}','${objs[key]}')`);
         return sql;
     }
 }
-exports.default = WhereExpression;
+exports.WhereExpression = WhereExpression;

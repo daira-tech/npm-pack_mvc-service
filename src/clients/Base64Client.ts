@@ -21,7 +21,7 @@ export class Base64Client {
     //     return Buffer.from(text).toString('base64');
     // }
 
-    public tryDecode(base64: string): Buffer<ArrayBuffer> | false {
+    public tryDecode(base64: string): Buffer | false {
         try {
             // Data URLのパターンをチェック
             if (base64.startsWith('data:')) {
@@ -48,7 +48,7 @@ export class Base64Client {
         }
     }
 
-    public getMimeType(data: string | Buffer<ArrayBuffer>): TImage | TPdf {
+    public getMimeType(data: string | Buffer): TImage | TPdf {
         try {
             let buffer;
             if (typeof data === 'string') {

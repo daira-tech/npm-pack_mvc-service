@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.runCron = exports.BaseCron = exports.rollback = exports.migrate = exports.MigrateDatabase = exports.MigrateTable = exports.createTableDoc = exports.TableModel = exports.ResponseType = exports.RequestType = exports.EncryptClient = exports.StringClient = exports.Base64Client = exports.AwsS3Client = exports.createSwagger = exports.NotFoundException = exports.UnprocessableException = exports.DbConflictException = exports.ForbiddenException = exports.InputErrorException = exports.AuthException = exports.MaintenanceException = exports.Service = void 0;
+exports.runCron = exports.BaseCron = exports.rollback = exports.migrate = exports.MigrateDatabase = exports.MigrateTable = exports.createTableDoc = exports.WhereExpression = exports.TableModel = exports.ResponseType = exports.RequestType = exports.EncryptClient = exports.StringClient = exports.Base64Client = exports.AwsS3Client = exports.createSwagger = exports.NotFoundException = exports.UnprocessableException = exports.DbConflictException = exports.ForbiddenException = exports.InputErrorException = exports.AuthException = exports.MaintenanceException = exports.Service = void 0;
 var Service_1 = require("./Service");
 Object.defineProperty(exports, "Service", { enumerable: true, get: function () { return Service_1.Service; } });
 var Exception_1 = require("./exceptions/Exception");
@@ -28,6 +28,8 @@ Object.defineProperty(exports, "ResponseType", { enumerable: true, get: function
 // models
 var TableModel_1 = require("./models/TableModel");
 Object.defineProperty(exports, "TableModel", { enumerable: true, get: function () { return TableModel_1.TableModel; } });
+var WhereExpression_1 = require("./models/SqlUtils/WhereExpression");
+Object.defineProperty(exports, "WhereExpression", { enumerable: true, get: function () { return WhereExpression_1.WhereExpression; } });
 var TableDoc_1 = require("./models/TableDoc");
 Object.defineProperty(exports, "createTableDoc", { enumerable: true, get: function () { return TableDoc_1.createTableDoc; } });
 var MigrateTable_1 = require("./models/MigrateTable");

@@ -12,6 +12,7 @@ export { PropertyType } from './reqestResponse/ReqResType';
 
 // models
 export { TableModel } from './models/TableModel';
+export { WhereExpression } from './models/SqlUtils/WhereExpression';
 export { createTableDoc } from './models/TableDoc';
 export { MigrateTable } from './models/MigrateTable';
 export { MigrateDatabase } from './models/MigrateDatabase';
