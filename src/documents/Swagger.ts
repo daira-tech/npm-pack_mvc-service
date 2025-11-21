@@ -72,8 +72,8 @@ export const createSwagger = (services: Service[], name: string, url: string, pa
         }
 
         yml += service.Request.createSwagger(service.Method);
-        const errorList = [...service.ErrorList, ...service.Request.getInputErrorList(service.Method, service.ApiCode)]
-        yml += service.Response.createSwagger(errorList);
+        const errorList = [...service.ErrorList, ...service.Request.getInputErrorList(service.Method)]
+        yml += service.Response.createSwagger(errorList, service.ApiCode);
     
         endpontSwaggerYml[service.Endpoint][service.Method] = yml;
     }

@@ -59,8 +59,8 @@ const createSwagger = (services, name, url, params = []) => {
             }
         }
         yml += service.Request.createSwagger(service.Method);
-        const errorList = [...service.ErrorList, ...service.Request.getInputErrorList(service.Method, service.ApiCode)];
-        yml += service.Response.createSwagger(errorList);
+        const errorList = [...service.ErrorList, ...service.Request.getInputErrorList(service.Method)];
+        yml += service.Response.createSwagger(errorList, service.ApiCode);
         endpontSwaggerYml[service.Endpoint][service.Method] = yml;
     }
     let swaggerInfo = `openapi: 3.0.0

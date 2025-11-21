@@ -370,7 +370,7 @@ export class ResponseType extends ReqResType {
      * @returns {string} Swagger format response definition
      * Swagger形式のレスポンス定義
      */
-    public createSwagger(errorList: Array<IError>): string {
+    public createSwagger(errorList: Array<IError>, apiCode: string): string {
         let ymlString = `      responses:
         '200':
           description: 成功事レスポンス
@@ -433,11 +433,11 @@ export class ResponseType extends ReqResType {
             if (list.length === 1) {
                 // 単一エラーは1行説明
                 ymlString += `        '${status}':
-          description: ${list[0].description}${list[0].code !== '' ? ` [${list[0].code}]` : ''}
+          description: ${list[0].description}${list[0].code !== '' ? ` > ${apiCode}-${list[0].code}` : ''}
 `;
             } else {
                 // 複数エラーは箇条書き
-                const bullets = list.map(e => `- ${e.description}${e.code !== '' ? ` [${e.code}]` : ''}`).join(descIndentJoin);
+                const bullets = list.map(e => `- ${e.description}${e.code !== '' ? ` > ${apiCode}-${e.code}` : ''}`).join(descIndentJoin);
                 ymlString += `        '${status}':
           description: |${descIndentJoin}${bullets}
 `;

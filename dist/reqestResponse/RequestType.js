@@ -1021,14 +1021,14 @@ class RequestType extends ReqResType_1.default {
         }
         return ymlString;
     }
-    getInputErrorList(method, code) {
+    getInputErrorList(method) {
         let errorList = [];
         for (const [key, property] of Object.entries(this.properties)) {
             if (property.type.endsWith('?') === false) {
                 const errorCode = property.type === 'array' && ['GET', 'DELETE'].includes(method) ? 'REQUIRE_00' : 'REQUIRE_01';
                 errorList.push({
                     status: 400,
-                    code: code + '-' + errorCode,
+                    code: errorCode,
                     description: this.createErrorMessage(errorCode, [key])
                 });
             }
@@ -1037,19 +1037,19 @@ class RequestType extends ReqResType_1.default {
                 case 'object?':
                     errorList.push({
                         status: 400,
-                        code: code + '-OBJECT_01',
+                        code: 'OBJECT_01',
                         description: this.createErrorMessage('OBJECT_01', [key])
                     });
-                    errorList = [...errorList, ...this.getErrorObject([key], code)];
+                    errorList = [...errorList, ...this.getErrorObject([key])];
                     break;
                 case 'array':
                 case 'array?':
                     errorList.push({
                         status: 400,
-                        code: code + '-ARRAY_01',
+                        code: 'ARRAY_01',
                         description: this.createErrorMessage('ARRAY_01', [key])
                     });
-                    errorList = [...errorList, ...this.getErrorArray([key], code)];
+                    errorList = [...errorList, ...this.getErrorArray([key])];
                     break;
                 case 'map':
                 case 'map?':
@@ -1057,44 +1057,44 @@ class RequestType extends ReqResType_1.default {
                         case 'number':
                             errorList.push({
                                 status: 400,
-                                code: code + '-MAP_01',
+                                code: 'MAP_01',
                                 description: this.createErrorMessage('MAP_01', [key])
                             });
                             break;
                         case 'string':
                             errorList.push({
                                 status: 400,
-                                code: code + '-MAP_02',
+                                code: 'MAP_02',
                                 description: this.createErrorMessage('MAP_02', [key])
                             });
                             break;
                         case 'bool':
                             errorList.push({
                                 status: 400,
-                                code: code + '-MAP_03',
+                                code: 'MAP_03',
                                 description: this.createErrorMessage('MAP_03', [key])
                             });
                             errorList.push({
                                 status: 400,
-                                code: code + '-MAP_04',
+                                code: 'MAP_04',
                                 description: this.createErrorMessage('MAP_04', [key])
                             });
                             errorList.push({
                                 status: 400,
-                                code: code + '-MAP_05',
+                                code: 'MAP_05',
                                 description: this.createErrorMessage('MAP_05', [key])
                             });
                             break;
                     }
                     break;
                 default:
-                    errorList = [...errorList, ...this.getError([key], code, true)];
+                    errorList = [...errorList, ...this.getError([key], true)];
                     break;
             }
         }
         return errorList;
     }
-    getErrorObject(keys, code) {
+    getErrorObject(keys) {
         let errorList = [];
         const property = this.getProperty(keys);
         if (property.type !== 'object' && property.type !== 'object?') {
@@ -1104,7 +1104,7 @@ class RequestType extends ReqResType_1.default {
             if (property.properties[key].type.endsWith('?') === false) {
                 errorList.push({
                     status: 400,
-                    code: code + '-REQUIRE_11',
+                    code: 'REQUIRE_11',
                     description: this.createErrorMessage('REQUIRE_11', [...keys, key]),
                 });
             }
@@ -1113,19 +1113,19 @@ class RequestType extends ReqResType_1.default {
                 case 'object?':
                     errorList.push({
                         status: 400,
-                        code: code + '-OBJECT_11',
+                        code: 'OBJECT_11',
                         description: this.createErrorMessage('OBJECT_11', [...keys, key]),
                     });
-                    errorList = [...errorList, ...this.getErrorObject([...keys, key], code)];
+                    errorList = [...errorList, ...this.getErrorObject([...keys, key])];
                     break;
                 case 'array':
                 case 'array?':
                     errorList.push({
                         status: 400,
-                        code: code + '-ARRAY_11',
+                        code: 'ARRAY_11',
                         description: this.createErrorMessage('ARRAY_11', [...keys, key]),
                     });
-                    errorList = [...errorList, ...this.getErrorArray([...keys, key, 0], code)];
+                    errorList = [...errorList, ...this.getErrorArray([...keys, key, 0])];
                     break;
                 case 'map':
                 case 'map?':
@@ -1133,44 +1133,44 @@ class RequestType extends ReqResType_1.default {
                         case 'number':
                             errorList.push({
                                 status: 400,
-                                code: code + '-MAP_11',
+                                code: 'MAP_11',
                                 description: this.createErrorMessage('MAP_11', [key])
                             });
                             break;
                         case 'string':
                             errorList.push({
                                 status: 400,
-                                code: code + '-MAP_12',
+                                code: 'MAP_12',
                                 description: this.createErrorMessage('MAP_12', [key])
                             });
                             break;
                         case 'bool':
                             errorList.push({
                                 status: 400,
-                                code: code + '-MAP_13',
+                                code: 'MAP_13',
                                 description: this.createErrorMessage('MAP_13', [key])
                             });
                             errorList.push({
                                 status: 400,
-                                code: code + '-MAP_14',
+                                code: 'MAP_14',
                                 description: this.createErrorMessage('MAP_14', [key])
                             });
                             errorList.push({
                                 status: 400,
-                                code: code + '-MAP_15',
+                                code: 'MAP_15',
                                 description: this.createErrorMessage('MAP_15', [key])
                             });
                             break;
                     }
                     break;
                 default:
-                    errorList = [...errorList, ...this.getError([...keys, key], code, false)];
+                    errorList = [...errorList, ...this.getError([...keys, key], false)];
                     break;
             }
         }
         return errorList;
     }
-    getErrorArray(keys, code) {
+    getErrorArray(keys) {
         let errorList = [];
         const property = this.getProperty(keys);
         if (property.type !== 'array' && property.type !== 'array?') {
@@ -1178,17 +1178,17 @@ class RequestType extends ReqResType_1.default {
         }
         errorList.push({
             status: 400,
-            code: code + '-REQUIRE_31',
+            code: 'REQUIRE_31',
             description: this.createErrorMessage('REQUIRE_31', [...keys]),
         });
         switch (property.item.type) {
             case 'object':
             case 'object?':
-                errorList = [...errorList, ...this.getErrorObject([...keys, 0], code)];
+                errorList = [...errorList, ...this.getErrorObject([...keys, 0])];
                 break;
             case 'array':
             case 'array?':
-                errorList = [...errorList, ...this.getErrorArray([...keys, 0], code)];
+                errorList = [...errorList, ...this.getErrorArray([...keys, 0])];
                 break;
             case 'map':
             case 'map?':
@@ -1196,43 +1196,43 @@ class RequestType extends ReqResType_1.default {
                     case 'number':
                         errorList.push({
                             status: 400,
-                            code: code + '-MAP_11',
+                            code: 'MAP_31',
                             description: this.createErrorMessage('MAP_31', [...keys, 0])
                         });
                         break;
                     case 'string':
                         errorList.push({
                             status: 400,
-                            code: code + '-MAP_12',
+                            code: 'MAP_32',
                             description: this.createErrorMessage('MAP_32', [...keys, 0])
                         });
                         break;
                     case 'bool':
                         errorList.push({
                             status: 400,
-                            code: code + '-MAP_13',
+                            code: 'MAP_33',
                             description: this.createErrorMessage('MAP_33', [...keys, 0])
                         });
                         errorList.push({
                             status: 400,
-                            code: code + '-MAP_14',
+                            code: 'MAP_34',
                             description: this.createErrorMessage('MAP_34', [...keys, 0])
                         });
                         errorList.push({
                             status: 400,
-                            code: code + '-MAP_15',
+                            code: 'MAP_35',
                             description: this.createErrorMessage('MAP_35', [...keys, 0])
                         });
                         break;
                 }
                 break;
             default:
-                errorList = [...errorList, ...this.getError([...keys, 0], code, false)];
+                errorList = [...errorList, ...this.getError([...keys, 0], false)];
                 break;
         }
         return errorList;
     }
-    getError(keys, code, isRequestBody) {
+    getError(keys, isRequestBody) {
         const errorList = [];
         const property = this.getProperty(keys);
         switch (property.type) {
@@ -1243,7 +1243,7 @@ class RequestType extends ReqResType_1.default {
                     case 'number?':
                         errorList.push({
                             status: 400,
-                            code: code + '-NUMBER_41',
+                            code: 'NUMBER_41',
                             description: this.createErrorMessage('NUMBER_41', keys)
                         });
                         break;
@@ -1251,14 +1251,14 @@ class RequestType extends ReqResType_1.default {
                     case 'string?':
                         errorList.push({
                             status: 400,
-                            code: code + '-STRING_41',
+                            code: 'STRING_41',
                             description: this.createErrorMessage('STRING_41', keys)
                         });
                         break;
                 }
                 errorList.push({
                     status: 400,
-                    code: code + '-ENUM_42',
+                    code: 'ENUM_42',
                     description: this.createErrorMessage('ENUM_42', keys)
                 });
                 break;
@@ -1266,20 +1266,20 @@ class RequestType extends ReqResType_1.default {
             case 'number?':
                 errorList.push({
                     status: 400,
-                    code: isRequestBody ? code + "-NUMBER_21" : code + "-NUMBER_91",
+                    code: isRequestBody ? "NUMBER_21" : "NUMBER_91",
                     description: this.createErrorMessage(isRequestBody ? "NUMBER_21" : "NUMBER_91", keys)
                 });
                 if (property.min !== undefined) {
                     errorList.push({
                         status: 400,
-                        code: isRequestBody ? code + "-NUMBER_22" : code + "-NUMBER_92",
+                        code: isRequestBody ? "NUMBER_22" : "NUMBER_92",
                         description: this.createErrorMessage(isRequestBody ? "NUMBER_22" : "NUMBER_92", keys)
                     });
                 }
                 if (property.max !== undefined) {
                     errorList.push({
                         status: 400,
-                        code: isRequestBody ? code + "-NUMBER_23" : code + "-NUMBER_93",
+                        code: isRequestBody ? "NUMBER_23" : "NUMBER_93",
                         description: this.createErrorMessage(isRequestBody ? "NUMBER_23" : "NUMBER_93", keys)
                     });
                 }
@@ -1288,17 +1288,17 @@ class RequestType extends ReqResType_1.default {
             case 'boolean?':
                 errorList.push({
                     status: 400,
-                    code: isRequestBody ? code + "-BOOL_21" : code + "-BOOL_91",
+                    code: isRequestBody ? "BOOL_21" : "BOOL_91",
                     description: this.createErrorMessage(isRequestBody ? "BOOL_21" : "BOOL_91", keys)
                 });
                 errorList.push({
                     status: 400,
-                    code: isRequestBody ? code + "-BOOL_22" : code + "-BOOL_92",
+                    code: isRequestBody ? "BOOL_22" : "BOOL_92",
                     description: this.createErrorMessage(isRequestBody ? "BOOL_22" : "BOOL_92", keys)
                 });
                 errorList.push({
                     status: 400,
-                    code: isRequestBody ? code + "-BOOL_23" : code + "-BOOL_93",
+                    code: isRequestBody ? "BOOL_23" : "BOOL_93",
                     description: this.createErrorMessage(isRequestBody ? "BOOL_23" : "BOOL_93", keys)
                 });
                 break;
@@ -1306,20 +1306,20 @@ class RequestType extends ReqResType_1.default {
             case 'string?':
                 errorList.push({
                     status: 400,
-                    code: isRequestBody ? code + "-STRING_21" : code + "-STRING_91",
+                    code: isRequestBody ? "STRING_21" : "STRING_91",
                     description: this.createErrorMessage(isRequestBody ? "STRING_21" : "STRING_91", keys)
                 });
                 if (property.maxLength !== undefined) {
                     errorList.push({
                         status: 400,
-                        code: isRequestBody ? code + "-STRING_22" : code + "-STRING_92",
+                        code: isRequestBody ? "STRING_22" : "STRING_92",
                         description: this.createErrorMessage(isRequestBody ? "STRING_22" : "STRING_92", keys)
                     });
                 }
                 if (property.regExp !== undefined) {
                     errorList.push({
                         status: 400,
-                        code: isRequestBody ? code + "-STRING_23" : code + "-STRING_93",
+                        code: isRequestBody ? "STRING_23" : "STRING_93",
                         description: this.createErrorMessage(isRequestBody ? "STRING_23" : "STRING_93", keys)
                     });
                 }
@@ -1328,7 +1328,7 @@ class RequestType extends ReqResType_1.default {
             case 'uuid?':
                 errorList.push({
                     status: 400,
-                    code: isRequestBody ? code + "-UUID_21" : code + "-UUID_91",
+                    code: isRequestBody ? "UUID_21" : "UUID_91",
                     description: this.createErrorMessage(isRequestBody ? "UUID_21" : "UUID_91", keys)
                 });
                 break;
@@ -1336,7 +1336,7 @@ class RequestType extends ReqResType_1.default {
             case 'mail?':
                 errorList.push({
                     status: 400,
-                    code: isRequestBody ? code + "-MAIL_21" : code + "-MAIL_91",
+                    code: isRequestBody ? "MAIL_21" : "MAIL_91",
                     description: this.createErrorMessage(isRequestBody ? "MAIL_21" : "MAIL_91", keys)
                 });
                 break;
@@ -1344,12 +1344,12 @@ class RequestType extends ReqResType_1.default {
             case 'date?':
                 errorList.push({
                     status: 400,
-                    code: isRequestBody ? code + "-DATE_21" : code + "-DATE_91",
+                    code: isRequestBody ? "DATE_21" : "DATE_91",
                     description: this.createErrorMessage(isRequestBody ? "DATE_21" : "DATE_91", keys)
                 });
                 errorList.push({
                     status: 400,
-                    code: isRequestBody ? code + "-DATE_22" : code + "-DATE_92",
+                    code: isRequestBody ? "DATE_22" : "DATE_92",
                     description: this.createErrorMessage(isRequestBody ? "DATE_22" : "DATE_92", keys)
                 });
                 break;
@@ -1357,7 +1357,7 @@ class RequestType extends ReqResType_1.default {
             case 'time?':
                 errorList.push({
                     status: 400,
-                    code: isRequestBody ? code + "-TIME_21" : code + "-TIME_91",
+                    code: isRequestBody ? "TIME_21" : "TIME_91",
                     description: this.createErrorMessage(isRequestBody ? "TIME_21" : "TIME_91", keys)
                 });
                 break;
@@ -1365,12 +1365,12 @@ class RequestType extends ReqResType_1.default {
             case 'datetime?':
                 errorList.push({
                     status: 400,
-                    code: isRequestBody ? code + "-DATETIME_21" : code + "-DATETIME_91",
+                    code: isRequestBody ? "DATETIME_21" : "DATETIME_91",
                     description: this.createErrorMessage(isRequestBody ? "DATETIME_21" : "DATETIME_91", keys)
                 });
                 errorList.push({
                     status: 400,
-                    code: isRequestBody ? code + "-DATETIME_22" : code + "-DATETIME_92",
+                    code: isRequestBody ? "DATETIME_22" : "DATETIME_92",
                     description: this.createErrorMessage(isRequestBody ? "DATETIME_22" : "DATETIME_92", keys)
                 });
                 break;
@@ -1378,7 +1378,7 @@ class RequestType extends ReqResType_1.default {
             case 'https?':
                 errorList.push({
                     status: 400,
-                    code: isRequestBody ? code + "-HTTPS_21" : code + "-HTTPS_91",
+                    code: isRequestBody ? "HTTPS_21" : "HTTPS_91",
                     description: this.createErrorMessage(isRequestBody ? "HTTPS_21" : "HTTPS_91", keys)
                 });
                 break;
@@ -1386,7 +1386,7 @@ class RequestType extends ReqResType_1.default {
             case 'base64?':
                 errorList.push({
                     status: 400,
-                    code: isRequestBody ? code + "-BASE64_21" : code + "-BASE64_91",
+                    code: isRequestBody ? "BASE64_21" : "BASE64_91",
                     description: this.createErrorMessage(isRequestBody ? "BASE64_21" : "BASE64_91", keys)
                 });
                 break;
