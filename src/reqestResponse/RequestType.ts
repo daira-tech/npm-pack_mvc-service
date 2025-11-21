@@ -3,6 +3,7 @@ import ReqResType, { EnumType, NumberType, PrimitiveType, PropertyType, StringTy
 import { InputErrorException } from '../exceptions/Exception';
 import StringUtil from '../Utils/StringUtil';
 import { ValidateStringUtil } from 'type-utils-n-daira';
+import { IError } from '../Service';
 
 // エラーメッセージの型定義
 export interface ErrorMessageType {
@@ -144,15 +145,7 @@ export class RequestType extends ReqResType {
         this.remoteAddress = request.socket?.remoteAddress;
     }
 
-    /**
-     * Generates an error message based on the provided code, keys, and value.
-     * 指定されたコード、キー、および値に基づいてエラーメッセージを生成します。
-     * @param {string} code - The error code. エラーコード
-     * @param {Array<string | number>} keys - The keys indicating the property path. プロパティパスを示すキー
-     * @param {any} value - The value that caused the error. エラーを引き起こした値
-     * @returns {string} The generated error message. 生成されたエラーメッセージ
-     */ 
-    private throwInputError(code: 
+    private createErrorMessage(code: 
         "REQUIRE_00" | "REQUIRE_01" | "OBJECT_01" | "ARRAY_01" | "UNNECESSARY_01" | 
         "REQUIRE_11" | "OBJECT_11" | "ARRAY_11" | "UNNECESSARY_11" |
         "NUMBER_21" | "NUMBER_22" | "NUMBER_23" | "BOOL_21" | "BOOL_22" | "BOOL_23" | "STRING_21" | "STRING_22" | "STRING_23" | "UUID_21" | "MAIL_21" | "DATE_21" | "DATE_22" |
@@ -162,8 +155,10 @@ export class RequestType extends ReqResType {
         "MAP_01" | "MAP_02" | "MAP_03" | "MAP_04" | "MAP_05" | "MAP_11" | "MAP_12" | "MAP_13" | "MAP_14" | "MAP_15" |
         "MAP_31" | "MAP_32" | "MAP_33" | "MAP_34" | "MAP_35" |
         "NUMBER_91" | "NUMBER_92" | "NUMBER_93" | "BOOL_91" | "BOOL_92" | "BOOL_93" | "STRING_91" | "STRING_92" | "STRING_93" | "UUID_91" | "MAIL_91" | "DATE_91" | "DATE_92" |
-        "TIME_91" | "DATETIME_91" | "DATETIME_92" | "HTTPS_91" | "BASE64_91"
-        , keys: Array<string | number>, value: any): never {
+        "TIME_91" | "DATETIME_91" | "DATETIME_92" | "HTTPS_91" | "BASE64_91", 
+        keys: Array<string | number>,
+        value?: any
+    ) {
         const list = {
             "REQUIRE_00": this.ERROR_MESSAGE.REQUIRED,
             "REQUIRE_01": this.ERROR_MESSAGE.REQUIRED,
@@ -252,9 +247,39 @@ export class RequestType extends ReqResType {
                 break;
         }
 
-        errorMessage = errorMessage.replace("{property}", keys.join('.')).replace("{value}", value);
+        errorMessage = errorMessage.replace("{property}", keys.join('.'));
+        if (value === undefined || value === '') {
+            errorMessage = errorMessage.replace("（{value}）", "");
+        } else {
+            errorMessage = errorMessage.replace("{value}", value);
+        }
 
-        throw new InputErrorException(code, errorMessage);
+        
+        return errorMessage;
+    }
+
+    /**
+     * Generates an error message based on the provided code, keys, and value.
+     * 指定されたコード、キー、および値に基づいてエラーメッセージを生成します。
+     * @param {string} code - The error code. エラーコード
+     * @param {Array<string | number>} keys - The keys indicating the property path. プロパティパスを示すキー
+     * @param {any} value - The value that caused the error. エラーを引き起こした値
+     * @returns {string} The generated error message. 生成されたエラーメッセージ
+     */ 
+    private throwInputError(code: 
+        "REQUIRE_00" | "REQUIRE_01" | "OBJECT_01" | "ARRAY_01" | "UNNECESSARY_01" | 
+        "REQUIRE_11" | "OBJECT_11" | "ARRAY_11" | "UNNECESSARY_11" |
+        "NUMBER_21" | "NUMBER_22" | "NUMBER_23" | "BOOL_21" | "BOOL_22" | "BOOL_23" | "STRING_21" | "STRING_22" | "STRING_23" | "UUID_21" | "MAIL_21" | "DATE_21" | "DATE_22" |
+        "TIME_21" | "DATETIME_21" | "DATETIME_22" | "HTTPS_21" | "BASE64_21" | 
+        "REQUIRE_31" | 
+        "ENUM_32" | "ENUM_41" | "ENUM_42" | "NUMBER_41" | "STRING_41" |
+        "MAP_01" | "MAP_02" | "MAP_03" | "MAP_04" | "MAP_05" | "MAP_11" | "MAP_12" | "MAP_13" | "MAP_14" | "MAP_15" |
+        "MAP_31" | "MAP_32" | "MAP_33" | "MAP_34" | "MAP_35" |
+        "NUMBER_91" | "NUMBER_92" | "NUMBER_93" | "BOOL_91" | "BOOL_92" | "BOOL_93" | "STRING_91" | "STRING_92" | "STRING_93" | "UUID_91" | "MAIL_91" | "DATE_91" | "DATE_92" |
+        "TIME_91" | "DATETIME_91" | "DATETIME_92" | "HTTPS_91" | "BASE64_91"
+        , keys: Array<string | number>, value: any): never {
+
+        throw new InputErrorException(code, this.createErrorMessage(code, keys, value));
     }
 
     /**
@@ -279,8 +304,7 @@ export class RequestType extends ReqResType {
         }
 
         if (this.data === undefined) {
-            // ここは基本通ることはないと思いますが...
-            throw new Error(`リクエストBodyがundefinedです。`);
+            this.data = {};
         }
 
         for (const key of Object.keys(this.properties)) {
@@ -766,11 +790,11 @@ export class RequestType extends ReqResType {
                 }
                 const numberValue = Number(value);
                 if (property.min !== undefined && numberValue < property.min) {
-                    this.throwInputError(isRequestBody ? "NUMBER_21" : "NUMBER_91", keys, value);
+                    this.throwInputError(isRequestBody ? "NUMBER_22" : "NUMBER_92", keys, value);
                 }
 
                 if (property.max !== undefined && numberValue > property.max) {
-                    this.throwInputError(isRequestBody ? "NUMBER_21" : "NUMBER_91", keys, value);
+                    this.throwInputError(isRequestBody ? "NUMBER_23" : "NUMBER_93", keys, value);
                 }
                 return numberValue;
             case 'boolean':
@@ -1099,32 +1123,401 @@ export class RequestType extends ReqResType {
         return ymlString;
     }
 
-    // private makeSwaggerPropertyFromDictionary(keys: Array<string | number>, tabCount: number): string {
+    public getInputErrorList(method: string, code: string): Array<IError> {
+        let errorList: Array<IError> = [];
+        
+        for (const [key, property] of Object.entries(this.properties)) {
+            if (property.type.endsWith('?') === false) {
+                const errorCode = property.type === 'array' && ['GET', 'DELETE'].includes(method) ? 'REQUIRE_00' : 'REQUIRE_01';
+                errorList.push({
+                    status: 400,
+                    code: code + '-' + errorCode,
+                    description: this.createErrorMessage(errorCode, [key])
+                });
+            }
 
-    //     const property = this.getProperty(keys).properties;
+            switch (property.type) {
+                case 'object':
+                case 'object?':
+                    errorList.push({
+                        status: 400,
+                        code: code + '-OBJECT_01',
+                        description: this.createErrorMessage('OBJECT_01', [key])
+                    });
 
-    //     const space = '  '.repeat(tabCount);
+                    errorList = [...errorList, ...this.getErrorObject([key], code)];
+                    break;
+                case 'array':
+                case 'array?':
+                    errorList.push({
+                        status: 400,
+                        code: code + '-ARRAY_01',
+                        description: this.createErrorMessage('ARRAY_01', [key])
+                    });
 
-    //     let ymlString = `${space}items:\n`;
-    //     ymlString += `${space}  type: ${this.replaceFromPropertyTypeToSwagger(property)}\n`;
-    //     if ((property.description ?? '') !== '') {
-    //         const descJoin = `\n${space}    `;
-    //         ymlString += `${space}  description: |${descJoin}${property.description.replaceAll('\n', descJoin)}\n`;
-    //     }
+                    errorList = [...errorList, ...this.getErrorArray([key], code)];
+                    break;
+                case 'map':
+                case 'map?':
+                    switch (property.mapType) {
+                        case 'number':
+                            errorList.push({
+                                status: 400,
+                                code: code + '-MAP_01',
+                                description: this.createErrorMessage('MAP_01', [key])
+                            });
+                            break;
+                        case 'string':
+                            errorList.push({
+                                status: 400,
+                                code: code + '-MAP_02',
+                                description: this.createErrorMessage('MAP_02', [key])
+                            });
+                            break;
+                        case 'bool':
+                            errorList.push({
+                                status: 400,
+                                code: code + '-MAP_03',
+                                description: this.createErrorMessage('MAP_03', [key])
+                            });
+                            errorList.push({
+                                status: 400,
+                                code: code + '-MAP_04',
+                                description: this.createErrorMessage('MAP_04', [key])
+                            });
+                            errorList.push({
+                                status: 400,
+                                code: code + '-MAP_05',
+                                description: this.createErrorMessage('MAP_05', [key])
+                            });
+                            break;
+                    }
+                    break;
+                default:
+                    errorList = [...errorList, ...this.getError([key], code, true)];
+                    break;
+            }
+        }
 
-    //     switch (property.type) {
-    //         case 'object':
-    //         case 'object?':
-    //             ymlString += this.makeSwaggerProperyFromObject([...keys, 0], tabCount + 1);
-    //             break;
-    //         case 'array':
-    //         case 'array?':
-    //             ymlString += this.makeSwaggerPropertyFromArray([...keys, 0], tabCount + 1);
-    //             break;
-    //     }
+        return errorList;
+    }
 
-    //     return ymlString;
-    // }
+    private getErrorObject(keys: Array<string | number>, code: string): Array<IError> {
+        let errorList: Array<IError> = [];
+
+        const property = this.getProperty(keys);
+        if (property.type !== 'object' && property.type !== 'object?') {
+            throw new Error(`sgetErrorObjectメソッドでObject型以外が入力された場合はエラー\n keys: ${keys.join(',')}`);
+        }
+
+        for (const key of Object.keys(property.properties)) {
+            if (property.properties[key].type.endsWith('?') === false) {
+                errorList.push({
+                    status: 400,
+                    code: code + '-REQUIRE_11',
+                    description: this.createErrorMessage('REQUIRE_11', [...keys, key]),
+                });
+            }
+
+            switch (property.properties[key].type) {
+                case 'object':
+                case 'object?':
+                    errorList.push({
+                        status: 400,
+                        code: code + '-OBJECT_11',
+                        description: this.createErrorMessage('OBJECT_11', [...keys, key]),
+                    });
+
+                    errorList = [...errorList, ...this.getErrorObject([...keys, key], code)];
+                    break;
+                case 'array':
+                case 'array?':
+                    errorList.push({
+                        status: 400,
+                        code: code + '-ARRAY_11',
+                        description: this.createErrorMessage('ARRAY_11', [...keys, key]),
+                    });
+
+                    errorList = [...errorList, ...this.getErrorArray([...keys, key, 0], code)];
+                    break;
+                case 'map':
+                case 'map?':
+                    switch (property.properties[key].mapType) {
+                        case 'number':
+                            errorList.push({
+                                status: 400,
+                                code: code + '-MAP_11',
+                                description: this.createErrorMessage('MAP_11', [key])
+                            });
+                            break;
+                        case 'string':
+                            errorList.push({
+                                status: 400,
+                                code: code + '-MAP_12',
+                                description: this.createErrorMessage('MAP_12', [key])
+                            });
+                            break;
+                        case 'bool':
+                            errorList.push({
+                                status: 400,
+                                code: code + '-MAP_13',
+                                description: this.createErrorMessage('MAP_13', [key])
+                            });
+                            errorList.push({
+                                status: 400,
+                                code: code + '-MAP_14',
+                                description: this.createErrorMessage('MAP_14', [key])
+                            });
+                            errorList.push({
+                                status: 400,
+                                code: code + '-MAP_15',
+                                description: this.createErrorMessage('MAP_15', [key])
+                            });
+                            break;
+                    }
+                    break;
+                default:
+                    errorList = [...errorList, ...this.getError([...keys, key], code, false)];
+                    break;
+            }
+        }
+
+        return errorList;
+    }
+
+    private getErrorArray(keys: Array<string | number>, code: string) {
+        let errorList: Array<IError> = [];
+
+        const property = this.getProperty(keys);
+        if (property.type !== 'array' && property.type !== 'array?') {
+            throw new Error(`setArrayメソッドでArray型以外が入力された場合はエラー\n keys: ${keys.join(',')}`);
+        }
+
+        errorList.push({
+            status: 400,
+            code: code + '-REQUIRE_31',
+            description: this.createErrorMessage('REQUIRE_31', [...keys]),
+        });
+
+        switch (property.item.type) {
+            case 'object':
+            case 'object?':
+                errorList = [...errorList, ...this.getErrorObject([...keys, 0], code)];
+                break;
+            case 'array':
+            case 'array?':
+                errorList = [...errorList, ...this.getErrorArray([...keys, 0], code)];
+                break;
+            case 'map':
+            case 'map?':
+                switch (property.item.mapType) {
+                    case 'number':
+                        errorList.push({
+                            status: 400,
+                            code: code + '-MAP_11',
+                            description: this.createErrorMessage('MAP_31', [...keys, 0])
+                        });
+                        break;
+                    case 'string':
+                        errorList.push({
+                            status: 400,
+                            code: code + '-MAP_12',
+                            description: this.createErrorMessage('MAP_32', [...keys, 0])
+                        });
+                        break;
+                    case 'bool':
+                        errorList.push({
+                            status: 400,
+                            code: code + '-MAP_13',
+                            description: this.createErrorMessage('MAP_33', [...keys, 0])
+                        });
+                        errorList.push({
+                            status: 400,
+                            code: code + '-MAP_14',
+                            description: this.createErrorMessage('MAP_34', [...keys, 0])
+                        });
+                        errorList.push({
+                            status: 400,
+                            code: code + '-MAP_15',
+                            description: this.createErrorMessage('MAP_35', [...keys, 0])
+                        });
+                        break;
+                }
+                break;
+            default:
+                errorList = [...errorList, ...this.getError([...keys, 0], code, false)];
+                break;
+        }
+
+        return errorList;
+    }
+
+    private getError(keys: Array<string | number>, code: string, isRequestBody: boolean): Array<IError> {
+        const errorList: Array<IError> = [];
+        const property = this.getProperty(keys);
+        switch (property.type) {
+            case 'enum':
+            case 'enum?':
+                switch (property.enumType) {
+                    case 'number':
+                    case 'number?':
+                        errorList.push({
+                            status: 400,
+                            code: code + '-NUMBER_41',
+                            description: this.createErrorMessage('NUMBER_41', keys)
+                        });
+                        break;
+                    case 'string':
+                    case 'string?':
+                        errorList.push({
+                            status: 400,
+                            code: code + '-STRING_41',
+                            description: this.createErrorMessage('STRING_41', keys)
+                        });
+                        break;
+                }
+                errorList.push({
+                    status: 400,
+                    code: code + '-ENUM_42',
+                    description: this.createErrorMessage('ENUM_42', keys)
+                });
+                break;
+            case 'number':
+            case 'number?':
+                errorList.push({
+                    status: 400,
+                    code: isRequestBody ? code + "-NUMBER_21" : code + "-NUMBER_91",
+                    description: this.createErrorMessage(isRequestBody ? "NUMBER_21" : "NUMBER_91", keys)
+                });
+
+                if (property.min !== undefined) {
+                    errorList.push({
+                        status: 400,
+                        code: isRequestBody ? code + "-NUMBER_22" : code + "-NUMBER_92",
+                        description: this.createErrorMessage(isRequestBody ? "NUMBER_22" : "NUMBER_92", keys)
+                    });
+                }
+
+                if (property.max !== undefined) {
+                    errorList.push({
+                        status: 400,
+                        code: isRequestBody ? code + "-NUMBER_23" : code + "-NUMBER_93",
+                        description: this.createErrorMessage(isRequestBody ? "NUMBER_23" : "NUMBER_93", keys)
+                    });
+                }
+                break;
+            case 'boolean':
+            case 'boolean?':
+                errorList.push({
+                    status: 400,
+                    code: isRequestBody ? code + "-BOOL_21" : code + "-BOOL_91",
+                    description: this.createErrorMessage(isRequestBody ? "BOOL_21" : "BOOL_91", keys)
+                });
+                errorList.push({
+                    status: 400,
+                    code: isRequestBody ? code + "-BOOL_22" : code + "-BOOL_92",
+                    description: this.createErrorMessage(isRequestBody ? "BOOL_22" : "BOOL_92", keys)
+                });
+                errorList.push({
+                    status: 400,
+                    code: isRequestBody ? code + "-BOOL_23" : code + "-BOOL_93",
+                    description: this.createErrorMessage(isRequestBody ? "BOOL_23" : "BOOL_93", keys)
+                });
+                break;
+            case 'string':
+            case 'string?':
+                errorList.push({
+                    status: 400,
+                    code: isRequestBody ? code + "-STRING_21" : code + "-STRING_91",
+                    description: this.createErrorMessage(isRequestBody ? "STRING_21" : "STRING_91", keys)
+                });
+
+                if (property.maxLength !== undefined) {
+                    errorList.push({
+                        status: 400,
+                        code: isRequestBody ? code + "-STRING_22" : code + "-STRING_92",
+                        description: this.createErrorMessage(isRequestBody ? "STRING_22" : "STRING_92", keys)
+                    });
+                }
+
+                if (property.regExp !== undefined) {
+                    errorList.push({
+                        status: 400,
+                        code: isRequestBody ? code + "-STRING_23" : code + "-STRING_93",
+                        description: this.createErrorMessage(isRequestBody ? "STRING_23" : "STRING_93", keys)
+                    });
+                }
+                break;
+            case 'uuid':
+            case 'uuid?':
+                errorList.push({
+                    status: 400,
+                    code: isRequestBody ? code + "-UUID_21" : code + "-UUID_91",
+                    description: this.createErrorMessage(isRequestBody ? "UUID_21" : "UUID_91", keys)
+                });
+                break;
+            case 'mail':
+            case 'mail?':
+                errorList.push({
+                    status: 400,
+                    code: isRequestBody ? code + "-MAIL_21" : code + "-MAIL_91",
+                    description: this.createErrorMessage(isRequestBody ? "MAIL_21" : "MAIL_91", keys)
+                });
+                break;
+            case 'date':
+            case 'date?':
+                errorList.push({
+                    status: 400,
+                    code: isRequestBody ? code + "-DATE_21" : code + "-DATE_91",
+                    description: this.createErrorMessage(isRequestBody ? "DATE_21" : "DATE_91", keys)
+                });
+                errorList.push({
+                    status: 400,
+                    code: isRequestBody ? code + "-DATE_22" : code + "-DATE_92",
+                    description: this.createErrorMessage(isRequestBody ? "DATE_22" : "DATE_92", keys)
+                });
+                break;
+            case 'time':
+            case 'time?':
+                errorList.push({
+                    status: 400,
+                    code: isRequestBody ? code + "-TIME_21" : code + "-TIME_91",
+                    description: this.createErrorMessage(isRequestBody ? "TIME_21" : "TIME_91", keys)
+                });
+                break;
+            case 'datetime':
+            case 'datetime?':
+                errorList.push({
+                    status: 400,
+                    code: isRequestBody ? code + "-DATETIME_21" : code + "-DATETIME_91",
+                    description: this.createErrorMessage(isRequestBody ? "DATETIME_21" : "DATETIME_91", keys)
+                });
+                errorList.push({
+                    status: 400,
+                    code: isRequestBody ? code + "-DATETIME_22" : code + "-DATETIME_92",
+                    description: this.createErrorMessage(isRequestBody ? "DATETIME_22" : "DATETIME_92", keys)
+                });
+                break;
+            case 'https':
+            case 'https?':
+                errorList.push({
+                    status: 400,
+                    code: isRequestBody ? code + "-HTTPS_21" : code + "-HTTPS_91",
+                    description: this.createErrorMessage(isRequestBody ? "HTTPS_21" : "HTTPS_91", keys)
+                });
+                break;
+            case 'base64':
+            case 'base64?':
+                errorList.push({
+                    status: 400,
+                    code: isRequestBody ? code + "-BASE64_21" : code + "-BASE64_91",
+                    description: this.createErrorMessage(isRequestBody ? "BASE64_21" : "BASE64_91", keys)
+                });
+                break;
+        }
+
+        return errorList;
+    }
 }
 
 // Requestのheaderで定義されているIFをそのまま拝借

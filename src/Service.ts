@@ -11,6 +11,11 @@ import { EncryptClient } from './clients/EncryptClient';
 import PoolManager from './PoolManager';
 
 export type MethodType = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
+export interface IError {
+    status: 400 | 401 | 404 | 409 | 422 | 500, 
+    code: string;
+    description: string; 
+}
 
 export class Service {
     protected readonly method: MethodType = 'GET';
@@ -31,6 +36,14 @@ export class Service {
     protected readonly isTest: boolean = process.env.NODE_ENV === 'test';
     protected readonly tags: Array<string> = [];
     get Tags(): Array<string> { return this.tags; }
+    protected readonly errorList: Array<IError> = [];
+    get ErrorList(): Array<IError> {
+        return [...this.errorList, {
+            status: 500,
+            code: '',
+            description: 'サーバー内部エラー（予期せぬエラー）'
+        }];
+    }
 
     protected readonly req: Request;
     protected readonly res: Response;

@@ -1,6 +1,9 @@
 import { ValidateStringUtil } from "type-utils-n-daira";
 import StringUtil from "../Utils/StringUtil";
 import ReqResType, { PropertyType } from "./ReqResType";
+import { IError } from "../Service";
+
+
 
 export class ResponseType extends ReqResType {
 
@@ -367,7 +370,7 @@ export class ResponseType extends ReqResType {
      * @returns {string} Swagger format response definition
      * Swagger形式のレスポンス定義
      */
-    public createSwagger(): string {
+    public createSwagger(errorList: Array<IError>): string {
         let ymlString = `      responses:
         '200':
           description: 成功事レスポンス
@@ -378,11 +381,10 @@ export class ResponseType extends ReqResType {
                 properties:`;
 
         if (Object.keys(this.properties).length === 0) {
-            ymlString += ' {}\n'
-            return ymlString;
+            ymlString += ' {}\n';
+        } else {
+            ymlString += `\n`;
         }
-
-        ymlString += `\n`;
 
         let tabCount = 9;
         const space = '  '.repeat(tabCount);
@@ -407,6 +409,38 @@ export class ResponseType extends ReqResType {
                 case 'map?':
                     ymlString += this.makeSwaggerPropertyFromDictionary([key], tabCount + 1);
                     break;
+            }
+        }
+
+        // statusごとにグルーピング
+        const grouped: { [status: number]: IError[] } = {};
+        for (const error of errorList) {
+            if (grouped[error.status] === undefined) {
+                grouped[error.status] = [];
+            }
+            grouped[error.status].push(error);
+        }
+
+        // 出力順（存在するものだけ出す）
+        const statusOrder: Array<IError['status']> = [400, 401, 404, 409, 422, 500];
+
+        for (const status of statusOrder) {
+            const list = grouped[status];
+            if (!list || list.length === 0) { continue; }
+
+            const descIndentJoin = '\n            ';
+
+            if (list.length === 1) {
+                // 単一エラーは1行説明
+                ymlString += `        '${status}':
+          description: ${list[0].description}${list[0].code !== '' ? ` [${list[0].code}]` : ''}
+`;
+            } else {
+                // 複数エラーは箇条書き
+                const bullets = list.map(e => `- ${e.description}${e.code !== '' ? ` [${e.code}]` : ''}`).join(descIndentJoin);
+                ymlString += `        '${status}':
+          description: |${descIndentJoin}${bullets}
+`;
             }
         }
 

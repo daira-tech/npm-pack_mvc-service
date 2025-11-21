@@ -34,6 +34,13 @@ class Service {
     get Response() { return this.response; }
     ; // swaggerで必要なので、ここだけ宣言
     get Tags() { return this.tags; }
+    get ErrorList() {
+        return [...this.errorList, {
+                status: 500,
+                code: '',
+                description: 'サーバー内部エラー（予期せぬエラー）'
+            }];
+    }
     constructor(request, response) {
         this.method = 'GET';
         this.endpoint = '';
@@ -44,6 +51,7 @@ class Service {
         this.response = new ResponseType_1.ResponseType();
         this.isTest = process.env.NODE_ENV === 'test';
         this.tags = [];
+        this.errorList = [];
         this.dbUser = process.env.DB_USER;
         this.dbHost = process.env.DB_HOST;
         this.dbName = process.env.DB_DATABASE;

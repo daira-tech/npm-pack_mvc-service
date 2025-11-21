@@ -337,7 +337,7 @@ class ResponseType extends ReqResType_1.default {
      * @returns {string} Swagger format response definition
      * Swagger形式のレスポンス定義
      */
-    createSwagger() {
+    createSwagger(errorList) {
         let ymlString = `      responses:
         '200':
           description: 成功事レスポンス
@@ -348,9 +348,10 @@ class ResponseType extends ReqResType_1.default {
                 properties:`;
         if (Object.keys(this.properties).length === 0) {
             ymlString += ' {}\n';
-            return ymlString;
         }
-        ymlString += `\n`;
+        else {
+            ymlString += `\n`;
+        }
         let tabCount = 9;
         const space = '  '.repeat(tabCount);
         for (const [key, property] of Object.entries(this.properties)) {
@@ -373,6 +374,36 @@ class ResponseType extends ReqResType_1.default {
                 case 'map?':
                     ymlString += this.makeSwaggerPropertyFromDictionary([key], tabCount + 1);
                     break;
+            }
+        }
+        // statusごとにグルーピング
+        const grouped = {};
+        for (const error of errorList) {
+            if (grouped[error.status] === undefined) {
+                grouped[error.status] = [];
+            }
+            grouped[error.status].push(error);
+        }
+        // 出力順（存在するものだけ出す）
+        const statusOrder = [400, 401, 404, 409, 422, 500];
+        for (const status of statusOrder) {
+            const list = grouped[status];
+            if (!list || list.length === 0) {
+                continue;
+            }
+            const descIndentJoin = '\n            ';
+            if (list.length === 1) {
+                // 単一エラーは1行説明
+                ymlString += `        '${status}':
+          description: ${list[0].description}${list[0].code !== '' ? ` [${list[0].code}]` : ''}
+`;
+            }
+            else {
+                // 複数エラーは箇条書き
+                const bullets = list.map(e => `- ${e.description}${e.code !== '' ? ` [${e.code}]` : ''}`).join(descIndentJoin);
+                ymlString += `        '${status}':
+          description: |${descIndentJoin}${bullets}
+`;
             }
         }
         return ymlString;
