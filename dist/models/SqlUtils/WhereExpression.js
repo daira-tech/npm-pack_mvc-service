@@ -388,32 +388,30 @@ class WhereExpression {
                 japanese: true
             };
         }
-        const objs = {};
-        if ((replaceOption === null || replaceOption === void 0 ? void 0 : replaceOption.hiraganaToKatakana) === true) {
-            objs['あいうえおかきくけこさしすせそたちつてとなにぬねのはひふへほまみむめもやゆよらりるれろわをんゔがぎぐげござじずぜぞだぢづでどばびぶべぼぱぴぷぺぽぁぃぅぇぉゃゅょっー、。・「」゛゜']
-                = 'アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲンヴガギグゲゴザジズゼゾダヂヅデドバビブベボパピプペポァィゥェォャュョッー、。・「」゛゜';
-        }
-        if (((_a = replaceOption === null || replaceOption === void 0 ? void 0 : replaceOption.numeric) === null || _a === void 0 ? void 0 : _a.japanese) === true) {
-            objs['零〇'] = '00';
-            objs['一壱弌'] = '111';
-            objs['二弐'] = '22';
-            objs['三参'] = '33';
-            objs['四肆'] = '44';
-            objs['五伍'] = '55';
-            objs['六陸'] = '66';
-            objs['七漆'] = '77';
-            objs['八捌'] = '88';
-            objs['九玖'] = '99';
-        }
-        if ((replaceOption === null || replaceOption === void 0 ? void 0 : replaceOption.halfToFull) === true) {
-            objs['０１２３４５６７８９'] = '0123456789';
-            objs['アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲンヴガギグゲゴザジズゼゾダヂヅデドバビブベボパピプペポァィゥェォャュョッー、。・「」゛゜']
-                = 'ｱｲｳｴｵｶｷｸｹｺｻｼｽｾｿﾀﾁﾂﾃﾄﾅﾆﾇﾈﾉﾊﾋﾌﾍﾎﾏﾐﾑﾒﾓﾔﾕﾖﾗﾘﾙﾚﾛﾜｦﾝｳﾞｶﾞｷﾞｸﾞｹﾞｺﾞｻﾞｼﾞｽﾞｾﾞｿﾞﾀﾞﾁﾞﾂﾞﾃﾞﾄﾞﾊﾊﾋﾞﾌﾞﾍﾞﾎﾞﾊﾟﾋﾟﾌﾟﾍﾟﾎﾟｧｨｩｪｫｬｭｮｯｰ､｡･｢｣ ﾞ ﾟ';
-            objs['ＡＢＣＤＥＦＧＨＩＪＫＬＭＮＯＰＱＲＳＴＵＶＷＸＹＺ'] = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-            objs['ａｂｃｄｅｆｇｈｉｊｋｌｍｎｏｐｑｒｓｔｕｖｗｘｙｚ'] = 'abcdefghijklmnopqrstuvwxyz';
-        }
         let sql = expression;
-        Object.keys(objs).forEach(key => sql = `TRANSLATE(${sql} ,'${key}','${objs[key]}')`);
+        // 1. ひらがな → カタカナ (TRANSLATEを使用)
+        // NORMALIZEはひらがなをカタカナにはしないので、これは残します
+        if ((replaceOption === null || replaceOption === void 0 ? void 0 : replaceOption.hiraganaToKatakana) === true) {
+            const from = 'あいうえおかきくけこさしすせそたちつてとなにぬねのはひふへほまみむめもやゆよらりるれろわをんゔがぎぐげござじずぜぞだぢづでどばびぶべぼぱぴぷぺぽぁぃぅぇぉゃゅょっー、。・「」゛゜';
+            const to = 'アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲンヴガギグゲゴザジズゼゾダヂヅデドバビブベボパピプペポァィゥェォャュョッー、。・「」゛゜';
+            sql = `TRANSLATE(${sql}, '${from}', '${to}')`;
+        }
+        // 2. 漢数字 → 算用数字 (TRANSLATEを使用)
+        // これもNORMALIZEの管轄外なので残しますが、1つのTRANSLATEにまとめます（SQLが速くなります）
+        if (((_a = replaceOption === null || replaceOption === void 0 ? void 0 : replaceOption.numeric) === null || _a === void 0 ? void 0 : _a.japanese) === true) {
+            const from = '零〇一壱弌二弐三参四肆五伍六陸七漆八捌九玖';
+            const to = '001112233445566778899';
+            sql = `TRANSLATE(${sql}, '${from}', '${to}')`;
+        }
+        // 3. 全角半角の統一 (ここを NORMALIZE に変更！)
+        // 元の halfToFull ブロックを削除し、この処理に置き換えます
+        if ((replaceOption === null || replaceOption === void 0 ? void 0 : replaceOption.halfToFull) === true) {
+            // NORMALIZE(..., NFKC) は以下の処理を自動で行います
+            // - 全角英数字 → 半角英数字 (例: Ａ → A)
+            // - 半角カナ → 全角カナ (例: ｱ → ア)
+            // - 濁点の結合 (例: ｶ + ﾞ → ガ)
+            sql = `NORMALIZE(${sql}, NFKC)`;
+        }
         return sql;
     }
 }

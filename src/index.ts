@@ -1,8 +1,8 @@
 export { Service } from './Service';
+export type { MethodType } from './Service';
 export { MaintenanceException, AuthException, InputErrorException, ForbiddenException, DbConflictException, UnprocessableException, NotFoundException } from './exceptions/Exception';
 export { createSwagger } from './documents/Swagger';
 export { AwsS3Client } from './clients/AwsS3Client';
-export { Base64Client } from './clients/Base64Client';
 export { StringClient } from './clients/StringClient';
 export { EncryptClient } from './clients/EncryptClient';
 

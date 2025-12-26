@@ -1,5 +1,4 @@
 import { _Object, DeleteObjectsCommand, GetObjectCommand, ListObjectsV2Command, PutObjectCommand, S3Client, ScanRange } from '@aws-sdk/client-s3';
-import { Base64Client } from './Base64Client';
 import { UnprocessableException } from '../exceptions/Exception';
 import axios from 'axios';
 
@@ -77,19 +76,19 @@ export class AwsS3Client {
         await this.client.send(command);
     }
 
-    public async uploadToPdf(path: string, fileName: string, base64Datas: Array<string>) {
-        const base64Client = new Base64Client();
-        const mergedPdfBase64 = await base64Client.mergeToPdfBase64(base64Datas);
+    // public async uploadToPdf(path: string, fileName: string, base64Datas: Array<string>) {
+    //     const base64Client = new Base64Client();
+    //     const mergedPdfBase64 = await base64Client.mergeToPdfBase64(base64Datas);
 
-        const command = new PutObjectCommand({
-            Bucket: this.bucketName,
-            Key: this.makeKey(path, fileName),
-            Body: Buffer.from(mergedPdfBase64, 'base64'),
-            ContentEncoding: 'base64',
-            ContentType: 'application/pdf'
-        });
-        await this.client.send(command);
-    }
+    //     const command = new PutObjectCommand({
+    //         Bucket: this.bucketName,
+    //         Key: this.makeKey(path, fileName),
+    //         Body: Buffer.from(mergedPdfBase64, 'base64'),
+    //         ContentEncoding: 'base64',
+    //         ContentType: 'application/pdf'
+    //     });
+    //     await this.client.send(command);
+    // }
 
     public async uploadText(path: string, fileName: string, text: string) {
         const command = new PutObjectCommand({
@@ -102,26 +101,12 @@ export class AwsS3Client {
     }
 
     public async uploadBase64Data(path: string, fileName: string, base64Data: string) : Promise<IUploadResponse> {
-        const base64Client = new Base64Client();
-
-        const type = base64Client.getMimeType(base64Data);
-        const extension = {
-            'image/png': '.png',
-            'image/jpeg': '.jpeg',
-            'image/gif': '.gif',
-            'application/pdf': '.pdf'
-        }[type];
-        if (fileName.endsWith(extension) === false) {
-            fileName += extension;
-        }
-
         const key = this.makeKey(path, fileName);
         const command = new PutObjectCommand({
             Bucket: this.bucketName,
             Key: key,
             Body: Buffer.from(base64Data, 'base64'),
-            ContentEncoding: 'base64',
-            ContentType: type
+            ContentEncoding: 'base64'
         });
         await this.client.send(command);
         

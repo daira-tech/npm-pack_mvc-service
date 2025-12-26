@@ -1,4 +1,13 @@
 "use strict";
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
@@ -91,7 +100,6 @@ class RequestType extends ReqResType_1.default {
         }
         return this.headers;
     }
-    get RemoteAddress() { return this.remoteAddress; }
     get Authorization() {
         var _a;
         const authorization = (_a = this.Headers['authorization']) !== null && _a !== void 0 ? _a : '';
@@ -100,23 +108,41 @@ class RequestType extends ReqResType_1.default {
         }
         return authorization.replace(/^Bearer\s/, '');
     }
-    setRequest(request) {
-        var _a, _b, _c;
-        this.createBody(request);
-        this.params = {};
-        if (request.params !== undefined) {
-            for (const [key, value] of Object.entries(request.params)) {
-                const index = this.paramProperties.findIndex(property => property.key === key);
-                if (index === -1) {
-                    throw new Error(`${key} is not set in paramProperties.`);
+    setRequest(module, request) {
+        return __awaiter(this, void 0, void 0, function* () {
+            var _a, _b, _c, _d;
+            yield this.createBody(module, request);
+            this.params = {};
+            if (module === 'express') {
+                const req = request;
+                if (req.params !== undefined) {
+                    for (const [key, value] of Object.entries(req.params)) {
+                        const index = this.paramProperties.findIndex((p) => p.key === key);
+                        if (index === -1)
+                            throw new Error(`${key} is not set in paramProperties.`);
+                        const prop = this.paramProperties[index];
+                        this.params[key] = this.convertValue(prop, value, [key, `(pathIndex: ${index})`], false);
+                    }
                 }
-                const property = this.paramProperties[index];
-                this.params[key] = this.convertValue(property, value, [key, `(pathIndex: ${index})`], false);
+                this.params = (_a = req.params) !== null && _a !== void 0 ? _a : {};
+                this.headers = (_b = req.headers) !== null && _b !== void 0 ? _b : {};
             }
-        }
-        this.params = (_a = request.params) !== null && _a !== void 0 ? _a : {};
-        this.headers = (_b = request.headers) !== null && _b !== void 0 ? _b : {};
-        this.remoteAddress = (_c = request.socket) === null || _c === void 0 ? void 0 : _c.remoteAddress;
+            else {
+                const c = request;
+                for (let index = 0; index < this.paramProperties.length; index++) {
+                    const prop = this.paramProperties[index];
+                    const value = (_d = (_c = c.req).param) === null || _d === void 0 ? void 0 : _d.call(_c, prop.key); // hono の param()
+                    if (value !== undefined) {
+                        this.params[prop.key] = this.convertValue(prop, value, [prop.key, `(pathIndex: ${index})`], false);
+                    }
+                }
+                const headersObj = {};
+                c.req.raw.headers.forEach((v, k) => {
+                    headersObj[k.toLowerCase()] = v;
+                });
+                this.headers = headersObj;
+            }
+        });
     }
     createErrorMessage(code, keys, value) {
         var _a, _b, _c, _d, _e;
@@ -240,179 +266,198 @@ class RequestType extends ReqResType_1.default {
      * @param {Object} body - Request body object, リクエストボディオブジェクト
      * @throws {InputErrorException} Thrown when the input value is invalid, 入力値が不正な場合にスローされます
      */
-    createBody(request) {
-        if (request.method === 'GET' || request.method === 'DELETE') {
-            this.data = request.query;
-        }
-        else {
-            this.data = request.body;
-        }
-        if (this.data === undefined) {
-            this.data = {};
-        }
-        for (const key of Object.keys(this.properties)) {
-            // NULLチェック
-            if (key in this.data === false || this.data[key] === null || this.data[key] === "") {
-                if (this.properties[key].type === 'array' && ['GET', 'DELETE'].includes(request.method)) {
-                    // GET,DELETEメソッドの場合、?array=1&array=2で配列となるが、
-                    // ?array=1のみで終わる場合は配列にならないため、直接配列にしている
-                    // この処理で空文字やnullが入った場合の対処をここで行う
-                    const itemProperty = this.properties[key].item;
-                    if (itemProperty.type.endsWith('?')) {
-                        const tempValue = this.data[key];
-                        this.data[key] = [];
-                        if (tempValue !== undefined) {
-                            if (itemProperty.type === 'string?') {
-                                this.data[key][0] = tempValue;
-                            }
-                            else {
-                                this.data[key][0] = null;
-                            }
-                        }
-                        continue;
-                    }
-                    else {
-                        this.throwInputError("REQUIRE_00", [key, 0], "");
-                    }
+    createBody(module, request) {
+        return __awaiter(this, void 0, void 0, function* () {
+            let method = '';
+            if (module === 'express') {
+                const req = request;
+                method = req.method;
+                if (method === 'GET' || method === 'DELETE') {
+                    this.data = req.query;
                 }
                 else {
-                    if (this.properties[key].type.endsWith('?')) {
-                        this.changeBody([key], null);
-                        continue;
-                    }
-                    else {
-                        this.throwInputError("REQUIRE_01", [key], "");
-                    }
+                    this.data = req.body;
                 }
             }
-            const value = this.data[key];
-            switch (this.properties[key].type) {
-                case 'object':
-                case 'object?':
-                    if (typeof value === 'object') {
-                        this.setObject([key], value);
-                    }
-                    else {
-                        this.throwInputError("OBJECT_01", [key], value);
-                    }
-                    break;
-                case 'array':
-                case 'array?':
-                    if (Array.isArray(value)) {
-                        this.setArray([key], value);
-                    }
-                    else {
-                        if (request.method === 'GET' || request.method === 'DELETE') {
-                            // GET,DELETEメソッドの場合、?array=1&array=2で配列となるが、
-                            // ?array=1のみで終わる場合は配列にならないため、直接配列にしている
-                            const type = this.properties[key].item.type;
-                            if (type === 'object' || type === 'object?' || type === 'array' || type === 'array?' || type === 'map' || type === 'map?') {
-                                throw new Error("GETまたはDELETEメソッドでは配列型にobject, array, mapを使用することはできません。");
+            else {
+                const c = request;
+                method = c.req.method;
+                if (method === 'GET' || method === 'DELETE') {
+                    const url = new URL(c.req.url);
+                    this.data = Object.fromEntries(url.searchParams.entries());
+                }
+                else {
+                    // JSON を想定（form 等なら parseBody() を使う）
+                    this.data = yield c.req.json();
+                }
+            }
+            if (this.data === undefined) {
+                this.data = {};
+            }
+            for (const key of Object.keys(this.properties)) {
+                // NULLチェック
+                if (key in this.data === false || this.data[key] === null || this.data[key] === "") {
+                    if (this.properties[key].type === 'array' && ['GET', 'DELETE'].includes(method)) {
+                        // GET,DELETEメソッドの場合、?array=1&array=2で配列となるが、
+                        // ?array=1のみで終わる場合は配列にならないため、直接配列にしている
+                        // この処理で空文字やnullが入った場合の対処をここで行う
+                        const itemProperty = this.properties[key].item;
+                        if (itemProperty.type.endsWith('?')) {
+                            const tempValue = this.data[key];
+                            this.data[key] = [];
+                            if (tempValue !== undefined) {
+                                if (itemProperty.type === 'string?') {
+                                    this.data[key][0] = tempValue;
+                                }
+                                else {
+                                    this.data[key][0] = null;
+                                }
                             }
-                            if (type === 'enum' || type === 'enum?') {
-                                const tempProp = {
-                                    type: type,
-                                    description: this.properties[key].item.description,
-                                    enumType: this.properties[key].item.enumType,
-                                    enums: this.properties[key].item.enums,
-                                };
-                                this.data[key] = [this.convertValue(tempProp, value, [key, 0], true)];
-                            }
-                            else if (type === 'string' || type === 'string?') {
-                                const tempProp = {
-                                    type: type,
-                                    description: this.properties[key].item.description,
-                                    maxLength: this.properties[key].item.maxLength,
-                                    regExp: this.properties[key].item.regExp
-                                };
-                                this.data[key] = [this.convertValue(tempProp, value, [key, 0], true)];
-                            }
-                            else if (type === 'number' || type === 'number?') {
-                                const tempProp = {
-                                    type: type,
-                                    description: this.properties[key].item.description,
-                                    max: this.properties[key].item.max,
-                                    min: this.properties[key].item.min,
-                                };
-                                this.data[key] = [this.convertValue(tempProp, value, [key, 0], true)];
-                            }
-                            else {
-                                const tempProp = {
-                                    type: type,
-                                    description: this.properties[key].item.description
-                                };
-                                this.data[key] = [this.convertValue(tempProp, value, [key, 0], true)];
-                            }
+                            continue;
                         }
                         else {
-                            this.throwInputError("ARRAY_01", [key], value);
+                            this.throwInputError("REQUIRE_00", [key, 0], "");
                         }
                     }
-                    break;
-                case 'map':
-                case 'map?':
-                    // tODO : ここは共通化したい
-                    const mapData = {};
-                    for (const [mapKey, mapValue] of Object.entries(value)) {
-                        switch (this.properties[key].mapType) {
-                            case 'number':
-                                if (this.isNumber(mapValue) === false) {
-                                    this.throwInputError("MAP_01", [key], value);
-                                }
-                                mapData[mapKey] = Number(mapValue);
-                                break;
-                            case 'string':
-                                switch (typeof mapValue) {
-                                    case 'number':
-                                        mapData[mapKey] = mapValue.toString();
-                                        break;
-                                    case 'string':
-                                        mapData[mapKey] = mapValue;
-                                        break;
-                                    default:
-                                        this.throwInputError("MAP_02", [key], value);
-                                }
-                                break;
-                            case 'bool':
-                                switch (typeof mapValue) {
-                                    case 'boolean':
-                                        mapData[mapKey] = mapValue;
-                                        break;
-                                    case 'number':
-                                        if (mapValue !== 0 && mapValue !== 1) {
-                                            this.throwInputError("MAP_03", [key], mapValue);
-                                        }
-                                        mapData[mapKey] = mapValue === 1;
-                                        break;
-                                    case 'string':
-                                        if (mapValue !== 'true' && mapValue !== 'false') {
-                                            this.throwInputError("MAP_04", [key], mapValue);
-                                        }
-                                        mapData[mapKey] = mapValue === 'true';
-                                        break;
-                                    default:
-                                        this.throwInputError("MAP_05", [key], mapValue);
-                                }
-                                break;
+                    else {
+                        if (this.properties[key].type.endsWith('?')) {
+                            this.changeBody([key], null);
+                            continue;
+                        }
+                        else {
+                            this.throwInputError("REQUIRE_01", [key], "");
                         }
                     }
-                    this.changeBody([key], mapData);
-                    break;
-                case 'enum':
-                case 'enum?':
-                    this.setEnum([key], value);
-                    break;
-                default:
-                    this.convertInput([key], value);
-                    break;
+                }
+                const value = this.data[key];
+                switch (this.properties[key].type) {
+                    case 'object':
+                    case 'object?':
+                        if (typeof value === 'object') {
+                            this.setObject([key], value);
+                        }
+                        else {
+                            this.throwInputError("OBJECT_01", [key], value);
+                        }
+                        break;
+                    case 'array':
+                    case 'array?':
+                        if (Array.isArray(value)) {
+                            this.setArray([key], value);
+                        }
+                        else {
+                            if (method === 'GET' || method === 'DELETE') {
+                                // GET,DELETEメソッドの場合、?array=1&array=2で配列となるが、
+                                // ?array=1のみで終わる場合は配列にならないため、直接配列にしている
+                                const type = this.properties[key].item.type;
+                                if (type === 'object' || type === 'object?' || type === 'array' || type === 'array?' || type === 'map' || type === 'map?') {
+                                    throw new Error("GETまたはDELETEメソッドでは配列型にobject, array, mapを使用することはできません。");
+                                }
+                                if (type === 'enum' || type === 'enum?') {
+                                    const tempProp = {
+                                        type: type,
+                                        description: this.properties[key].item.description,
+                                        enumType: this.properties[key].item.enumType,
+                                        enums: this.properties[key].item.enums,
+                                    };
+                                    this.data[key] = [this.convertValue(tempProp, value, [key, 0], true)];
+                                }
+                                else if (type === 'string' || type === 'string?') {
+                                    const tempProp = {
+                                        type: type,
+                                        description: this.properties[key].item.description,
+                                        maxLength: this.properties[key].item.maxLength,
+                                        regExp: this.properties[key].item.regExp
+                                    };
+                                    this.data[key] = [this.convertValue(tempProp, value, [key, 0], true)];
+                                }
+                                else if (type === 'number' || type === 'number?') {
+                                    const tempProp = {
+                                        type: type,
+                                        description: this.properties[key].item.description,
+                                        max: this.properties[key].item.max,
+                                        min: this.properties[key].item.min,
+                                    };
+                                    this.data[key] = [this.convertValue(tempProp, value, [key, 0], true)];
+                                }
+                                else {
+                                    const tempProp = {
+                                        type: type,
+                                        description: this.properties[key].item.description
+                                    };
+                                    this.data[key] = [this.convertValue(tempProp, value, [key, 0], true)];
+                                }
+                            }
+                            else {
+                                this.throwInputError("ARRAY_01", [key], value);
+                            }
+                        }
+                        break;
+                    case 'map':
+                    case 'map?':
+                        // tODO : ここは共通化したい
+                        const mapData = {};
+                        for (const [mapKey, mapValue] of Object.entries(value)) {
+                            switch (this.properties[key].mapType) {
+                                case 'number':
+                                    if (this.isNumber(mapValue) === false) {
+                                        this.throwInputError("MAP_01", [key], value);
+                                    }
+                                    mapData[mapKey] = Number(mapValue);
+                                    break;
+                                case 'string':
+                                    switch (typeof mapValue) {
+                                        case 'number':
+                                            mapData[mapKey] = mapValue.toString();
+                                            break;
+                                        case 'string':
+                                            mapData[mapKey] = mapValue;
+                                            break;
+                                        default:
+                                            this.throwInputError("MAP_02", [key], value);
+                                    }
+                                    break;
+                                case 'bool':
+                                    switch (typeof mapValue) {
+                                        case 'boolean':
+                                            mapData[mapKey] = mapValue;
+                                            break;
+                                        case 'number':
+                                            if (mapValue !== 0 && mapValue !== 1) {
+                                                this.throwInputError("MAP_03", [key], mapValue);
+                                            }
+                                            mapData[mapKey] = mapValue === 1;
+                                            break;
+                                        case 'string':
+                                            if (mapValue !== 'true' && mapValue !== 'false') {
+                                                this.throwInputError("MAP_04", [key], mapValue);
+                                            }
+                                            mapData[mapKey] = mapValue === 'true';
+                                            break;
+                                        default:
+                                            this.throwInputError("MAP_05", [key], mapValue);
+                                    }
+                                    break;
+                            }
+                        }
+                        this.changeBody([key], mapData);
+                        break;
+                    case 'enum':
+                    case 'enum?':
+                        this.setEnum([key], value);
+                        break;
+                    default:
+                        this.convertInput([key], value);
+                        break;
+                }
             }
-        }
-        // 不要項目チェック
-        for (const [key, value] of Object.entries(this.data)) {
-            if (key in this.properties === false) {
-                this.throwInputError("UNNECESSARY_01", [key], value);
+            // 不要項目チェック
+            for (const [key, value] of Object.entries(this.data)) {
+                if (key in this.properties === false) {
+                    this.throwInputError("UNNECESSARY_01", [key], value);
+                }
             }
-        }
+        });
     }
     /**
      * Sets the value for an enum type based on the specified keys.

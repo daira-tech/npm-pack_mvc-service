@@ -2,7 +2,6 @@ import { Pool, PoolClient } from "pg";
 import { DateType, DayType, HourType, MinuteSecondType, MonthType } from "./CronType";
 import PoolManager from "../PoolManager";
 import { AwsS3Client } from "../clients/AwsS3Client";
-import { Base64Client } from "../clients/Base64Client";
 
 export class BaseCron {
 
@@ -110,13 +109,5 @@ export class BaseCron {
             });
         }
         return this.s3Client;
-    }
-
-    private base64Client? : Base64Client;
-    get Base64Client(): Base64Client {
-        if (this.base64Client === undefined) {
-            this.base64Client = new Base64Client();
-        }
-        return this.base64Client;
     }
 }

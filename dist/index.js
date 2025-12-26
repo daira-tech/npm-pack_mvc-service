@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.runCron = exports.BaseCron = exports.rollback = exports.migrate = exports.MigrateDatabase = exports.MigrateTable = exports.createTableDoc = exports.WhereExpression = exports.TableModel = exports.ResponseType = exports.RequestType = exports.EncryptClient = exports.StringClient = exports.Base64Client = exports.AwsS3Client = exports.createSwagger = exports.NotFoundException = exports.UnprocessableException = exports.DbConflictException = exports.ForbiddenException = exports.InputErrorException = exports.AuthException = exports.MaintenanceException = exports.Service = void 0;
+exports.runCron = exports.BaseCron = exports.rollback = exports.migrate = exports.MigrateDatabase = exports.MigrateTable = exports.createTableDoc = exports.WhereExpression = exports.TableModel = exports.ResponseType = exports.RequestType = exports.EncryptClient = exports.StringClient = exports.AwsS3Client = exports.createSwagger = exports.NotFoundException = exports.UnprocessableException = exports.DbConflictException = exports.ForbiddenException = exports.InputErrorException = exports.AuthException = exports.MaintenanceException = exports.Service = void 0;
 var Service_1 = require("./Service");
 Object.defineProperty(exports, "Service", { enumerable: true, get: function () { return Service_1.Service; } });
 var Exception_1 = require("./exceptions/Exception");
@@ -15,8 +15,6 @@ var Swagger_1 = require("./documents/Swagger");
 Object.defineProperty(exports, "createSwagger", { enumerable: true, get: function () { return Swagger_1.createSwagger; } });
 var AwsS3Client_1 = require("./clients/AwsS3Client");
 Object.defineProperty(exports, "AwsS3Client", { enumerable: true, get: function () { return AwsS3Client_1.AwsS3Client; } });
-var Base64Client_1 = require("./clients/Base64Client");
-Object.defineProperty(exports, "Base64Client", { enumerable: true, get: function () { return Base64Client_1.Base64Client; } });
 var StringClient_1 = require("./clients/StringClient");
 Object.defineProperty(exports, "StringClient", { enumerable: true, get: function () { return StringClient_1.StringClient; } });
 var EncryptClient_1 = require("./clients/EncryptClient");

@@ -1,23 +1,41 @@
 import axios, { AxiosResponse } from "axios";
 import { Request, Response } from 'express';
+import { Hono, Context, TypedResponse } from 'hono' // Context を追加
 import { Pool, type PoolClient } from 'pg';
 import { MaintenanceException, AuthException, InputErrorException, ForbiddenException, DbConflictException, UnprocessableException, NotFoundException } from './exceptions/Exception';
 import { RequestType } from './reqestResponse/RequestType';
 import { ResponseType } from './reqestResponse/ResponseType';
 import { AwsS3Client } from './clients/AwsS3Client';
-import { Base64Client } from './clients/Base64Client';
 import { StringClient } from './clients/StringClient';
 import { EncryptClient } from './clients/EncryptClient';
 import PoolManager from './PoolManager';
 
+type TStatusCode = 200 | 201 | 400 | 401 | 403 | 404 | 409 | 422 | 500 | 503;
+
 export type MethodType = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
 export interface IError {
-    status: 400 | 401 | 404 | 409 | 422 | 500, 
+    status: TStatusCode;
     code: string;
     description: string; 
 }
 
-export class Service {
+interface IServiceEnv {
+    DB_USER?: string;
+    DB_HOST?: string;
+    DB_DATABASE?: string;
+    DB_PASSWORD?: string;
+    DB_PORT?: string | number;
+    DB_IS_SSL?: string;
+    TZ?: string;
+    S3_BUCKET_NAME?: string;
+    S3_REGION?: string;
+    S3_ACCESS_KEY_ID?: string;
+    S3_SECRET_ACCESS_KEY?: string;
+    SECRET_KEY_HEX?: string;
+    HMAC_KEY_BASE64?: string;
+}
+
+export class Service<IEnv extends IServiceEnv = IServiceEnv> {
     protected readonly method: MethodType = 'GET';
     get Method(): MethodType { return this.method; }
     protected readonly endpoint: string = '';
@@ -33,7 +51,6 @@ export class Service {
     get AuthToken(): string { return this.request.Authorization ?? ''; }
     protected readonly response: ResponseType = new ResponseType();
     get Response(): ResponseType { return this.response }; // swaggerで必要なので、ここだけ宣言
-    protected readonly isTest: boolean = process.env.NODE_ENV === 'test';
     protected readonly tags: Array<string> = [];
     get Tags(): Array<string> { return this.tags; }
     protected readonly errorList: Array<IError> = [];
@@ -45,44 +62,98 @@ export class Service {
         }];
     }
 
-    protected readonly req: Request;
-    protected readonly res: Response;
-    constructor(request: Request, response: Response) {
-        this.req = request;
-        this.res = response;
+    private readonly req?: Request;
+    protected get Req(): Request {
+        if (this.req === undefined) {
+            throw new Error('This method can only be used when module is "express".');
+        }
+
+        return this.req;
+    }
+    private readonly res?: Response;
+    protected get Res(): Response {
+        if (this.res === undefined) {
+            throw new Error('This method can only be used when module is "express".');
+        }
+
+        return this.res;
+    }
+    private readonly c?: Context;
+    protected get C(): Context {
+        if (this.c === undefined) {
+            throw new Error('This method can only be used when module is "hono".');
+        }
+
+        return this.c;
+    }
+    get Module(): 'express' | 'hono' {
+        if (this.c !== undefined) {
+            return 'hono';
+        } else if (this.req !== undefined && this.res !== undefined) {
+            return 'express';
+        }
+
+        throw new Error('Failed to determine whether the module is "express" or "hono".');
+    };
+
+    get Env(): IEnv {
+        if (this.Module === 'express') {
+            return process.env as unknown as IEnv;
+        } else {
+            return this.C.env;
+        }
+    }
+
+    constructor(request: Request, response: Response);
+    constructor(c: Context);
+    constructor(param1: Request | Context, param2?: Response) {
+        if (param2 !== undefined) {
+            // Express の場合: (request, response)
+            this.req = param1 as Request;
+            this.res = param2;
+        } else {
+            // Hono の場合: (c)
+            this.c = param1 as Context;
+        }
     }
 
     public async inintialize(): Promise<void> {
-        this.request.setRequest(this.req);
+        if (this.Module === "express") {
+            await this.request.setRequest(this.Module, this.Req);
+        } else {
+            await this.request.setRequest(this.Module, this.C);
+        }
+
         await this.checkMaintenance();
         await this.middleware();
     }
 
-    protected dbUser?: string = process.env.DB_USER;
-    protected dbHost?: string = process.env.DB_HOST;
-    protected dbName?: string = process.env.DB_DATABASE;
-    protected dbPassword?: string = process.env.DB_PASSWORD;
-    protected dbPort?: string | number = process.env.DB_PORT;
-    protected dbIsSslConnect: boolean = process.env.DB_IS_SSL === 'true';
+    protected get DbUser(): string | undefined { return this.Env.DB_USER; }
+    protected get DbHost(): string | undefined { return this.Env.DB_HOST; }
+    protected get DbName(): string | undefined { return this.Env.DB_DATABASE; }
+    protected get DbPassword(): string | undefined { return this.Env.DB_PASSWORD; }
+    protected get DbPort(): string | number | undefined { return this.Env.DB_PORT; }
+    protected get DbIsSslConnect(): boolean { return this.Env.DB_IS_SSL === 'true'; }
+    
     private setPool(): Pool {
-        if (this.dbUser === undefined) {
+        if (this.DbUser === undefined) {
             throw new Error("Database user is not configured");
         }
-        if (this.dbHost === undefined) {
+        if (this.DbHost === undefined) {
             throw new Error("Database host is not configured");
         }
-        if (this.dbName === undefined) {
+        if (this.DbName === undefined) {
             throw new Error("Database name is not configured");
         }
-        if (this.dbPassword === undefined) {
+        if (this.DbPassword === undefined) {
             throw new Error("Database password is not configured");
         }
-        if (this.dbPort === undefined) {
+        if (this.DbPort === undefined) {
             throw new Error("Database port is not configured");
         }
 
         try {
-            return PoolManager.getPool(this.dbUser, this.dbHost, this.dbName, this.dbPassword, this.dbPort, this.dbIsSslConnect);
+            return PoolManager.getPool(this.DbUser, this.DbHost, this.DbName, this.DbPassword, this.DbPort, this.DbIsSslConnect);
         } catch (ex) {
             throw new Error("Failed to connect to the database. Please check the connection settings.");
         }
@@ -90,76 +161,110 @@ export class Service {
     protected async checkMaintenance(): Promise<void> { }
     protected async middleware(): Promise<void>{ }
 
-    public resSuccess(): void {
-        this.res.status(200).json(this.response.ResponseData);
+    public resSuccessExpress(): void {
+        this.Res.status(200).json(this.response.ResponseData);
+    }
+    public resSuccessHono(): TypedResponse<any> {
+        return this.C.json(this.response.ResponseData, 200);
     }
 
     protected async outputErrorLog(ex: any): Promise<void>{ }
-    public handleException(ex: any): void {
+    public handleExceptionExpress(ex: any): void {
         // To avoid slowing down the response, make this asynchronous
         this.outputErrorLog(ex).catch((ex) => {
             console.error(ex);
         });
 
         if (ex instanceof AuthException) {
-            this.res.status(401).json({
+            this.Res.status(401).json({
                 message : "Authentication expired. Please login again."
             });
-            return;
         } else if (ex instanceof ForbiddenException) {
-            this.res.status(403).json({
+            this.Res.status(403).json({
                 message : 'Forbidden error'
             });
-            return;
         } else if (ex instanceof InputErrorException) {
-            this.res.status(400).json({
+            this.Res.status(400).json({
                 errorCode : `${this.apiCode}-${ex.ErrorId}`,
                 errorMessage : ex.message
             });
             return;
         } else if (ex instanceof DbConflictException) {
-            this.res.status(409).json({
+            this.Res.status(409).json({
                 errorCode : `${this.apiCode}-${ex.ErrorId}`,
                 errorMessage : ex.message
-            });
-            return;
+            })
         } else if (ex instanceof UnprocessableException) {
-            this.res.status(422).json({
+            this.Res.status(422).json({
                 errorCode : `${this.apiCode}-${ex.ErrorId}`,
                 errorMessage : ex.message
             });
-            return;
         } else if (ex instanceof MaintenanceException) {
-            this.res.status(503).json({
+            this.Res.status(503).json({
                 errorMessage : ex.message
             });
-            return;
         } else if (ex instanceof NotFoundException) {
-            this.res.status(404).json({
+            this.Res.status(404).json({
                 errorCode : `${this.apiCode}-${ex.ErrorId}`,
                 errorMessage : ex.message
-            });
-            return;
-        }
-
-        if (this.isTest) {
-            this.res.status(500).json({
-                message : ex.stack
             });
         } else {
-            this.res.status(500).json({
+            this.Res.status(500).json({
                 message : 'Internal server error'
             });
         }
+    }
 
-        return;
+    public handleExceptionHono(ex: any): TypedResponse<any> {
+        // To avoid slowing down the response, make this asynchronous
+        this.outputErrorLog(ex).catch((ex) => {
+            console.error(ex);
+        });
+
+        if (ex instanceof AuthException) {
+            return this.C.json({ 
+                message: "Authentication expired. Please login again." 
+            }, 401);
+        } else if (ex instanceof ForbiddenException) {
+            return this.C.json({ 
+                message: 'Forbidden error' 
+            }, 403);
+        } else if (ex instanceof InputErrorException) {
+            return this.C.json({ 
+                errorCode: `${this.apiCode}-${ex.ErrorId}`, 
+                errorMessage: ex.message 
+            }, 400);
+        } else if (ex instanceof DbConflictException) {
+            return this.C.json({ 
+                errorCode: `${this.apiCode}-${ex.ErrorId}`, 
+                errorMessage: ex.message 
+            }, 409);
+        } else if (ex instanceof UnprocessableException) {
+            return this.C.json({ 
+                errorCode: `${this.apiCode}-${ex.ErrorId}`, 
+                errorMessage: ex.message 
+            },422);
+        } else if (ex instanceof MaintenanceException) {
+            return this.C.json({ 
+                errorMessage: ex.message 
+            }, 503);
+        } else if (ex instanceof NotFoundException) {
+            return this.C.json({ 
+                errorCode: `${this.apiCode}-${ex.ErrorId}`, 
+                errorMessage: ex.message 
+            }, 404);
+        } else {
+            return this.C.json({ 
+                message: 'Internal server error' 
+            }, 500);
+        }
     }
 
     private pool?: Pool;
     protected get Pool(): Pool {
         if (this.pool === undefined) {
             this.pool = this.setPool();
-            this.pool.query(`SET TIME ZONE '${process.env.TZ ?? 'Asia/Tokyo'}';`);
+            this.pool.query(`SET TIME ZONE '${this.Env.TZ ?? 'Asia/Tokyo'}';`);
         }
         return this.pool; 
     }
@@ -201,21 +306,13 @@ export class Service {
     get S3Client(): AwsS3Client {
         if (this.s3Client === undefined) {
             this.s3Client = new AwsS3Client({
-                bucketName: process.env.S3_BUCKET_NAME,
-                region: process.env.S3_REGION,
-                accessKeyId: process.env.S3_ACCESS_KEY_ID,
-                secretAccessKey: process.env.S3_SECRET_ACCESS_KEY
+                bucketName: this.Env.S3_BUCKET_NAME,
+                region: this.Env.S3_REGION,
+                accessKeyId: this.Env.S3_ACCESS_KEY_ID,
+                secretAccessKey: this.Env.S3_SECRET_ACCESS_KEY
             });
         }
         return this.s3Client;
-    }
-
-    private base64Client? : Base64Client;
-    get Base64Client(): Base64Client {
-        if (this.base64Client === undefined) {
-            this.base64Client = new Base64Client();
-        }
-        return this.base64Client;
     }
 
     private stringClient? : StringClient;
@@ -230,8 +327,8 @@ export class Service {
     get EncryptClient(): EncryptClient {
         if (this.encryptClient === undefined) {
             this.encryptClient = new EncryptClient({
-                secretKeyHex: process.env.SECRET_KEY_HEX,
-                hmacKeyBase64: process.env.HMAC_KEY_BASE64
+                secretKeyHex: this.Env.SECRET_KEY_HEX,
+                hmacKeyBase64: this.Env.HMAC_KEY_BASE64
             });
         }
 

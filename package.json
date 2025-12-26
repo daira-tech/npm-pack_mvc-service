@@ -1,6 +1,6 @@
 {
   "name": "pg-mvc-service",
-  "version": "2.0.128",
+  "version": "2.1.7",
   "description": "",
   "homepage": "https://github.com/n-daira/npm-pack_mvc-service#readme",
   "bugs": {
@@ -14,6 +14,12 @@
   "author": "Sho Nakadaira",
   "type": "commonjs",
   "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist/**/*",
+    "README.md",
+    "package.json"
+  ],
   "scripts": {
     "build": "rm -rf dist/* && tsc",
     "test": "echo \"Error: no test specified\" && exit 1"
@@ -31,9 +37,9 @@
     "@types/express": "5.0.1",
     "axios": "1.10.0",
     "crypto": "1.0.1",
+    "hono": "4.11.2",
     "node-cron": "4.2.1",
     "pdf-lib": "1.17.1",
-    "sharp": "0.34.1",
     "type-utils-n-daira": "1.0.11"
   }
 }

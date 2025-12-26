@@ -21,7 +21,6 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.AwsS3Client = void 0;
 const client_s3_1 = require("@aws-sdk/client-s3");
-const Base64Client_1 = require("./Base64Client");
 const Exception_1 = require("../exceptions/Exception");
 const axios_1 = __importDefault(require("axios"));
 class AwsS3Client {
@@ -80,20 +79,18 @@ class AwsS3Client {
             yield this.client.send(command);
         });
     }
-    uploadToPdf(path, fileName, base64Datas) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const base64Client = new Base64Client_1.Base64Client();
-            const mergedPdfBase64 = yield base64Client.mergeToPdfBase64(base64Datas);
-            const command = new client_s3_1.PutObjectCommand({
-                Bucket: this.bucketName,
-                Key: this.makeKey(path, fileName),
-                Body: Buffer.from(mergedPdfBase64, 'base64'),
-                ContentEncoding: 'base64',
-                ContentType: 'application/pdf'
-            });
-            yield this.client.send(command);
-        });
-    }
+    // public async uploadToPdf(path: string, fileName: string, base64Datas: Array<string>) {
+    //     const base64Client = new Base64Client();
+    //     const mergedPdfBase64 = await base64Client.mergeToPdfBase64(base64Datas);
+    //     const command = new PutObjectCommand({
+    //         Bucket: this.bucketName,
+    //         Key: this.makeKey(path, fileName),
+    //         Body: Buffer.from(mergedPdfBase64, 'base64'),
+    //         ContentEncoding: 'base64',
+    //         ContentType: 'application/pdf'
+    //     });
+    //     await this.client.send(command);
+    // }
     uploadText(path, fileName, text) {
         return __awaiter(this, void 0, void 0, function* () {
             const command = new client_s3_1.PutObjectCommand({
@@ -107,24 +104,12 @@ class AwsS3Client {
     }
     uploadBase64Data(path, fileName, base64Data) {
         return __awaiter(this, void 0, void 0, function* () {
-            const base64Client = new Base64Client_1.Base64Client();
-            const type = base64Client.getMimeType(base64Data);
-            const extension = {
-                'image/png': '.png',
-                'image/jpeg': '.jpeg',
-                'image/gif': '.gif',
-                'application/pdf': '.pdf'
-            }[type];
-            if (fileName.endsWith(extension) === false) {
-                fileName += extension;
-            }
             const key = this.makeKey(path, fileName);
             const command = new client_s3_1.PutObjectCommand({
                 Bucket: this.bucketName,
                 Key: key,
                 Body: Buffer.from(base64Data, 'base64'),
-                ContentEncoding: 'base64',
-                ContentType: type
+                ContentEncoding: 'base64'
             });
             yield this.client.send(command);
             return {

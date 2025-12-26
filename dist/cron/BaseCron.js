@@ -15,7 +15,6 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.BaseCron = void 0;
 const PoolManager_1 = __importDefault(require("../PoolManager"));
 const AwsS3Client_1 = require("../clients/AwsS3Client");
-const Base64Client_1 = require("../clients/Base64Client");
 class BaseCron {
     constructor() {
         this.isTest = process.env.NODE_ENV === 'test';
@@ -123,12 +122,6 @@ class BaseCron {
             });
         }
         return this.s3Client;
-    }
-    get Base64Client() {
-        if (this.base64Client === undefined) {
-            this.base64Client = new Base64Client_1.Base64Client();
-        }
-        return this.base64Client;
     }
 }
 exports.BaseCron = BaseCron;

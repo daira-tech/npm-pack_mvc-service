@@ -4,6 +4,7 @@ import { InputErrorException } from '../exceptions/Exception';
 import StringUtil from '../Utils/StringUtil';
 import { ValidateStringUtil } from 'type-utils-n-daira';
 import { IError } from '../Service';
+import { Context } from 'hono';
 
 // エラーメッセージの型定義
 export interface ErrorMessageType {
@@ -115,8 +116,7 @@ export class RequestType extends ReqResType {
         }
         return this.headers;
     }
-    private remoteAddress: string | undefined;
-    get RemoteAddress(): string | undefined { return this.remoteAddress; }
+
     get Authorization(): string | null { 
         const authorization = this.Headers['authorization'] ?? '';
         if (authorization.startsWith('Bearer ') === false) {
@@ -125,24 +125,39 @@ export class RequestType extends ReqResType {
         return authorization.replace(/^Bearer\s/, '');
     }
 
-    public setRequest(request: Request) {
-        this.createBody(request);
+    public async setRequest(module: 'express' | 'hono', request: Request | Context): Promise<void> {
+        await this.createBody(module, request);
 
         this.params = {};
-        if (request.params !== undefined) {
-            for (const [key, value] of Object.entries(request.params)) {
-                const index = this.paramProperties.findIndex(property => property.key === key);
-                if (index === -1) {
-                    throw new Error(`${key} is not set in paramProperties.`);                  
-                }
-                const property = this.paramProperties[index];
-                this.params[key] = this.convertValue(property, value, [key, `(pathIndex: ${index})`], false);
+        if (module === 'express') {
+            const req = request as Request;
+            if (req.params !== undefined) {
+              for (const [key, value] of Object.entries(req.params)) {
+                const index = this.paramProperties.findIndex((p) => p.key === key);
+                if (index === -1) throw new Error(`${key} is not set in paramProperties.`);
+                const prop = this.paramProperties[index];
+                this.params[key] = this.convertValue(prop, value, [key, `(pathIndex: ${index})`], false);
+              }
             }
-        }
-        this.params = request.params ?? {};
-        this.headers = request.headers ?? {};
 
-        this.remoteAddress = request.socket?.remoteAddress;
+            this.params = req.params ?? {};
+            this.headers = req.headers ?? {};
+        } else {
+            const c = request as Context;
+            for (let index = 0; index < this.paramProperties.length; index++) {
+                const prop = this.paramProperties[index];
+                const value = (c.req as any).param?.(prop.key); // hono の param()
+                if (value !== undefined) {
+                this.params[prop.key] = this.convertValue(prop, value, [prop.key, `(pathIndex: ${index})`], false);
+                }
+            }
+
+            const headersObj: Record<string, string> = {};
+            c.req.raw.headers.forEach((v, k) => {
+                headersObj[k.toLowerCase()] = v;
+            });
+            this.headers = headersObj as any;
+        }
     }
 
     private createErrorMessage(code: 
@@ -296,12 +311,28 @@ export class RequestType extends ReqResType {
      * @param {Object} body - Request body object, リクエストボディオブジェクト
      * @throws {InputErrorException} Thrown when the input value is invalid, 入力値が不正な場合にスローされます
      */
-    private createBody(request: Request) {
-        if (request.method === 'GET' || request.method === 'DELETE') {
-            this.data = request.query;
+    private async createBody(module: 'express' | 'hono', request: Request | Context): Promise<void> {
+        let method = '';
+        if (module === 'express') {
+            const req = request as Request;
+            method = req.method;
+            if (method === 'GET' || method === 'DELETE') {
+                this.data = req.query;
+            } else {
+                this.data = req.body;
+            }            
         } else {
-            this.data = request.body;
+            const c = request as Context;
+            method = c.req.method;
+            if (method === 'GET' || method === 'DELETE') {
+                const url = new URL(c.req.url);
+                this.data = Object.fromEntries(url.searchParams.entries());
+            } else {
+                // JSON を想定（form 等なら parseBody() を使う）
+                this.data = await c.req.json();
+            }
         }
+
 
         if (this.data === undefined) {
             this.data = {};
@@ -311,7 +342,7 @@ export class RequestType extends ReqResType {
 
             // NULLチェック
             if (key in this.data === false || this.data[key] === null || this.data[key] === "") {
-                if (this.properties[key].type === 'array' && ['GET', 'DELETE'].includes(request.method)) {
+                if (this.properties[key].type === 'array' && ['GET', 'DELETE'].includes(method)) {
                     // GET,DELETEメソッドの場合、?array=1&array=2で配列となるが、
                     // ?array=1のみで終わる場合は配列にならないため、直接配列にしている
                     // この処理で空文字やnullが入った場合の対処をここで行う
@@ -355,7 +386,7 @@ export class RequestType extends ReqResType {
                     if (Array.isArray(value)) {
                         this.setArray([key], value);
                     } else {
-                        if (request.method === 'GET' || request.method === 'DELETE') {
+                        if (method === 'GET' || method === 'DELETE') {
                             // GET,DELETEメソッドの場合、?array=1&array=2で配列となるが、
                             // ?array=1のみで終わる場合は配列にならないため、直接配列にしている
                             const type = this.properties[key].item.type;
