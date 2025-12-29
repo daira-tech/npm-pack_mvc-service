@@ -299,10 +299,10 @@ export class Service<IEnv extends IServiceEnv = IServiceEnv> {
         await this.rollback();
         if (this.client !== undefined) {
             await this.client.release();
-            
-            if (this.Module === 'hono') {
-                await PoolManager.shutdownAll();
-            }
+        }
+
+        if (this.Module === 'hono') {
+            await PoolManager.shutdownAll()
         }
     }
 

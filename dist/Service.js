@@ -294,9 +294,9 @@ class Service {
             yield this.rollback();
             if (this.client !== undefined) {
                 yield this.client.release();
-                if (this.Module === 'hono') {
-                    yield PoolManager_1.default.shutdownAll();
-                }
+            }
+            if (this.Module === 'hono') {
+                yield PoolManager_1.default.shutdownAll();
             }
         });
     }
