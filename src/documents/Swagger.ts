@@ -39,7 +39,7 @@ export const createSwagger = (services: Service[], name: string, url: string, pa
                 yml += `        - ${tag}\n`;
             }
         }
-        yml += `      summary: ${service.Summary}\n`;
+        yml += `      summary: "${service.Summary}"\n`;
 
         const croneParams = [...params];
         for (const path of service.Endpoint.split('/')) {

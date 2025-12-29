@@ -43,7 +43,7 @@ export class Service<IEnv extends IServiceEnv = IServiceEnv> {
     protected readonly apiCode: string = '';
     get ApiCode(): string { return this.apiCode; }
     protected readonly summary: string = '';
-    get Summary(): string { return `${this.ApiCode !== '' ? this.apiCode + ': ' : ''}${this.summary}`; }
+    get Summary(): string { return `${this.ApiCode !== '' ? `[${this.apiCode}]` : ''}${this.summary}`; }
     protected readonly apiUserAvailable: string = '';
     get ApiUserAvailable(): string { return this.apiUserAvailable; }
     protected readonly request: RequestType = new RequestType();
@@ -299,6 +299,10 @@ export class Service<IEnv extends IServiceEnv = IServiceEnv> {
         await this.rollback();
         if (this.client !== undefined) {
             await this.client.release();
+            
+            if (this.Module === 'hono') {
+                await PoolManager.shutdownAll();
+            }
         }
     }
 

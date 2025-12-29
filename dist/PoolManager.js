@@ -39,6 +39,7 @@ class PoolManager {
                     console.error(`Error closing pool ${key}`, e);
                 }
             }
+            this.poolMap = {};
         });
     }
 }

@@ -25,7 +25,7 @@ class Service {
     get Method() { return this.method; }
     get Endpoint() { return this.endpoint + this.request.paramPath; }
     get ApiCode() { return this.apiCode; }
-    get Summary() { return `${this.ApiCode !== '' ? this.apiCode + ': ' : ''}${this.summary}`; }
+    get Summary() { return `${this.ApiCode !== '' ? `[${this.apiCode}]` : ''}${this.summary}`; }
     get ApiUserAvailable() { return this.apiUserAvailable; }
     get Request() { return this.request; }
     ; // swaggerで必要なので、ここだけ宣言
@@ -294,6 +294,9 @@ class Service {
             yield this.rollback();
             if (this.client !== undefined) {
                 yield this.client.release();
+                if (this.Module === 'hono') {
+                    yield PoolManager_1.default.shutdownAll();
+                }
             }
         });
     }

@@ -21,16 +21,18 @@ export default class PoolManager {
     
         return this.poolMap[key];
     }
-  
-static async shutdownAll(): Promise<void> {
-    for (const [key, pool] of Object.entries(this.poolMap)) {
-        try {
-            await pool.end();
-            console.log(`Closed pool: ${key}`);
-        } catch (e) {
-            console.error(`Error closing pool ${key}`, e);
+
+    static async shutdownAll(): Promise<void> {
+        for (const [key, pool] of Object.entries(this.poolMap)) {
+            try {
+                await pool.end();
+                console.log(`Closed pool: ${key}`);
+            } catch (e) {
+                console.error(`Error closing pool ${key}`, e);
+            }
         }
-        }
+
+        this.poolMap = {};
     }
 }
   
