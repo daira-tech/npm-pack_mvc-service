@@ -94,23 +94,9 @@ class RequestType extends ReqResType_1.default {
         }
         return (_a = this.data) !== null && _a !== void 0 ? _a : {};
     }
-    get Headers() {
-        if (this.headers === undefined) {
-            throw new Error("Request data must be set using setRequest method before accessing Req.");
-        }
-        return this.headers;
-    }
-    get Authorization() {
-        var _a;
-        const authorization = (_a = this.Headers['authorization']) !== null && _a !== void 0 ? _a : '';
-        if (authorization.startsWith('Bearer ') === false) {
-            return null;
-        }
-        return authorization.replace(/^Bearer\s/, '');
-    }
     setRequest(module, request) {
         return __awaiter(this, void 0, void 0, function* () {
-            var _a, _b, _c, _d;
+            var _a, _b, _c;
             yield this.createBody(module, request);
             this.params = {};
             if (module === 'express') {
@@ -125,22 +111,16 @@ class RequestType extends ReqResType_1.default {
                     }
                 }
                 this.params = (_a = req.params) !== null && _a !== void 0 ? _a : {};
-                this.headers = (_b = req.headers) !== null && _b !== void 0 ? _b : {};
             }
             else {
                 const c = request;
                 for (let index = 0; index < this.paramProperties.length; index++) {
                     const prop = this.paramProperties[index];
-                    const value = (_d = (_c = c.req).param) === null || _d === void 0 ? void 0 : _d.call(_c, prop.key); // hono の param()
+                    const value = (_c = (_b = c.req).param) === null || _c === void 0 ? void 0 : _c.call(_b, prop.key); // hono の param()
                     if (value !== undefined) {
                         this.params[prop.key] = this.convertValue(prop, value, [prop.key, `(pathIndex: ${index})`], false);
                     }
                 }
-                const headersObj = {};
-                c.req.raw.headers.forEach((v, k) => {
-                    headersObj[k.toLowerCase()] = v;
-                });
-                this.headers = headersObj;
             }
         });
     }

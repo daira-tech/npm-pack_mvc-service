@@ -445,7 +445,7 @@ export class TableModel {
     protected readonly errorMessages: TOptionErrorMessage = 
         process.env.TZ === 'Asia/Tokyo' ? MessageUtil.optionErrorMessageJapan : MessageUtil.optionErrorMessageEnglish;
 
-    private throwException(code: string, type: TColumnType | TColumnArrayType | 'length' | 'null' | 'notInput' | 'fk', columnName: string, value: any): never {
+    private throwException(code: string, type: TColumnType | TColumnArrayType | 'length' | 'regExp' | 'min' | 'max' | 'null' | 'notInput' | 'fk', columnName: string, value: any): never {
         const column = this.getColumn(columnName);
         
         let message = this.errorMessages[type];
@@ -455,6 +455,12 @@ export class TableModel {
         if (message.includes("{length}") && (column.type === 'string' || column.type === 'string[]')) {
             message = message.replace('{length}', (column.length ?? '未設定').toString());
         } 
+        if (message.includes("{min}") && (column.type === 'integer' || column.type === 'integer[]')) {
+            message = message.replace('{min}', (column.min ?? '').toString());
+        }
+        if (message.includes("{max}") && (column.type === 'integer' || column.type === 'integer[]')) {
+            message = message.replace('{max}', (column.max ?? '').toString());
+        }
 
         this.throwUnprocessableException(code, message);
     }
@@ -501,6 +507,10 @@ export class TableModel {
                 if (value.toString().length > column.length) {
                     this.throwException("003", "length", key, value);
                 }
+
+                if (column.regExp !== undefined && column.regExp.test(value) === false) {
+                    this.throwException("008", "regExp", key, value);
+                }
             } else if (column.type === 'string[]') {
                 if (Number.isInteger(column.length) === false) {
                     throw new Error(`For strings, please specify the length of the column.(column: ${column.columnName})`);
@@ -509,7 +519,30 @@ export class TableModel {
                 // ValidateValueUtil.isErrorValue(column.type, value)で型チェックしてるのでas []にしている
                 for (const v of value as Array<string | number | boolean>) {
                     if (v.toString().length > column.length) {
-                        this.throwException("004", "length", key, value);
+                        this.throwException("004", "length", key, v);
+                    }
+
+                    if (column.regExp !== undefined && column.regExp.test(v.toString()) === false) {
+                        this.throwException("009", "regExp", key, v);
+                    }
+                }
+            } else if (column.type === 'integer') {
+                if (column.min !== undefined && column.min > Number(value)) {
+                    this.throwException("010", "min", key, value);
+                }
+
+                if (column.max !== undefined && column.max < Number(value)) {
+                    this.throwException("011", "max", key, value);
+                }
+            } else if(column.type === 'integer[]') {
+                // ValidateValueUtil.isErrorValue(column.type, value)で型チェックしてるのでas []にしている
+                for (const v of value as Array<string | number | boolean>) {
+                    if (column.min !== undefined && column.min > Number(v)) {
+                        this.throwException("010", "min", key, v);
+                    }
+    
+                    if (column.max !== undefined && column.max < Number(v)) {
+                        this.throwException("011", "max", key, v);
                     }
                 }
             }

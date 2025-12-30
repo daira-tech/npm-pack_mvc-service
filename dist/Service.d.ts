@@ -42,7 +42,6 @@ export declare class Service<IEnv extends IServiceEnv = IServiceEnv> {
     get ApiUserAvailable(): string;
     protected readonly request: RequestType;
     get Request(): RequestType;
-    get AuthToken(): string;
     protected readonly response: ResponseType;
     get Response(): ResponseType;
     protected readonly tags: Array<string>;
@@ -56,6 +55,23 @@ export declare class Service<IEnv extends IServiceEnv = IServiceEnv> {
     private readonly c?;
     protected get C(): Context;
     get Module(): 'express' | 'hono';
+    protected get Headers(): Record<string, string | string[] | undefined>;
+    protected getHeader(key: string): string | undefined;
+    protected setResponseHeader(key: string, value: string | Record<string, any>): void;
+    protected setCookie(key: string, value: string, options?: {
+        httpOnly?: boolean;
+        secure?: boolean;
+        sameSite?: 'strict' | 'lax' | 'none';
+        maxAge?: number;
+        path?: string;
+        domain?: string;
+        expires?: Date;
+    }): void;
+    protected getCookie(key: string): string | undefined;
+    protected removeCookie(key: string, options?: {
+        path?: string;
+        domain?: string;
+    }): void;
     get Env(): IEnv;
     constructor(request: Request, response: Response);
     constructor(c: Context);

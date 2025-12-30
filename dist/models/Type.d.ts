@@ -12,6 +12,12 @@ type TColumnBase = {
 type TStringColumn = TColumnBase & {
     type: "string";
     length: number;
+    regExp?: RegExp;
+};
+type TIntegerColumn = TColumnBase & {
+    type: "integer";
+    max?: number;
+    min?: number;
 };
 type TJsonColumn = TColumnBase & {
     type: "json" | "jsonb";
@@ -19,20 +25,27 @@ type TJsonColumn = TColumnBase & {
     attribute: Exclude<TColumnAttribute, "primary">;
 };
 type TBasicColumn = TColumnBase & {
-    type: Exclude<TColumnType, "string">;
+    type: Exclude<TColumnType, "string" | "integer">;
     length?: undefined;
 };
 type TStringArrayColumn = TColumnBase & {
     type: "string[]";
     length: number;
+    regExp?: RegExp;
+    attribute: Exclude<TColumnAttribute, "primary">;
+};
+type TIntegerArrayColumn = TColumnBase & {
+    type: "integer[]";
+    max?: number;
+    min?: number;
     attribute: Exclude<TColumnAttribute, "primary">;
 };
 type TArrayColumn = TColumnBase & {
-    type: Exclude<TColumnArrayType, "string[]">;
+    type: Exclude<TColumnArrayType, "string[]" | "integer[]">;
     length?: undefined;
     attribute: Exclude<TColumnAttribute, "primary">;
 };
-export type TColumn = TStringColumn | TJsonColumn | TBasicColumn | TStringArrayColumn | TArrayColumn;
+export type TColumn = TStringColumn | TIntegerColumn | TJsonColumn | TBasicColumn | TStringArrayColumn | TIntegerArrayColumn | TArrayColumn;
 export type TColumnDetail = TColumn & {
     columnName: string;
     tableName: string;

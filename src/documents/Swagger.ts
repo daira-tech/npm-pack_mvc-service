@@ -9,7 +9,7 @@ export interface IParams {
     example?: string
 }
 
-export const createSwagger = (services: Service[], name: string, url: string, params: Array<IParams> = []): string => {
+export const createSwagger = (services: Service[], name: string, pathOrUrl: string, params: Array<IParams> = []): string => {
     // *****************************************
     // Internal method definitions
     // *****************************************
@@ -84,7 +84,7 @@ info:
   version: 1.0.0
   description: API documentation for your service
 servers:
-  - url: ${url}
+  - url: ${pathOrUrl ?? '/'}
     description: ${name} API IF定義書
 tags:\n`;
     for (const tag of tags) {

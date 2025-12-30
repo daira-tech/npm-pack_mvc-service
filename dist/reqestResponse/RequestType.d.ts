@@ -42,9 +42,6 @@ export declare class RequestType extends ReqResType {
     get Data(): {
         [key: string]: any;
     };
-    private headers?;
-    get Headers(): IncomingHttpHeaders;
-    get Authorization(): string | null;
     setRequest(module: 'express' | 'hono', request: Request | Context): Promise<void>;
     private createErrorMessage;
     /**

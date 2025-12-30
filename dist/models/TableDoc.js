@@ -2,7 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.createTableDoc = void 0;
 const createTableDoc = (models, serviceName) => {
-    var _a, _b, _c, _d;
+    var _a, _b, _c;
     let html = `
 <!DOCTYPE html>
 <html lang="ja">
@@ -177,28 +177,33 @@ td:nth-child(6) {
     width: 40px;
 }
 
-/* nullable */
+/* validation */
 td:nth-child(7) {
+    width: 120px;
+}
+
+/* nullable */
+td:nth-child(8) {
     width: 40px;
 }
 
 /* default */
-td:nth-child(8) {
+td:nth-child(9) {
     width: 120px;
 }
 
 /* Foreign Key */
-td:nth-child(9) {
+td:nth-child(10) {
     width: 300px;
 }
 
 /* comment */
-td:nth-child(10) {
+td:nth-child(11) {
     width: auto;
 }
 
 /* function */
-td:nth-child(11) {
+td:nth-child(12) {
     width: auto;
 }
 </style>
@@ -226,7 +231,7 @@ td:nth-child(11) {
                 <div class="table-title-left">${model.Id !== "" ? `[${model.Id}] ` : ""}${model.TableName} ${model.TableDescription !== '' ? ` : ${model.TableDescription}` : ''}</div>
                 <button class="table-title-right" onclick="${createFuncName}()">Copy Create Query</button>
             </div>
-            <div class="comment-wrapper">${model.Comment.replace('\n', '<br>')}</div>
+            <div class="comment-wrapper">${model.Comment.replace(/\n/g, '<br>')}</div>
 
             <table>
                 <tr>
@@ -236,6 +241,7 @@ td:nth-child(11) {
                     <th>alias</th>
                     <th>type</th>
                     <th>length</th>
+                    <th>validation</th>
                     <th>nullable</th>
                     <th>default</th>
                     <th>foreign key</th>
@@ -265,11 +271,21 @@ td:nth-child(11) {
                     <td>${keyColName}</td>
                     <td>${(_a = column.alias) !== null && _a !== void 0 ? _a : keyColName}</td>
                     <td>${column.type}</td>
-                    <td>${(_b = column.length) !== null && _b !== void 0 ? _b : ''}</td>
+                    <td>${'length' in column ? column.length : ''}</td>
+                    <td>${(() => {
+                    const v = [];
+                    if ('min' in column && column.min !== undefined)
+                        v.push(`min: ${column.min}`);
+                    if ('max' in column && column.max !== undefined)
+                        v.push(`max: ${column.max}`);
+                    if ('regExp' in column && column.regExp !== undefined)
+                        v.push(`regexp: ${column.regExp}`);
+                    return v.join('<br>');
+                })()}</td>
                     <td>${column.attribute === 'nullable' ? 'nullable' : ''}</td>
-                    <td>${column.attribute === 'hasDefault' ? (_c = column.default) !== null && _c !== void 0 ? _c : '???' : ''}</td>
+                    <td>${column.attribute === 'hasDefault' ? (_b = column.default) !== null && _b !== void 0 ? _b : '???' : ''}</td>
                     <td>${references.length === 0 ? '' : references.join('<br>')}</td>
-                    <td>${((_d = column.comment) !== null && _d !== void 0 ? _d : '').replace('\n', '<br>')}</td>
+                    <td>${((_c = column.comment) !== null && _c !== void 0 ? _c : '').replace(/\n/g, '<br>')}</td>
                     <td>
                         ${column.attribute === "primary" ? `` : `
                         <button onclick="${addFuncName}()">Copy add column</button><br>
@@ -338,7 +354,7 @@ function toColumnType(column) {
         return column.type.replace('real', 'REAL');
     }
     else if (column.type.startsWith('string')) {
-        return column.type.replace('string', `VARCHAR(${column.length})`);
+        return column.type.replace('string', `VARCHAR(${'length' in column ? column.length : '???'})`);
     }
     else if (column.type.startsWith('timestamp')) {
         return column.type.replace('timestamp', 'TIMESTAMP');

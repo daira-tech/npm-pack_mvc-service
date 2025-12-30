@@ -1,6 +1,6 @@
 import { TColumnArrayType, TColumnType } from "../Type"
 
-export type TOptionErrorMessage = Record<TColumnType | TColumnArrayType | 'length' | 'null' | 'notInput' | 'fk' | 'find', string>;
+export type TOptionErrorMessage = Record<TColumnType | TColumnArrayType | 'length' | 'regExp' | 'min' | 'max' | 'null' | 'notInput' | 'fk' | 'find', string>;
 
 export default class MessageUtil {
     public static readonly optionErrorMessageEnglish: TOptionErrorMessage = {
@@ -25,6 +25,9 @@ export default class MessageUtil {
         'jsonb': '{name} should be entered as an Object or JSON string.',
         'jsonb[]': '{name} should be entered as an array of Objects or JSON strings.',
         'length': '{name} should be entered within {length} characters.',
+        'regExp': '{name} format is invalid.',
+        'min': '{name} should be greater than or equal to {min}.',
+        'max': '{name} should be less than or equal to {max}.',
         'null': '{name} is not allowed to be null.',
         'notInput': 'Please enter {name}.',
         'fk': 'The value of {name} does not exist in the table.',
@@ -52,6 +55,9 @@ export default class MessageUtil {
         'jsonb': '{name}はObject形またはJSON文字列で入力してください。',
         'jsonb[]': '{name}はObject形またはJSON文字列の配列で入力してください。',
         'length': '{name}は{length}文字以内で入力してください。',
+        'regExp': '{name}の形式が正しくありません。',
+        'min': '{name}は{min}以上の値で入力してください。',
+        'max': '{name}は{max}以下の値で入力してください。',
         'null': '{name}はnullを許可されていません。',
         'notInput': '{name}を入力してください。',
         'fk': '{name}の値がテーブルに存在しません。',

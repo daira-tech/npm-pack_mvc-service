@@ -380,13 +380,19 @@ class TableModel {
         });
     }
     throwException(code, type, columnName, value) {
-        var _a;
+        var _a, _b, _c;
         const column = this.getColumn(columnName);
         let message = this.errorMessages[type];
         const name = (column.alias === undefined || column.alias === '') ? columnName : column.alias;
         message = message.replace('{name}', name);
         if (message.includes("{length}") && (column.type === 'string' || column.type === 'string[]')) {
             message = message.replace('{length}', ((_a = column.length) !== null && _a !== void 0 ? _a : '未設定').toString());
+        }
+        if (message.includes("{min}") && (column.type === 'integer' || column.type === 'integer[]')) {
+            message = message.replace('{min}', ((_b = column.min) !== null && _b !== void 0 ? _b : '').toString());
+        }
+        if (message.includes("{max}") && (column.type === 'integer' || column.type === 'integer[]')) {
+            message = message.replace('{max}', ((_c = column.max) !== null && _c !== void 0 ? _c : '').toString());
         }
         this.throwUnprocessableException(code, message);
     }
@@ -425,6 +431,9 @@ class TableModel {
                     if (value.toString().length > column.length) {
                         this.throwException("003", "length", key, value);
                     }
+                    if (column.regExp !== undefined && column.regExp.test(value) === false) {
+                        this.throwException("008", "regExp", key, value);
+                    }
                 }
                 else if (column.type === 'string[]') {
                     if (Number.isInteger(column.length) === false) {
@@ -433,7 +442,29 @@ class TableModel {
                     // ValidateValueUtil.isErrorValue(column.type, value)で型チェックしてるのでas []にしている
                     for (const v of value) {
                         if (v.toString().length > column.length) {
-                            this.throwException("004", "length", key, value);
+                            this.throwException("004", "length", key, v);
+                        }
+                        if (column.regExp !== undefined && column.regExp.test(v.toString()) === false) {
+                            this.throwException("009", "regExp", key, v);
+                        }
+                    }
+                }
+                else if (column.type === 'integer') {
+                    if (column.min !== undefined && column.min > Number(value)) {
+                        this.throwException("010", "min", key, value);
+                    }
+                    if (column.max !== undefined && column.max < Number(value)) {
+                        this.throwException("011", "max", key, value);
+                    }
+                }
+                else if (column.type === 'integer[]') {
+                    // ValidateValueUtil.isErrorValue(column.type, value)で型チェックしてるのでas []にしている
+                    for (const v of value) {
+                        if (column.min !== undefined && column.min > Number(v)) {
+                            this.throwException("010", "min", key, v);
+                        }
+                        if (column.max !== undefined && column.max < Number(v)) {
+                            this.throwException("011", "max", key, v);
                         }
                     }
                 }

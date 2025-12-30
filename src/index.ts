@@ -14,6 +14,22 @@ export { PropertyType } from './reqestResponse/ReqResType';
 // models
 export { TableModel } from './models/TableModel';
 export { WhereExpression } from './models/SqlUtils/WhereExpression';
+export type { 
+    TColumnAttribute,
+    TColumnType,
+    TColumnArrayType,
+    TColumn,
+    TColumnDetail,
+    TOperator,
+    TColumnInfo,
+    TQuery,
+    TSelectExpression,
+    TAggregateFuncType,
+    TCondition,
+    TNestedCondition,
+    TSortKeyword,
+    TKeyFormat
+} from './models/Type';
 export { createTableDoc } from './models/TableDoc';
 export { MigrateTable } from './models/MigrateTable';
 export { MigrateDatabase } from './models/MigrateDatabase';

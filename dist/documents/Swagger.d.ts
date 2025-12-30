@@ -6,5 +6,5 @@ export interface IParams {
     description?: string;
     example?: string;
 }
-export declare const createSwagger: (services: Service[], name: string, url: string, params?: Array<IParams>) => string;
+export declare const createSwagger: (services: Service[], name: string, pathOrUrl: string, params?: Array<IParams>) => string;
 //# sourceMappingURL=Swagger.d.ts.map

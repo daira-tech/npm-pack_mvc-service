@@ -109,21 +109,6 @@ export class RequestType extends ReqResType {
         }
         return this.data ?? {};
     }
-    private headers?: IncomingHttpHeaders;
-    get Headers(): IncomingHttpHeaders { 
-        if (this.headers === undefined) {
-            throw new Error("Request data must be set using setRequest method before accessing Req.");
-        }
-        return this.headers;
-    }
-
-    get Authorization(): string | null { 
-        const authorization = this.Headers['authorization'] ?? '';
-        if (authorization.startsWith('Bearer ') === false) {
-            return null;
-        }
-        return authorization.replace(/^Bearer\s/, '');
-    }
 
     public async setRequest(module: 'express' | 'hono', request: Request | Context): Promise<void> {
         await this.createBody(module, request);
@@ -132,31 +117,24 @@ export class RequestType extends ReqResType {
         if (module === 'express') {
             const req = request as Request;
             if (req.params !== undefined) {
-              for (const [key, value] of Object.entries(req.params)) {
-                const index = this.paramProperties.findIndex((p) => p.key === key);
-                if (index === -1) throw new Error(`${key} is not set in paramProperties.`);
-                const prop = this.paramProperties[index];
-                this.params[key] = this.convertValue(prop, value, [key, `(pathIndex: ${index})`], false);
-              }
+                for (const [key, value] of Object.entries(req.params)) {
+                    const index = this.paramProperties.findIndex((p) => p.key === key);
+                    if (index === -1) throw new Error(`${key} is not set in paramProperties.`);
+                    const prop = this.paramProperties[index];
+                    this.params[key] = this.convertValue(prop, value, [key, `(pathIndex: ${index})`], false);
+                }
             }
 
             this.params = req.params ?? {};
-            this.headers = req.headers ?? {};
         } else {
             const c = request as Context;
             for (let index = 0; index < this.paramProperties.length; index++) {
                 const prop = this.paramProperties[index];
                 const value = (c.req as any).param?.(prop.key); // hono の param()
                 if (value !== undefined) {
-                this.params[prop.key] = this.convertValue(prop, value, [prop.key, `(pathIndex: ${index})`], false);
+                    this.params[prop.key] = this.convertValue(prop, value, [prop.key, `(pathIndex: ${index})`], false);
                 }
             }
-
-            const headersObj: Record<string, string> = {};
-            c.req.raw.headers.forEach((v, k) => {
-                headersObj[k.toLowerCase()] = v;
-            });
-            this.headers = headersObj as any;
         }
     }
 

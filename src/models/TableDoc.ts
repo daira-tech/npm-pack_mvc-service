@@ -176,28 +176,33 @@ td:nth-child(6) {
     width: 40px;
 }
 
-/* nullable */
+/* validation */
 td:nth-child(7) {
+    width: 120px;
+}
+
+/* nullable */
+td:nth-child(8) {
     width: 40px;
 }
 
 /* default */
-td:nth-child(8) {
+td:nth-child(9) {
     width: 120px;
 }
 
 /* Foreign Key */
-td:nth-child(9) {
+td:nth-child(10) {
     width: 300px;
 }
 
 /* comment */
-td:nth-child(10) {
+td:nth-child(11) {
     width: auto;
 }
 
 /* function */
-td:nth-child(11) {
+td:nth-child(12) {
     width: auto;
 }
 </style>
@@ -228,7 +233,7 @@ td:nth-child(11) {
                 <div class="table-title-left">${model.Id !== "" ? `[${model.Id}] ` : ""}${model.TableName} ${model.TableDescription !== '' ? ` : ${model.TableDescription}` : ''}</div>
                 <button class="table-title-right" onclick="${createFuncName}()">Copy Create Query</button>
             </div>
-            <div class="comment-wrapper">${model.Comment.replace('\n', '<br>')}</div>
+            <div class="comment-wrapper">${model.Comment.replace(/\n/g, '<br>')}</div>
 
             <table>
                 <tr>
@@ -238,6 +243,7 @@ td:nth-child(11) {
                     <th>alias</th>
                     <th>type</th>
                     <th>length</th>
+                    <th>validation</th>
                     <th>nullable</th>
                     <th>default</th>
                     <th>foreign key</th>
@@ -270,11 +276,18 @@ td:nth-child(11) {
                     <td>${keyColName}</td>
                     <td>${column.alias ?? keyColName}</td>
                     <td>${column.type}</td>
-                    <td>${column.length ?? ''}</td>
+                    <td>${'length' in column ? column.length : ''}</td>
+                    <td>${(() => {
+                        const v: string[] = [];
+                        if ('min' in column && column.min !== undefined) v.push(`min: ${column.min}`);
+                        if ('max' in column && column.max !== undefined) v.push(`max: ${column.max}`);
+                        if ('regExp' in column && column.regExp !== undefined) v.push(`regexp: ${column.regExp}`);
+                        return v.join('<br>');
+                    })()}</td>
                     <td>${column.attribute === 'nullable' ? 'nullable' : ''}</td>
                     <td>${column.attribute === 'hasDefault' ? column.default ?? '???' : ''}</td>
                     <td>${references.length === 0 ? '' : references.join('<br>')}</td>
-                    <td>${(column.comment ?? '').replace('\n', '<br>')}</td>
+                    <td>${(column.comment ?? '').replace(/\n/g, '<br>')}</td>
                     <td>
                         ${column.attribute === "primary" ? `` : `
                         <button onclick="${addFuncName}()">Copy add column</button><br>
@@ -344,7 +357,7 @@ function toColumnType(column: TColumn) {
     } else if (column.type.startsWith('real')) {
         return column.type.replace('real', 'REAL');
     } else if (column.type.startsWith('string')) {
-        return column.type.replace('string', `VARCHAR(${column.length})`);
+        return column.type.replace('string', `VARCHAR(${'length' in column ? column.length : '???'})`);
     } else if (column.type.startsWith('timestamp')) {
         return column.type.replace('timestamp', 'TIMESTAMP');
     } else if (column.type.startsWith('time')) {

@@ -1,7 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.createSwagger = void 0;
-const createSwagger = (services, name, url, params = []) => {
+const createSwagger = (services, name, pathOrUrl, params = []) => {
     // *****************************************
     // Internal method definitions
     // *****************************************
@@ -69,7 +69,7 @@ info:
   version: 1.0.0
   description: API documentation for your service
 servers:
-  - url: ${url}
+  - url: ${pathOrUrl !== null && pathOrUrl !== void 0 ? pathOrUrl : ''}
     description: ${name} API IF定義書
 tags:\n`;
     for (const tag of tags) {

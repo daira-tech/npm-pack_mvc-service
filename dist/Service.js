@@ -14,6 +14,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Service = void 0;
 const axios_1 = __importDefault(require("axios"));
+const cookie_1 = require("hono/cookie");
 const Exception_1 = require("./exceptions/Exception");
 const RequestType_1 = require("./reqestResponse/RequestType");
 const ResponseType_1 = require("./reqestResponse/ResponseType");
@@ -29,7 +30,6 @@ class Service {
     get ApiUserAvailable() { return this.apiUserAvailable; }
     get Request() { return this.request; }
     ; // swaggerで必要なので、ここだけ宣言
-    get AuthToken() { var _a; return (_a = this.request.Authorization) !== null && _a !== void 0 ? _a : ''; }
     get Response() { return this.response; }
     ; // swaggerで必要なので、ここだけ宣言
     get Tags() { return this.tags; }
@@ -68,6 +68,87 @@ class Service {
         throw new Error('Failed to determine whether the module is "express" or "hono".');
     }
     ;
+    get Headers() {
+        if (this.Module === 'express') {
+            return this.Req.headers;
+        }
+        else {
+            return this.C.req.header();
+        }
+    }
+    getHeader(key) {
+        if (this.Module === 'express') {
+            // Expressの場合
+            const value = this.Req.header(key);
+            return Array.isArray(value) ? value[0] : value;
+        }
+        else {
+            // Honoの場合
+            return this.C.req.header(key);
+        }
+    }
+    setResponseHeader(key, value) {
+        let formattedValue;
+        if (typeof value === 'string') {
+            formattedValue = value;
+        }
+        else {
+            // オブジェクトの場合（配列は Record<string, any> に合致しないよう、念のためチェック）
+            if (Array.isArray(value)) {
+                throw new Error('Arrays are not allowed in setResponseHeader. Please use string or object.');
+            }
+            formattedValue = JSON.stringify(value);
+        }
+        if (this.Module === 'express') {
+            // Expressの場合
+            this.Res.setHeader(key, formattedValue);
+        }
+        else {
+            // Honoの場合
+            this.C.header(key, formattedValue);
+        }
+    }
+    setCookie(key, value, options) {
+        var _a, _b, _c, _d;
+        const config = {
+            httpOnly: (_a = options === null || options === void 0 ? void 0 : options.httpOnly) !== null && _a !== void 0 ? _a : true,
+            secure: (_b = options === null || options === void 0 ? void 0 : options.secure) !== null && _b !== void 0 ? _b : true,
+            sameSite: (_c = options === null || options === void 0 ? void 0 : options.sameSite) !== null && _c !== void 0 ? _c : 'strict',
+            maxAge: options === null || options === void 0 ? void 0 : options.maxAge,
+            path: (_d = options === null || options === void 0 ? void 0 : options.path) !== null && _d !== void 0 ? _d : '/',
+            domain: options === null || options === void 0 ? void 0 : options.domain,
+            expires: options === null || options === void 0 ? void 0 : options.expires,
+        };
+        if (this.Module === 'express') {
+            this.Res.cookie(key, value, config);
+        }
+        else if (this.Module === 'hono') {
+            (0, cookie_1.setCookie)(this.C, key, value, Object.assign(Object.assign({}, config), { 
+                // HonoのmaxAgeは秒単位なので変換
+                maxAge: (options === null || options === void 0 ? void 0 : options.maxAge) !== undefined ? options.maxAge / 1000 : undefined, 
+                // HonoのsameSiteはPascalCase（Strict等）
+                sameSite: (config.sameSite.charAt(0).toUpperCase() + config.sameSite.slice(1)) }));
+        }
+    }
+    getCookie(key) {
+        if (this.Module === 'express') {
+            return this.Req.cookies[key];
+        }
+        else if (this.Module === 'hono') {
+            return (0, cookie_1.getCookie)(this.C, key);
+        }
+        return undefined;
+    }
+    removeCookie(key, options) {
+        if (this.Module === 'express') {
+            // Expressの場合
+            this.Res.clearCookie(key, options);
+        }
+        else if (this.Module === 'hono') {
+            // Honoの場合
+            (0, cookie_1.deleteCookie)(this.C, key, options);
+        }
+    }
     get Env() {
         if (this.Module === 'express') {
             return process.env;
