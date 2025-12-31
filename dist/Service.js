@@ -15,6 +15,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.Service = void 0;
 const axios_1 = __importDefault(require("axios"));
 const cookie_1 = require("hono/cookie");
+const pg_1 = require("pg");
 const Exception_1 = require("./exceptions/Exception");
 const RequestType_1 = require("./reqestResponse/RequestType");
 const ResponseType_1 = require("./reqestResponse/ResponseType");
@@ -213,6 +214,19 @@ class Service {
             throw new Error("Database port is not configured");
         }
         try {
+            // honoの場合、Poolは各リクエストで使い捨てのため、Poolマネージャーを使わず、リクエスト内で接続・破棄をする
+            if (this.Module === 'hono') {
+                return new pg_1.Pool({
+                    user: this.DbUser,
+                    host: this.DbHost,
+                    database: this.DbName,
+                    password: this.DbPassword,
+                    port: Number(this.DbPort),
+                    ssl: this.DbIsSslConnect ? {
+                        rejectUnauthorized: false
+                    } : false
+                });
+            }
             return PoolManager_1.default.getPool(this.DbUser, this.DbHost, this.DbName, this.DbPassword, this.DbPort, this.DbIsSslConnect);
         }
         catch (ex) {
@@ -376,8 +390,8 @@ class Service {
             if (this.client !== undefined) {
                 yield this.client.release();
             }
-            if (this.Module === 'hono') {
-                yield PoolManager_1.default.shutdownAll();
+            if (this.Module === 'hono' && this.pool !== undefined) {
+                yield this.pool.end();
             }
         });
     }

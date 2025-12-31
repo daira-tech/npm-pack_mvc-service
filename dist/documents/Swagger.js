@@ -69,7 +69,7 @@ info:
   version: 1.0.0
   description: API documentation for your service
 servers:
-  - url: ${pathOrUrl !== null && pathOrUrl !== void 0 ? pathOrUrl : ''}
+  - url: ${pathOrUrl !== null && pathOrUrl !== void 0 ? pathOrUrl : '/'}
     description: ${name} API IF定義書
 tags:\n`;
     for (const tag of tags) {

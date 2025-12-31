@@ -246,6 +246,20 @@ export class Service<IEnv extends IServiceEnv = IServiceEnv> {
         }
 
         try {
+            // honoの場合、Poolは各リクエストで使い捨てのため、Poolマネージャーを使わず、リクエスト内で接続・破棄をする
+            if (this.Module === 'hono') {
+                return new Pool({
+                    user: this.DbUser,
+                    host: this.DbHost,
+                    database: this.DbName,
+                    password: this.DbPassword,
+                    port: Number(this.DbPort),
+                    ssl: this.DbIsSslConnect ? {
+                        rejectUnauthorized: false
+                        } : false
+                })
+            }
+
             return PoolManager.getPool(this.DbUser, this.DbHost, this.DbName, this.DbPassword, this.DbPort, this.DbIsSslConnect);
         } catch (ex) {
             throw new Error("Failed to connect to the database. Please check the connection settings.");
@@ -394,8 +408,8 @@ export class Service<IEnv extends IServiceEnv = IServiceEnv> {
             await this.client.release();
         }
 
-        if (this.Module === 'hono') {
-            await PoolManager.shutdownAll()
+        if (this.Module === 'hono' && this.pool !== undefined) {
+            await this.pool.end();
         }
     }
 
