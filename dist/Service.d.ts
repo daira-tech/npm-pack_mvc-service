@@ -62,7 +62,7 @@ export declare class Service<IEnv extends IServiceEnv = IServiceEnv> {
         httpOnly?: boolean;
         secure?: boolean;
         sameSite?: 'strict' | 'lax' | 'none';
-        maxAge?: number;
+        maxAgeSec?: number;
         path?: string;
         domain?: string;
         expires?: Date;

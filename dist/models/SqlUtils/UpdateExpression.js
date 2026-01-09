@@ -16,7 +16,7 @@ class UpdateExpression {
             expressions.push(`${key} = $${vars.length}`);
         }
         return {
-            expression: `UPDATE ${model.TableName} SET ${expressions.join(',')}`,
+            expression: `UPDATE ${model.SchemaTableName} SET ${expressions.join(',')}`,
             vars: vars
         };
     }

@@ -2,6 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.MigrateTable = void 0;
 class MigrateTable {
+    get Schema() { return this.schema; }
     get MigrateSql() { return this.trimSpaceLineSql(this.migrateSql); }
     get RollbackSql() { return this.trimSpaceLineSql(this.rollbackSql); }
     get AddGrantSql() {
@@ -15,7 +16,7 @@ class MigrateTable {
         }
         let sql = "";
         for (const table of tables) {
-            sql += `GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.${table} TO ${this.user};`;
+            sql += `GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE ${this.schema}.${table} TO ${this.user};`;
         }
         return sql;
     }
@@ -24,6 +25,7 @@ class MigrateTable {
         this.rollbackSql = '';
         this.addGrantTables = [];
         this.user = '';
+        this.schema = 'public';
         if (user !== undefined) {
             this.user = user;
         }

@@ -4,7 +4,9 @@ export class MigrateTable {
     protected readonly rollbackSql: string = '';
     protected readonly addGrantTables: Array<string> = [];
     protected readonly user: string = '';
+    protected readonly schema: string = 'public';
 
+    get Schema(): string { return this.schema; }
     get MigrateSql(): string { return this.trimSpaceLineSql(this.migrateSql); }
     get RollbackSql(): string { return this.trimSpaceLineSql(this.rollbackSql); }
     get AddGrantSql(): string | null {
@@ -19,7 +21,7 @@ export class MigrateTable {
 
         let sql = "";
         for (const table of tables) {
-            sql += `GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.${table} TO ${this.user};`;
+            sql += `GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE ${this.schema}.${table} TO ${this.user};`;
         }
         return sql;
     }

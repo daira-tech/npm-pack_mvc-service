@@ -23,12 +23,21 @@ const UpdateExpression_1 = __importDefault(require("./SqlUtils/UpdateExpression"
 const MessageUtil_1 = __importDefault(require("./Utils/MessageUtil"));
 class TableModel {
     get Id() { return this.id; }
-    get DbName() { return this.dbName; }
+    get SchemaName() { return this.schemaName; }
     get TableName() {
         if (this.tableName === "") {
             throw new Error("Please set the tableName for TableModel.");
         }
         return this.tableName;
+    }
+    get SchemaTableName() {
+        if (this.tableName === "") {
+            throw new Error("Please set the tableName for TableModel.");
+        }
+        if (this.schemaName === "") {
+            return this.tableName;
+        }
+        return this.schemaName + "." + this.tableName;
     }
     get TableDescription() { return this.tableDescription; }
     get Comment() { return this.comment; }
@@ -59,7 +68,7 @@ class TableModel {
         return this.tableAlias === undefined ? this.TableName : this.tableAlias;
     }
     get createSqlFromJoinWhere() {
-        let sql = ` FROM ${this.TableName} as "${this.TableAlias}"`;
+        let sql = ` FROM ${this.SchemaTableName} as "${this.TableAlias}"`;
         for (const join of this.joinConditions) {
             const joins = {
                 inner: ' INNER JOIN',
@@ -67,7 +76,7 @@ class TableModel {
                 full: ' FULL OUTER JOIN',
             };
             sql += joins[join.type];
-            sql += ` ${join.model.TableName} as "${join.model.TableAlias}" ON `;
+            sql += ` ${join.model.SchemaTableName} as "${join.model.TableAlias}" ON `;
             const query = WhereExpression_1.WhereExpression.createCondition(join.conditions, this, this.vars.length + 1);
             sql += query.expression;
             if (query.vars !== undefined) {
@@ -100,7 +109,7 @@ class TableModel {
     }
     constructor(client, tableAlias) {
         this.id = "";
-        this.dbName = "default";
+        this.schemaName = "";
         this.tableName = "";
         this.tableDescription = "";
         this.comment = "";
@@ -146,7 +155,7 @@ class TableModel {
             else {
                 query = WhereExpression_1.WhereExpression.createConditionPk(this, pkOrId);
             }
-            const sql = `SELECT ${selects.join(',')} FROM ${this.TableName} WHERE ${query.expression}`;
+            const sql = `SELECT ${selects.join(',')} FROM ${this.SchemaTableName} WHERE ${query.expression}`;
             let datas = yield this.executeQuery(sql, query.vars);
             return datas.rowCount == 0 ? null : datas.rows[0];
         });
@@ -317,7 +326,7 @@ class TableModel {
                     orderConditions.push(`WHEN ${columnInfo.expression} is null THEN ${i}`);
                     continue;
                 }
-                throw new Error(`${this.TableName}.${columnInfo.columnName} is a non-nullable column.`);
+                throw new Error(`${this.SchemaTableName}.${columnInfo.columnName} is a non-nullable column.`);
             }
             ValidateValueUtil_1.default.validateValue(columnInfo, value);
             switch (columnInfo.type) {
@@ -413,7 +422,7 @@ class TableModel {
             for (const [key, value] of Object.entries(options)) {
                 const column = this.getColumn(key);
                 if (isInsert === false && column.attribute === 'primary') {
-                    throw new Error(`${this.TableName}.${key} cannot be modified because it is a primary key.`);
+                    throw new Error(`${this.SchemaTableName}.${key} cannot be modified because it is a primary key.`);
                 }
                 if (value === null) {
                     if (column.attribute === 'nullable') {
@@ -516,7 +525,7 @@ class TableModel {
                 vars.push(value);
             }
             const params = vars.map((_, index) => `$${index + 1}`);
-            const sql = `INSERT INTO ${this.TableName} (${columns.join(",")}) VALUES (${params.join(",")});`;
+            const sql = `INSERT INTO ${this.SchemaTableName} (${columns.join(",")}) VALUES (${params.join(",")});`;
             yield this.executeQuery(sql, vars);
         });
     }
@@ -551,7 +560,7 @@ class TableModel {
             else {
                 whereQuery = WhereExpression_1.WhereExpression.createConditionPk(this, pkOrId);
             }
-            const sql = `DELETE FROM ${this.TableName} WHERE ${whereQuery.expression}`;
+            const sql = `DELETE FROM ${this.SchemaTableName} WHERE ${whereQuery.expression}`;
             const data = yield this.executeQuery(sql, whereQuery.vars);
             if (data.rowCount !== 1) {
                 this.throwUnprocessableException("301", this.errorMessages.find.replace('{pks}', ((_a = whereQuery.vars) !== null && _a !== void 0 ? _a : []).join(',')));
@@ -568,11 +577,11 @@ class TableModel {
                 this.vars.push(value);
                 updateExpressions.push(`${key} = $${this.vars.length}`);
             }
-            let sql = `UPDATE ${this.TableName} "${this.TableAlias}" SET ${updateExpressions.join(',')} `;
+            let sql = `UPDATE ${this.SchemaTableName} "${this.TableAlias}" SET ${updateExpressions.join(',')} `;
             if (this.joinConditions.length > 0) {
                 const tables = [];
                 for (const join of this.joinConditions) {
-                    tables.push(`${join.model.TableName} as "${join.model.TableAlias}"`);
+                    tables.push(`${join.model.SchemaTableName} as "${join.model.TableAlias}"`);
                     const query = WhereExpression_1.WhereExpression.createCondition(join.conditions, this, this.vars.length + 1);
                     this.whereExpressions.push(query.expression);
                     if (query.vars !== undefined) {
@@ -590,11 +599,11 @@ class TableModel {
     }
     executeDelete() {
         return __awaiter(this, void 0, void 0, function* () {
-            let sql = `DELETE FROM ${this.TableName} "${this.TableAlias}" `;
+            let sql = `DELETE FROM ${this.SchemaTableName} "${this.TableAlias}" `;
             if (this.joinConditions.length > 0) {
                 const tables = [];
                 for (const join of this.joinConditions) {
-                    tables.push(`${join.model.TableName} as "${join.model.TableAlias}"`);
+                    tables.push(`${join.model.SchemaTableName} as "${join.model.TableAlias}"`);
                     const query = WhereExpression_1.WhereExpression.createCondition(join.conditions, this, this.vars.length + 1);
                     this.whereExpressions.push(query.expression);
                     if (query.vars !== undefined) {

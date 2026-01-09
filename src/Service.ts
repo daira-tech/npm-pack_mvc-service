@@ -141,7 +141,7 @@ export class Service<IEnv extends IServiceEnv = IServiceEnv> {
         httpOnly?: boolean;
         secure?: boolean;
         sameSite?: 'strict' | 'lax' | 'none';
-        maxAge?: number; // ミリ秒単位で受け取る（Expressに合わせる）
+        maxAgeSec?: number; // ミリ秒単位で受け取る（Expressに合わせる）
         path?: string;
         domain?: string;
         expires?: Date;
@@ -150,19 +150,20 @@ export class Service<IEnv extends IServiceEnv = IServiceEnv> {
             httpOnly: options?.httpOnly ?? true,
             secure: options?.secure ?? true,
             sameSite: options?.sameSite ?? 'strict',
-            maxAge: options?.maxAge,
             path: options?.path ?? '/',
             domain: options?.domain,
-            expires: options?.expires,
+            expires: options?.expires
         };
 
         if (this.Module === 'express') {
-            this.Res.cookie(key, value, config);
+            this.Res.cookie(key, value, {
+                ...config,
+                maxAge: options?.maxAgeSec !== undefined ? options.maxAgeSec * 1000 : undefined,
+            });
         } else if (this.Module === 'hono') {
             setCookie(this.C, key, value, {
                 ...config,
-                // HonoのmaxAgeは秒単位なので変換
-                maxAge: options?.maxAge !== undefined ? options.maxAge / 1000 : undefined,
+                maxAge: options?.maxAgeSec,
                 // HonoのsameSiteはPascalCase（Strict等）
                 sameSite: (config.sameSite.charAt(0).toUpperCase() + config.sameSite.slice(1)) as 'Strict' | 'Lax' | 'None',
             });

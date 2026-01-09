@@ -14,7 +14,7 @@ export class WhereExpression {
             }
 
             if (pk[keyColumn] === undefined || pk[keyColumn] === null) {
-                throw new Error(`No value is set for the primary key "${model.TableName}".${keyColumn}.`);
+                throw new Error(`No value is set for the primary key "${model.SchemaTableName}".${keyColumn}.`);
             }
 
             ValidateValueUtil.validateValue(column, pk[keyColumn]);

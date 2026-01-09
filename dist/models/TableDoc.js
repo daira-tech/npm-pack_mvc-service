@@ -213,10 +213,10 @@ td:nth-child(12) {
 `;
     const dbObj = {};
     for (const model of models) {
-        if (model.DbName in dbObj === false) {
-            dbObj[model.DbName] = [];
+        if (model.SchemaName in dbObj === false) {
+            dbObj[model.SchemaName] = [];
         }
-        dbObj[model.DbName].push(model);
+        dbObj[model.SchemaName].push(model);
     }
     const jsCripFuncs = {};
     for (const [keyDbName, models] of Object.entries(dbObj)) {
@@ -224,7 +224,7 @@ td:nth-child(12) {
     <div class="db-wrapper">
         <h2>${keyDbName} Database</h2>`;
         for (const model of models) {
-            const createFuncName = `clipboard_createTable_${model.DbName}_${model.TableName}`;
+            const createFuncName = `clipboard_createTable_${model.SchemaName}_${model.TableName}`;
             html += `
         <div class="table-wrapper">
             <div class="table-title-wrapper">
@@ -253,8 +253,8 @@ td:nth-child(12) {
             let index = 0;
             for (const [keyColName, column] of Object.entries(model.Columns)) {
                 index++;
-                const addFuncName = `clipboard_addColumn_${model.DbName}_${model.TableName}_${keyColName}`;
-                const dropFuncName = `clipboard_dropColumn_${model.DbName}_${model.TableName}_${keyColName}`;
+                const addFuncName = `clipboard_addColumn_${model.SchemaName}_${model.TableName}_${keyColName}`;
+                const dropFuncName = `clipboard_dropColumn_${model.SchemaName}_${model.TableName}_${keyColName}`;
                 // 外部キー用
                 let references = [];
                 for (const ref of model.GetReferences(keyColName)) {
@@ -293,8 +293,8 @@ td:nth-child(12) {
                         `}
                     </td>
                 </tr>`;
-                jsCripFuncs[addFuncName] = `ALTER TABLE ${model.TableName} ADD COLUMN ${keyColName} ${toColumnType(column)} ${toColumnAttibute(column)};`;
-                jsCripFuncs[dropFuncName] = `ALTER TABLE ${model.TableName} DROP COLUMN ${keyColName};`;
+                jsCripFuncs[addFuncName] = `ALTER TABLE ${model.SchemaTableName} ADD COLUMN ${keyColName} ${toColumnType(column)} ${toColumnAttibute(column)};`;
+                jsCripFuncs[dropFuncName] = `ALTER TABLE ${model.SchemaTableName} DROP COLUMN ${keyColName};`;
                 // CreateTable作成用
                 createColExpressions.push(`${keyColName} ${toColumnType(column)} ${toColumnAttibute(column)}`);
                 if (column.attribute === 'primary') {
@@ -309,7 +309,7 @@ td:nth-child(12) {
             for (const ref of model.References) {
                 expressions.push(`FOREIGN KEY (${ref.columns.map(col => col.target).join(', ')}) REFERENCES ${ref.table}(${ref.columns.map(col => col.ref).join(', ')})`);
             }
-            jsCripFuncs[createFuncName] = `CREATE TABLE ${model.TableName} (\n    ${expressions.join(',\n    ')}\n);`;
+            jsCripFuncs[createFuncName] = `CREATE TABLE ${model.SchemaTableName} (\n    ${expressions.join(',\n    ')}\n);`;
             html += `
             </table>
         </div>`;

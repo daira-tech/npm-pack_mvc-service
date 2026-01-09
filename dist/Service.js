@@ -115,18 +115,17 @@ class Service {
             httpOnly: (_a = options === null || options === void 0 ? void 0 : options.httpOnly) !== null && _a !== void 0 ? _a : true,
             secure: (_b = options === null || options === void 0 ? void 0 : options.secure) !== null && _b !== void 0 ? _b : true,
             sameSite: (_c = options === null || options === void 0 ? void 0 : options.sameSite) !== null && _c !== void 0 ? _c : 'strict',
-            maxAge: options === null || options === void 0 ? void 0 : options.maxAge,
             path: (_d = options === null || options === void 0 ? void 0 : options.path) !== null && _d !== void 0 ? _d : '/',
             domain: options === null || options === void 0 ? void 0 : options.domain,
-            expires: options === null || options === void 0 ? void 0 : options.expires,
+            expires: options === null || options === void 0 ? void 0 : options.expires
         };
         if (this.Module === 'express') {
-            this.Res.cookie(key, value, config);
+            this.Res.cookie(key, value, Object.assign(Object.assign({}, config), { maxAge: (options === null || options === void 0 ? void 0 : options.maxAgeSec) !== undefined ? options.maxAgeSec * 1000 : undefined }));
         }
         else if (this.Module === 'hono') {
             (0, cookie_1.setCookie)(this.C, key, value, Object.assign(Object.assign({}, config), { 
                 // HonoのmaxAgeは秒単位なので変換
-                maxAge: (options === null || options === void 0 ? void 0 : options.maxAge) !== undefined ? options.maxAge / 1000 : undefined, 
+                maxAge: options === null || options === void 0 ? void 0 : options.maxAgeSec, 
                 // HonoのsameSiteはPascalCase（Strict等）
                 sameSite: (config.sameSite.charAt(0).toUpperCase() + config.sameSite.slice(1)) }));
         }

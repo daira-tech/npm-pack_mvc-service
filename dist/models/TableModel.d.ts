@@ -6,10 +6,11 @@ import { TOptionErrorMessage } from './Utils/MessageUtil';
 export declare class TableModel {
     protected readonly id: string;
     get Id(): string;
-    protected readonly dbName: string;
-    get DbName(): string;
+    protected readonly schemaName: string;
+    get SchemaName(): string;
     protected readonly tableName: string;
     get TableName(): string;
+    get SchemaTableName(): string;
     protected readonly tableDescription: string;
     get TableDescription(): string;
     protected readonly comment: string;
