@@ -123,9 +123,7 @@ class Service {
             this.Res.cookie(key, value, Object.assign(Object.assign({}, config), { maxAge: (options === null || options === void 0 ? void 0 : options.maxAgeSec) !== undefined ? options.maxAgeSec * 1000 : undefined }));
         }
         else if (this.Module === 'hono') {
-            (0, cookie_1.setCookie)(this.C, key, value, Object.assign(Object.assign({}, config), { 
-                // HonoのmaxAgeは秒単位なので変換
-                maxAge: options === null || options === void 0 ? void 0 : options.maxAgeSec, 
+            (0, cookie_1.setCookie)(this.C, key, value, Object.assign(Object.assign({}, config), { maxAge: options === null || options === void 0 ? void 0 : options.maxAgeSec, 
                 // HonoのsameSiteはPascalCase（Strict等）
                 sameSite: (config.sameSite.charAt(0).toUpperCase() + config.sameSite.slice(1)) }));
         }
