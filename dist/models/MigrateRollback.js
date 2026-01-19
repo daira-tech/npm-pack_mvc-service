@@ -30,9 +30,10 @@ const migrate = (migrates, poolParam) => __awaiter(void 0, void 0, void 0, funct
             rejectUnauthorized: false
         } : false
     });
-    // create migration table
+    const client = yield pool.connect();
     try {
-        for (const keySchema of Object.keys(migratesBySchema)) {
+        client.query('BEGIN');
+        for (const [keySchema, migrates] of Object.entries(migratesBySchema)) {
             if ((yield isExistMigrationTable(pool, keySchema)) == false) {
                 const tableName = keySchema === '' ? 'migrations' : `"${keySchema}".migrations`;
                 const sql = `
@@ -44,17 +45,6 @@ const migrate = (migrates, poolParam) => __awaiter(void 0, void 0, void 0, funct
                     );`;
                 yield pool.query(sql);
             }
-        }
-    }
-    catch (ex) {
-        console.error('An error occurred related to the Migrate table:', ex);
-        yield pool.end();
-        throw ex;
-    }
-    const client = yield pool.connect();
-    try {
-        client.query('BEGIN');
-        for (const [keySchema, migrates] of Object.entries(migratesBySchema)) {
             const datas = yield getMigrations(pool, keySchema);
             let maxNumber = datas.maxNumber;
             for (const migrate of migrates) {
@@ -76,10 +66,10 @@ const migrate = (migrates, poolParam) => __awaiter(void 0, void 0, void 0, funct
                 `;
                 maxNumber++;
                 yield client.query(migrateInsertSql);
+                yield client.query('COMMIT');
                 console.log(`Execution completed: ${className}`);
             }
         }
-        yield client.query('COMMIT');
         console.log('Migration completed');
     }
     catch (ex) {

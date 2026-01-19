@@ -25,9 +25,11 @@ export const migrate = async (migrates: Array<MigrateTable>, poolParam: {
         } : false
     });
 
-    // create migration table
+    const client = await pool.connect();
     try {
-        for (const keySchema of Object.keys(migratesBySchema)) {
+        client.query('BEGIN');
+
+        for (const [keySchema, migrates] of Object.entries(migratesBySchema)) {
             if (await isExistMigrationTable(pool, keySchema) == false) {
                 const tableName = keySchema === '' ? 'migrations' : `"${keySchema}".migrations`;
                 const sql = `
@@ -39,18 +41,7 @@ export const migrate = async (migrates: Array<MigrateTable>, poolParam: {
                     );`;
                 await pool.query(sql);
             }
-        }
-    } catch (ex) {
-        console.error('An error occurred related to the Migrate table:', ex);
-        await pool.end();
-        throw ex;
-    }
 
-    const client = await pool.connect();
-    try {
-        client.query('BEGIN');
-
-        for (const [keySchema, migrates] of Object.entries(migratesBySchema)) {
             const datas = await getMigrations(pool, keySchema);
             let maxNumber = datas.maxNumber;
             for (const migrate of migrates) {
@@ -76,12 +67,11 @@ export const migrate = async (migrates: Array<MigrateTable>, poolParam: {
                 maxNumber++;
         
                 await client.query(migrateInsertSql);
-        
+                await client.query('COMMIT');
+
                 console.log(`Execution completed: ${className}`);
             }
         }
-
-        await client.query('COMMIT');
         
         console.log('Migration completed');
     } catch (ex) {
