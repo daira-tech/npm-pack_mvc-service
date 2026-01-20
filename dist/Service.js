@@ -236,10 +236,19 @@ class Service {
     middleware() {
         return __awaiter(this, void 0, void 0, function* () { });
     }
+    outputSuccessLog() {
+        return __awaiter(this, void 0, void 0, function* () { });
+    }
     resSuccessExpress() {
+        this.outputSuccessLog().catch((ex) => {
+            console.error(ex);
+        });
         this.Res.status(200).json(this.response.ResponseData);
     }
     resSuccessHono() {
+        this.outputSuccessLog().catch((ex) => {
+            console.error(ex);
+        });
         return this.C.json(this.response.ResponseData, 200);
     }
     outputErrorLog(ex) {

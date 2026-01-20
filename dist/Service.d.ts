@@ -85,6 +85,7 @@ export declare class Service<IEnv extends IServiceEnv = IServiceEnv> {
     private setPool;
     protected checkMaintenance(): Promise<void>;
     protected middleware(): Promise<void>;
+    protected outputSuccessLog(): Promise<void>;
     resSuccessExpress(): void;
     resSuccessHono(): TypedResponse<any>;
     protected outputErrorLog(ex: any): Promise<void>;

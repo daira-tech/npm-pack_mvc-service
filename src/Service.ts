@@ -269,10 +269,17 @@ export class Service<IEnv extends IServiceEnv = IServiceEnv> {
     protected async checkMaintenance(): Promise<void> { }
     protected async middleware(): Promise<void>{ }
 
+    protected async outputSuccessLog(): Promise<void>{ }
     public resSuccessExpress(): void {
+        this.outputSuccessLog().catch((ex) => {
+            console.error(ex);
+        });
         this.Res.status(200).json(this.response.ResponseData);
     }
     public resSuccessHono(): TypedResponse<any> {
+        this.outputSuccessLog().catch((ex) => {
+            console.error(ex);
+        });
         return this.C.json(this.response.ResponseData, 200);
     }
 
