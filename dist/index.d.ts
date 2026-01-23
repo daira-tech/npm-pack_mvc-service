@@ -11,6 +11,7 @@ export { ResponseType } from './reqestResponse/ResponseType';
 export { PropertyType } from './reqestResponse/ReqResType';
 export { TableModel } from './models/TableModel';
 export { WhereExpression } from './models/SqlUtils/WhereExpression';
+export { SelectExpression } from './models/SqlUtils/SelectExpression';
 export type { TColumnAttribute, TColumnType, TColumnArrayType, TColumn, TColumnDetail, TOperator, TColumnInfo, TQuery, TSelectExpression, TAggregateFuncType, TCondition, TNestedCondition, TSortKeyword, TKeyFormat } from './models/Type';
 export { createTableDoc } from './models/TableDoc';
 export { MigrateTable } from './models/MigrateTable';

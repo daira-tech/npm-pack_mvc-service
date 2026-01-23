@@ -3,6 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.SelectExpression = void 0;
 const StringUtil_1 = __importDefault(require("../../Utils/StringUtil"));
 class SelectExpression {
     /**
@@ -91,5 +92,9 @@ class SelectExpression {
                 return `to_char(${columnInfo.expression}, 'HH24:mi:ss')`;
         }
     }
+    static nullToEmptyString(column) {
+        const columnInfo = column.model.getColumn(column.name);
+        return `COALESCE(${columnInfo.expression}, '')`;
+    }
 }
-exports.default = SelectExpression;
+exports.SelectExpression = SelectExpression;

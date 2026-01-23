@@ -2,7 +2,7 @@ import { TableModel } from "../TableModel";
 import { TAggregateFuncType, TColumnInfo, TKeyFormat } from "../Type";
 import StringUtil from "../../Utils/StringUtil";
 
-export default class SelectExpression {
+export class SelectExpression {
 
     /**
      * 指定されたカラム情報と関数を使用して、SQLのSELECT文を作成します。
@@ -98,5 +98,10 @@ export default class SelectExpression {
             case 'time':
                 return `to_char(${columnInfo.expression}, 'HH24:mi:ss')`;
         }
+    }
+
+    public static nullToEmptyString(column: TColumnInfo) {
+        const columnInfo = column.model.getColumn(column.name);
+        return `COALESCE(${columnInfo.expression}, '')`;
     }
 }

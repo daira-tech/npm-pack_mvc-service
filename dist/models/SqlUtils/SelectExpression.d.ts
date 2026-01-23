@@ -1,6 +1,6 @@
 import { TableModel } from "../TableModel";
 import { TAggregateFuncType, TColumnInfo, TKeyFormat } from "../Type";
-export default class SelectExpression {
+export declare class SelectExpression {
     /**
      * 指定されたカラム情報と関数を使用して、SQLのSELECT文を作成します。
      * @param columnInfoType カラム情報を含むオブジェクト。
@@ -27,5 +27,6 @@ export default class SelectExpression {
      *          指定された形式に変換されたSQLの文字列。
      */
     static createDateTime(column: TColumnInfo, to: 'date' | 'time' | 'datetime'): string;
+    static nullToEmptyString(column: TColumnInfo): string;
 }
 //# sourceMappingURL=SelectExpression.d.ts.map

@@ -125,6 +125,10 @@ export declare class TableModel {
         name: string;
         model: TableModel;
     }, toValue: any, alias: string): void;
+    selectNullToEmptyString(column: string | {
+        name: string;
+        model: TableModel;
+    }, alias: string): void;
     /**
      * 指定されたカラムを特定のフォーマットの日付情報に変換し、SELECT句で使用します。
      *

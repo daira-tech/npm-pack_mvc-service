@@ -14,7 +14,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.TableModel = void 0;
 const ValidateValueUtil_1 = __importDefault(require("./SqlUtils/ValidateValueUtil"));
-const SelectExpression_1 = __importDefault(require("./SqlUtils/SelectExpression"));
+const SelectExpression_1 = require("./SqlUtils/SelectExpression");
 const WhereExpression_1 = require("./SqlUtils/WhereExpression");
 const ValidateClient_1 = __importDefault(require("./ValidateClient"));
 const Exception_1 = require("../exceptions/Exception");
@@ -134,12 +134,12 @@ class TableModel {
             let selects = [];
             if (selectColumns == "*") {
                 for (const key of Object.keys(this.Columns)) {
-                    selects.push(SelectExpression_1.default.create({ model: this, name: key }, null, null, keyFormat));
+                    selects.push(SelectExpression_1.SelectExpression.create({ model: this, name: key }, null, null, keyFormat));
                 }
             }
             else if (selectColumns != null) {
                 for (const key of selectColumns) {
-                    selects.push(SelectExpression_1.default.create({ model: this, name: key }, null, null, keyFormat));
+                    selects.push(SelectExpression_1.SelectExpression.create({ model: this, name: key }, null, null, keyFormat));
                 }
             }
             if (selectExpressions != null) {
@@ -175,7 +175,7 @@ class TableModel {
                 keyFormat = param2;
             }
             for (const key of Object.keys(model.Columns)) {
-                this.selectExpressions.push(SelectExpression_1.default.create({ model: model, name: key }, null, null, keyFormat));
+                this.selectExpressions.push(SelectExpression_1.SelectExpression.create({ model: model, name: key }, null, null, keyFormat));
             }
             return;
         }
@@ -193,10 +193,10 @@ class TableModel {
             }
             for (const key of param1) {
                 if (typeof key === 'string') {
-                    this.selectExpressions.push(SelectExpression_1.default.create({ model: model, name: key }, null, null, keyFormat));
+                    this.selectExpressions.push(SelectExpression_1.SelectExpression.create({ model: model, name: key }, null, null, keyFormat));
                 }
                 else {
-                    this.selectExpressions.push(SelectExpression_1.default.create({ model: model, name: key.name }, (_a = key.func) !== null && _a !== void 0 ? _a : null, (_b = key.alias) !== null && _b !== void 0 ? _b : null, keyFormat));
+                    this.selectExpressions.push(SelectExpression_1.SelectExpression.create({ model: model, name: key.name }, (_a = key.func) !== null && _a !== void 0 ? _a : null, (_b = key.alias) !== null && _b !== void 0 ? _b : null, keyFormat));
                 }
             }
             return;
@@ -226,6 +226,11 @@ class TableModel {
         const column = columnInfo.model.getColumn(columnInfo.name);
         this.selectExpressions.push(`COALESCE(${column.expression}, $${this.vars.length}) as "${alias}"`);
     }
+    selectNullToEmptyString(column, alias) {
+        column = typeof column === 'string' ? { name: column, model: this } : column;
+        const columnInfo = column.model.getColumn(column.name);
+        this.selectExpressions.push(`${SelectExpression_1.SelectExpression.nullToEmptyString(column)} as "${alias}"`);
+    }
     /**
      * 指定されたカラムを特定のフォーマットの日付情報に変換し、SELECT句で使用します。
      *
@@ -239,7 +244,7 @@ class TableModel {
         if (['date', 'time', 'timestamp'].includes(columnInfo.type) === false) {
             throw new Error('The first argument of the selectDateAsFormat method must specify a column of type date, time, or timestamp.');
         }
-        this.selectExpressions.push(`${SelectExpression_1.default.createDateTime(column, to)} as "${alias}"`);
+        this.selectExpressions.push(`${SelectExpression_1.SelectExpression.createDateTime(column, to)} as "${alias}"`);
     }
     /**
      * 指定された条件に基づいてテーブルを結合します。

@@ -303,8 +303,10 @@ export class RequestType extends ReqResType {
             const c = request as Context;
             method = c.req.method;
             if (method === 'GET' || method === 'DELETE') {
-                const url = new URL(c.req.url);
-                this.data = Object.fromEntries(url.searchParams.entries());
+                this.data = {};
+                for (const [key, values] of Object.entries(c.req.queries())) {
+                    this.data[key] = values.length === 1 ? values[0] : values;
+                }
             } else {
                 // JSON を想定（form 等なら parseBody() を使う）
                 this.data = await c.req.json();

@@ -1,7 +1,7 @@
 import { Pool, PoolClient } from 'pg';
 import { TAggregateFuncType, TColumn, TColumnArrayType, TColumnDetail, TColumnInfo, TColumnType, TKeyFormat, TNestedCondition, TOperator, TQuery, TSelectExpression, TSortKeyword } from "./Type";
 import ValidateValueUtil from './SqlUtils/ValidateValueUtil';
-import SelectExpression from './SqlUtils/SelectExpression';
+import { SelectExpression } from './SqlUtils/SelectExpression';
 import { WhereExpression } from './SqlUtils/WhereExpression';
 import ValidateClient from './ValidateClient';
 import { DbConflictException, NotFoundException, UnprocessableException } from '../exceptions/Exception';
@@ -267,6 +267,13 @@ export class TableModel {
 
         const column = columnInfo.model.getColumn(columnInfo.name);
         this.selectExpressions.push(`COALESCE(${column.expression}, $${this.vars.length}) as "${alias}"`)
+    }
+
+    public selectNullToEmptyString(column: string | {name: string, model: TableModel}, alias: string) {
+        column = typeof column === 'string' ? {name: column, model: this} : column;
+        const columnInfo = column.model.getColumn(column.name);
+
+        this.selectExpressions.push(`${SelectExpression.nullToEmptyString(column)} as "${alias}"`);
     }
 
 

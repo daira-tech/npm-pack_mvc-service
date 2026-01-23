@@ -14,6 +14,7 @@ export { PropertyType } from './reqestResponse/ReqResType';
 // models
 export { TableModel } from './models/TableModel';
 export { WhereExpression } from './models/SqlUtils/WhereExpression';
+export { SelectExpression } from './models/SqlUtils/SelectExpression';
 export type { 
     TColumnAttribute,
     TColumnType,
