@@ -1152,7 +1152,7 @@ class RequestType extends ReqResType_1.default {
                         code: 'ARRAY_11',
                         description: this.createErrorMessage('ARRAY_11', [...keys, key]),
                     });
-                    errorList = [...errorList, ...this.getErrorArray([...keys, key, 0])];
+                    errorList = [...errorList, ...this.getErrorArray([...keys, key])];
                     break;
                 case 'map':
                 case 'map?':
