@@ -34,6 +34,7 @@ export interface ErrorMessageType {
 
 export class RequestType extends ReqResType {
 
+    protected readonly language: "ja" | "en" = "en";
     // *****************************************
     // Input Error Message
     // Please make changes to error messages in the subclass
@@ -88,7 +89,9 @@ export class RequestType extends ReqResType {
         INVALID_MAP_STRING: '{property} は有効な文字列のマップキーでなければなりません。({value})',
         INVALID_MAP_BOOL: '{property} は有効なboolのマップキーでなければなりません。({value})',
     }
-    protected readonly ERROR_MESSAGE: ErrorMessageType = process.env.TZ === 'Asia/Tokyo' ? this.ERROR_MESSAGE_JAPAN : this.ERROR_MESSAGE_ENGLISH;
+    protected get ERROR_MESSAGE(): ErrorMessageType {
+        return this.language === 'ja' ? this.ERROR_MESSAGE_JAPAN : this.ERROR_MESSAGE_ENGLISH;
+    }
 
     protected paramProperties: Array<(PrimitiveType | StringType | NumberType | EnumType) & { key: string }> = []
     get paramPath(): string {

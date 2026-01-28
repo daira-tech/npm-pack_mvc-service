@@ -461,8 +461,10 @@ export class TableModel {
         };
     }
 
-    protected readonly errorMessages: TOptionErrorMessage = 
-        process.env.TZ === 'Asia/Tokyo' ? MessageUtil.optionErrorMessageJapan : MessageUtil.optionErrorMessageEnglish;
+    protected readonly language: "ja" | "en" = "en";
+    protected get errorMessages(): TOptionErrorMessage {
+        return this.language === 'ja' ? MessageUtil.optionErrorMessageJapan : MessageUtil.optionErrorMessageEnglish;
+    }
 
     private throwException(code: string, type: TColumnType | TColumnArrayType | 'length' | 'regExp' | 'min' | 'max' | 'null' | 'notInput' | 'fk', columnName: string, value: any): never {
         const column = this.getColumn(columnName);
@@ -624,7 +626,7 @@ export class TableModel {
         await this.executeQuery(sql, vars);
     }
 
-    public async update(pkOrId: string | number | boolean | {[key: string]: any}, options: {[key: string]: any}) : Promise<void> {
+    public async update(pkOrId: string | number | boolean | {[key: string]: string | number | boolean}, options: {[key: string]: any}) : Promise<void> {
         await this.validateOptions(options, false, pkOrId);
 
         const updateSetQuery = UpdateExpression.createUpdateSet(this, options);
@@ -639,7 +641,13 @@ export class TableModel {
         const sql = updateSetQuery.expression + ' WHERE ' + whereQuery.expression;
         const data = await this.executeQuery(sql, whereQuery.vars);
         if (data.rowCount !== 1) {
-            this.throwUnprocessableException("201", this.errorMessages.find.replace('{pks}', (whereQuery.vars ?? []).join(',')));
+            let pkValues;
+            if (typeof pkOrId === 'string' || typeof pkOrId === 'number' || typeof pkOrId === 'boolean') {
+                pkValues = pkOrId.toString();
+            } else {
+                pkValues = Object.values(pkOrId).map((d) => d.toString()).join(',');
+            }
+            this.throwUnprocessableException("201", this.errorMessages.find.replace('{pks}', pkValues));
         }
     }
 

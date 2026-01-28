@@ -165,7 +165,8 @@ export declare class TableModel {
         lastPage: number;
         isLastData: boolean;
     }>;
-    protected readonly errorMessages: TOptionErrorMessage;
+    protected readonly language: "ja" | "en";
+    protected get errorMessages(): TOptionErrorMessage;
     private throwException;
     protected throwDbCoflictException(code: string, message: string): never;
     protected throwUnprocessableException(code: string, message: string): never;
@@ -179,7 +180,7 @@ export declare class TableModel {
         [key: string]: any;
     }): Promise<void>;
     update(pkOrId: string | number | boolean | {
-        [key: string]: any;
+        [key: string]: string | number | boolean;
     }, options: {
         [key: string]: any;
     }): Promise<void>;

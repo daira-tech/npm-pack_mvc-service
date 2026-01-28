@@ -20,6 +20,7 @@ const type_utils_n_daira_1 = require("type-utils-n-daira");
 class RequestType extends ReqResType_1.default {
     constructor() {
         super(...arguments);
+        this.language = "en";
         // *****************************************
         // Input Error Message
         // Please make changes to error messages in the subclass
@@ -74,7 +75,7 @@ class RequestType extends ReqResType_1.default {
             INVALID_MAP_STRING: '{property} は有効な文字列のマップキーでなければなりません。({value})',
             INVALID_MAP_BOOL: '{property} は有効なboolのマップキーでなければなりません。({value})',
         };
-        this.ERROR_MESSAGE = process.env.TZ === 'Asia/Tokyo' ? this.ERROR_MESSAGE_JAPAN : this.ERROR_MESSAGE_ENGLISH;
+        this.ERROR_MESSAGE = this.language === 'ja' ? this.ERROR_MESSAGE_JAPAN : this.ERROR_MESSAGE_ENGLISH;
         this.paramProperties = [];
     }
     get paramPath() {

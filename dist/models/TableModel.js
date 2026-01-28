@@ -123,7 +123,7 @@ class TableModel {
         this.groupExpression = [];
         this.sortExpression = [];
         this.vars = [];
-        this.errorMessages = process.env.TZ === 'Asia/Tokyo' ? MessageUtil_1.default.optionErrorMessageJapan : MessageUtil_1.default.optionErrorMessageEnglish;
+        this.language = "en";
         this.client = client;
         if (tableAlias !== undefined && tableAlias.trim() !== '') {
             this.tableAlias = tableAlias;
@@ -393,6 +393,9 @@ class TableModel {
             };
         });
     }
+    get errorMessages() {
+        return this.language === 'ja' ? MessageUtil_1.default.optionErrorMessageJapan : MessageUtil_1.default.optionErrorMessageEnglish;
+    }
     throwException(code, type, columnName, value) {
         var _a, _b, _c;
         const column = this.getColumn(columnName);
@@ -536,7 +539,6 @@ class TableModel {
     }
     update(pkOrId, options) {
         return __awaiter(this, void 0, void 0, function* () {
-            var _a;
             yield this.validateOptions(options, false, pkOrId);
             const updateSetQuery = UpdateExpression_1.default.createUpdateSet(this, options);
             let whereQuery;
@@ -550,7 +552,14 @@ class TableModel {
             const sql = updateSetQuery.expression + ' WHERE ' + whereQuery.expression;
             const data = yield this.executeQuery(sql, whereQuery.vars);
             if (data.rowCount !== 1) {
-                this.throwUnprocessableException("201", this.errorMessages.find.replace('{pks}', ((_a = whereQuery.vars) !== null && _a !== void 0 ? _a : []).join(',')));
+                let pkValues;
+                if (typeof pkOrId === 'string' || typeof pkOrId === 'number' || typeof pkOrId === 'boolean') {
+                    pkValues = pkOrId.toString();
+                }
+                else {
+                    pkValues = Object.values(pkOrId).map((d) => d.toString()).join(',');
+                }
+                this.throwUnprocessableException("201", this.errorMessages.find.replace('{pks}', pkValues));
             }
         });
     }

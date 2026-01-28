@@ -27,6 +27,7 @@ export interface ErrorMessageType {
     INVALID_MAP_BOOL: string;
 }
 export declare class RequestType extends ReqResType {
+    protected readonly language: "ja" | "en";
     private readonly ERROR_MESSAGE_ENGLISH;
     private readonly ERROR_MESSAGE_JAPAN;
     protected readonly ERROR_MESSAGE: ErrorMessageType;
