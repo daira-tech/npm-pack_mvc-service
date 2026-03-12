@@ -1,6 +1,5 @@
 import { PoolClient } from "pg";
 import { DateType, DayType, HourType, MinuteSecondType, MonthType } from "./CronType";
-import { AwsS3Client } from "../clients/AwsS3Client";
 export declare class BaseCron {
     protected readonly isTest: boolean;
     protected dbUser?: string;
@@ -26,7 +25,5 @@ export declare class BaseCron {
     get CronCode(): string;
     setUp(): Promise<void>;
     tearDown(): Promise<void>;
-    private s3Client?;
-    get S3Client(): AwsS3Client;
 }
 //# sourceMappingURL=BaseCron.d.ts.map

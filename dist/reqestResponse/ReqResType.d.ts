@@ -1,4 +1,4 @@
-type PrimitiveKeyType = 'boolean' | 'date' | 'datetime' | 'time' | 'uuid' | 'mail' | 'https' | 'base64' | 'boolean?' | 'date?' | 'datetime?' | 'time?' | 'uuid?' | 'mail?' | 'https?' | 'base64?';
+type PrimitiveKeyType = 'boolean' | 'date' | 'datetime' | 'time' | 'uuid' | 'mail' | 'https' | 'base64' | 'file' | 'boolean?' | 'date?' | 'datetime?' | 'time?' | 'uuid?' | 'mail?' | 'https?' | 'base64?' | 'file?';
 export type PrimitiveType = {
     type: PrimitiveKeyType;
     description?: string;

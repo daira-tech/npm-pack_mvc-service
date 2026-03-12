@@ -4,7 +4,6 @@ import { Context, TypedResponse } from 'hono';
 import { Pool, type PoolClient } from 'pg';
 import { RequestType } from './reqestResponse/RequestType';
 import { ResponseType } from './reqestResponse/ResponseType';
-import { AwsS3Client } from './clients/AwsS3Client';
 import { StringClient } from './clients/StringClient';
 import { EncryptClient } from './clients/EncryptClient';
 type TStatusCode = 200 | 201 | 400 | 401 | 403 | 404 | 409 | 422 | 500 | 503;
@@ -14,7 +13,7 @@ export interface IError {
     code: string;
     description: string;
 }
-interface IServiceEnv {
+interface IBaseEnv {
     DB_USER?: string;
     DB_HOST?: string;
     DB_DATABASE?: string;
@@ -22,14 +21,10 @@ interface IServiceEnv {
     DB_PORT?: string | number;
     DB_IS_SSL?: string;
     TZ?: string;
-    S3_BUCKET_NAME?: string;
-    S3_REGION?: string;
-    S3_ACCESS_KEY_ID?: string;
-    S3_SECRET_ACCESS_KEY?: string;
     SECRET_KEY_HEX?: string;
     HMAC_KEY_BASE64?: string;
 }
-export declare class Service<IEnv extends IServiceEnv = IServiceEnv> {
+export declare class Controller<IEnv extends IBaseEnv = IBaseEnv> {
     protected readonly method: MethodType;
     get Method(): MethodType;
     protected readonly endpoint: string;
@@ -48,6 +43,35 @@ export declare class Service<IEnv extends IServiceEnv = IServiceEnv> {
     get Tags(): Array<string>;
     protected readonly errorList: Array<IError>;
     get ErrorList(): Array<IError>;
+    protected readonly isSetDbConnection: boolean;
+    protected main(): Promise<void>;
+    protected middleware(): Promise<void>;
+    protected outputSuccessLog(): Promise<void>;
+    protected outputErrorLog(ex: any): Promise<void>;
+    runHono(): Promise<(globalThis.Response & TypedResponse<{
+        [x: string]: any;
+    }, 200, "json">) | (globalThis.Response & TypedResponse<{
+        message: string;
+    }, 401, "json">) | (globalThis.Response & TypedResponse<{
+        message: string;
+    }, 403, "json">) | (globalThis.Response & TypedResponse<{
+        errorCode: string;
+        errorMessage: string;
+    }, 400, "json">) | (globalThis.Response & TypedResponse<{
+        errorCode: string;
+        errorMessage: string;
+    }, 409, "json">) | (globalThis.Response & TypedResponse<{
+        errorCode: string;
+        errorMessage: string;
+    }, 422, "json">) | (globalThis.Response & TypedResponse<{
+        errorMessage: string;
+    }, 503, "json">) | (globalThis.Response & TypedResponse<{
+        errorCode: string;
+        errorMessage: string;
+    }, 404, "json">) | (globalThis.Response & TypedResponse<{
+        message: string;
+    }, 500, "json">)>;
+    runExpress(): Promise<Response<any, Record<string, any>> | undefined>;
     private readonly req?;
     protected get Req(): Request;
     private readonly res?;
@@ -75,7 +99,6 @@ export declare class Service<IEnv extends IServiceEnv = IServiceEnv> {
     get Env(): IEnv;
     constructor(request: Request, response: Response);
     constructor(c: Context);
-    inintialize(): Promise<void>;
     protected get DbUser(): string | undefined;
     protected get DbHost(): string | undefined;
     protected get DbName(): string | undefined;
@@ -83,25 +106,11 @@ export declare class Service<IEnv extends IServiceEnv = IServiceEnv> {
     protected get DbPort(): string | number | undefined;
     protected get DbIsSslConnect(): boolean;
     private setPool;
-    protected checkMaintenance(): Promise<void>;
-    protected middleware(): Promise<void>;
-    protected outputSuccessLog(): Promise<void>;
-    resSuccessExpress(): void;
-    resSuccessHono(): TypedResponse<any>;
-    protected outputErrorLog(ex: any): Promise<void>;
-    handleExceptionExpress(ex: any): void;
-    handleExceptionHono(ex: any): TypedResponse<any>;
     private pool?;
-    protected get Pool(): Pool;
+    private get Pool();
     private client?;
     private isExecuteRollback;
-    protected get Client(): PoolClient;
-    startConnect(): Promise<void>;
-    commit(): Promise<void>;
-    rollback(): Promise<void>;
-    release(): Promise<void>;
-    private s3Client?;
-    get S3Client(): AwsS3Client;
+    protected get Client(): Pool | PoolClient;
     private stringClient?;
     get StringClient(): StringClient;
     private encryptClient?;
@@ -113,4 +122,4 @@ export declare class Service<IEnv extends IServiceEnv = IServiceEnv> {
     }): Promise<AxiosResponse<TResponse>>;
 }
 export {};
-//# sourceMappingURL=Service.d.ts.map
+//# sourceMappingURL=Controller.d.ts.map

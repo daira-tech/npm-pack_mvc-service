@@ -168,6 +168,7 @@ export declare class TableModel {
     protected readonly language: "ja" | "en";
     protected get errorMessages(): TOptionErrorMessage;
     private throwException;
+    protected throwInputErrorException(code: string, message: string): never;
     protected throwDbCoflictException(code: string, message: string): never;
     protected throwUnprocessableException(code: string, message: string): never;
     protected throwNotFoundException(code: string, message: string): never;

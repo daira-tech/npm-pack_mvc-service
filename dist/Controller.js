@@ -12,18 +12,17 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.Service = void 0;
+exports.Controller = void 0;
 const axios_1 = __importDefault(require("axios"));
 const cookie_1 = require("hono/cookie");
 const pg_1 = require("pg");
 const Exception_1 = require("./exceptions/Exception");
 const RequestType_1 = require("./reqestResponse/RequestType");
 const ResponseType_1 = require("./reqestResponse/ResponseType");
-const AwsS3Client_1 = require("./clients/AwsS3Client");
 const StringClient_1 = require("./clients/StringClient");
 const EncryptClient_1 = require("./clients/EncryptClient");
 const PoolManager_1 = __importDefault(require("./PoolManager"));
-class Service {
+class Controller {
     get Method() { return this.method; }
     get Endpoint() { return this.endpoint + this.request.paramPath; }
     get ApiCode() { return this.apiCode; }
@@ -40,6 +39,186 @@ class Service {
                 code: '',
                 description: 'サーバー内部エラー（予期せぬエラー）'
             }];
+    }
+    main() {
+        return __awaiter(this, void 0, void 0, function* () { });
+    }
+    middleware() {
+        return __awaiter(this, void 0, void 0, function* () { });
+    }
+    outputSuccessLog() {
+        return __awaiter(this, void 0, void 0, function* () { });
+    }
+    outputErrorLog(ex) {
+        return __awaiter(this, void 0, void 0, function* () { });
+    }
+    runHono() {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                yield this.request.setRequest(this.Module, this.C);
+                if (this.isSetDbConnection) {
+                    this.client = yield this.Pool.connect();
+                    yield this.Client.query('BEGIN');
+                    this.isExecuteRollback = true;
+                }
+                yield this.middleware();
+                yield this.main();
+                if (this.isSetDbConnection) {
+                    yield this.Client.query('COMMIT');
+                    this.isExecuteRollback = false;
+                }
+                this.outputSuccessLog().catch((ex) => {
+                    console.error(ex);
+                });
+                return this.C.json(this.response.ResponseData, 200);
+            }
+            catch (ex) {
+                this.outputErrorLog(ex).catch((ex) => {
+                    console.error(ex);
+                });
+                if (ex instanceof Exception_1.AuthException) {
+                    return this.C.json({
+                        message: "Authentication expired. Please login again."
+                    }, 401);
+                }
+                else if (ex instanceof Exception_1.ForbiddenException) {
+                    return this.C.json({
+                        message: 'Forbidden error'
+                    }, 403);
+                }
+                else if (ex instanceof Exception_1.InputErrorException) {
+                    return this.C.json({
+                        errorCode: `${this.apiCode}-${ex.ErrorId}`,
+                        errorMessage: ex.message
+                    }, 400);
+                }
+                else if (ex instanceof Exception_1.DbConflictException) {
+                    return this.C.json({
+                        errorCode: `${this.apiCode}-${ex.ErrorId}`,
+                        errorMessage: ex.message
+                    }, 409);
+                }
+                else if (ex instanceof Exception_1.UnprocessableException) {
+                    return this.C.json({
+                        errorCode: `${this.apiCode}-${ex.ErrorId}`,
+                        errorMessage: ex.message
+                    }, 422);
+                }
+                else if (ex instanceof Exception_1.MaintenanceException) {
+                    return this.C.json({
+                        errorMessage: ex.message
+                    }, 503);
+                }
+                else if (ex instanceof Exception_1.NotFoundException) {
+                    return this.C.json({
+                        errorCode: `${this.apiCode}-${ex.ErrorId}`,
+                        errorMessage: ex.message
+                    }, 404);
+                }
+                else {
+                    return this.C.json({
+                        message: 'Internal server error'
+                    }, 500);
+                }
+            }
+            finally {
+                if (this.isExecuteRollback) {
+                    yield this.Client.query('ROLLBACK');
+                }
+                this.isExecuteRollback = false;
+                if (this.client !== undefined) {
+                    yield this.client.release();
+                }
+                if (this.pool !== undefined) {
+                    yield this.pool.end();
+                }
+            }
+        });
+    }
+    runExpress() {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                yield this.request.setRequest(this.Module, this.Req);
+                if (this.isSetDbConnection) {
+                    this.client = yield this.Pool.connect();
+                    yield this.Client.query('BEGIN');
+                    this.isExecuteRollback = true;
+                }
+                yield this.middleware();
+                yield this.main();
+                if (this.isSetDbConnection) {
+                    yield this.Client.query('COMMIT');
+                    this.isExecuteRollback = false;
+                }
+                this.outputSuccessLog().catch((ex) => {
+                    console.error(ex);
+                });
+                return this.Res.status(200).json(this.response.ResponseData);
+            }
+            catch (ex) {
+                this.outputErrorLog(ex).catch((ex) => {
+                    console.error(ex);
+                });
+                if (ex instanceof Exception_1.AuthException) {
+                    this.Res.status(401).json({
+                        message: "Authentication expired. Please login again."
+                    });
+                }
+                else if (ex instanceof Exception_1.ForbiddenException) {
+                    this.Res.status(403).json({
+                        message: 'Forbidden error'
+                    });
+                }
+                else if (ex instanceof Exception_1.InputErrorException) {
+                    this.Res.status(400).json({
+                        errorCode: `${this.apiCode}-${ex.ErrorId}`,
+                        errorMessage: ex.message
+                    });
+                    return;
+                }
+                else if (ex instanceof Exception_1.DbConflictException) {
+                    this.Res.status(409).json({
+                        errorCode: `${this.apiCode}-${ex.ErrorId}`,
+                        errorMessage: ex.message
+                    });
+                }
+                else if (ex instanceof Exception_1.UnprocessableException) {
+                    this.Res.status(422).json({
+                        errorCode: `${this.apiCode}-${ex.ErrorId}`,
+                        errorMessage: ex.message
+                    });
+                }
+                else if (ex instanceof Exception_1.MaintenanceException) {
+                    this.Res.status(503).json({
+                        errorMessage: ex.message
+                    });
+                }
+                else if (ex instanceof Exception_1.NotFoundException) {
+                    this.Res.status(404).json({
+                        errorCode: `${this.apiCode}-${ex.ErrorId}`,
+                        errorMessage: ex.message
+                    });
+                }
+                else {
+                    this.Res.status(500).json({
+                        message: 'Internal server error'
+                    });
+                }
+                return;
+            }
+            finally {
+                if (this.isExecuteRollback) {
+                    yield this.Client.query('ROLLBACK');
+                }
+                this.isExecuteRollback = false;
+                if (this.client !== undefined) {
+                    yield this.client.release();
+                }
+                if (this.Module === 'hono' && this.pool !== undefined) {
+                    yield this.pool.end();
+                }
+            }
+        });
     }
     get Req() {
         if (this.req === undefined) {
@@ -79,12 +258,10 @@ class Service {
     }
     getHeader(key) {
         if (this.Module === 'express') {
-            // Expressの場合
             const value = this.Req.header(key);
             return Array.isArray(value) ? value[0] : value;
         }
         else {
-            // Honoの場合
             return this.C.req.header(key);
         }
     }
@@ -101,11 +278,9 @@ class Service {
             formattedValue = JSON.stringify(value);
         }
         if (this.Module === 'express') {
-            // Expressの場合
             this.Res.setHeader(key, formattedValue);
         }
         else {
-            // Honoの場合
             this.C.header(key, formattedValue);
         }
     }
@@ -139,11 +314,9 @@ class Service {
     }
     removeCookie(key, options) {
         if (this.Module === 'express') {
-            // Expressの場合
             this.Res.clearCookie(key, options);
         }
         else if (this.Module === 'hono') {
-            // Honoの場合
             (0, cookie_1.deleteCookie)(this.C, key, options);
         }
     }
@@ -165,6 +338,7 @@ class Service {
         this.response = new ResponseType_1.ResponseType();
         this.tags = [];
         this.errorList = [];
+        this.isSetDbConnection = true;
         this.isExecuteRollback = false;
         if (param2 !== undefined) {
             // Express の場合: (request, response)
@@ -175,18 +349,6 @@ class Service {
             // Hono の場合: (c)
             this.c = param1;
         }
-    }
-    inintialize() {
-        return __awaiter(this, void 0, void 0, function* () {
-            if (this.Module === "express") {
-                yield this.request.setRequest(this.Module, this.Req);
-            }
-            else {
-                yield this.request.setRequest(this.Module, this.C);
-            }
-            yield this.checkMaintenance();
-            yield this.middleware();
-        });
     }
     get DbUser() { return this.Env.DB_USER; }
     get DbHost() { return this.Env.DB_HOST; }
@@ -230,131 +392,6 @@ class Service {
             throw new Error("Failed to connect to the database. Please check the connection settings.");
         }
     }
-    checkMaintenance() {
-        return __awaiter(this, void 0, void 0, function* () { });
-    }
-    middleware() {
-        return __awaiter(this, void 0, void 0, function* () { });
-    }
-    outputSuccessLog() {
-        return __awaiter(this, void 0, void 0, function* () { });
-    }
-    resSuccessExpress() {
-        this.outputSuccessLog().catch((ex) => {
-            console.error(ex);
-        });
-        this.Res.status(200).json(this.response.ResponseData);
-    }
-    resSuccessHono() {
-        this.outputSuccessLog().catch((ex) => {
-            console.error(ex);
-        });
-        return this.C.json(this.response.ResponseData, 200);
-    }
-    outputErrorLog(ex) {
-        return __awaiter(this, void 0, void 0, function* () { });
-    }
-    handleExceptionExpress(ex) {
-        // To avoid slowing down the response, make this asynchronous
-        this.outputErrorLog(ex).catch((ex) => {
-            console.error(ex);
-        });
-        if (ex instanceof Exception_1.AuthException) {
-            this.Res.status(401).json({
-                message: "Authentication expired. Please login again."
-            });
-        }
-        else if (ex instanceof Exception_1.ForbiddenException) {
-            this.Res.status(403).json({
-                message: 'Forbidden error'
-            });
-        }
-        else if (ex instanceof Exception_1.InputErrorException) {
-            this.Res.status(400).json({
-                errorCode: `${this.apiCode}-${ex.ErrorId}`,
-                errorMessage: ex.message
-            });
-            return;
-        }
-        else if (ex instanceof Exception_1.DbConflictException) {
-            this.Res.status(409).json({
-                errorCode: `${this.apiCode}-${ex.ErrorId}`,
-                errorMessage: ex.message
-            });
-        }
-        else if (ex instanceof Exception_1.UnprocessableException) {
-            this.Res.status(422).json({
-                errorCode: `${this.apiCode}-${ex.ErrorId}`,
-                errorMessage: ex.message
-            });
-        }
-        else if (ex instanceof Exception_1.MaintenanceException) {
-            this.Res.status(503).json({
-                errorMessage: ex.message
-            });
-        }
-        else if (ex instanceof Exception_1.NotFoundException) {
-            this.Res.status(404).json({
-                errorCode: `${this.apiCode}-${ex.ErrorId}`,
-                errorMessage: ex.message
-            });
-        }
-        else {
-            this.Res.status(500).json({
-                message: 'Internal server error'
-            });
-        }
-    }
-    handleExceptionHono(ex) {
-        // To avoid slowing down the response, make this asynchronous
-        this.outputErrorLog(ex).catch((ex) => {
-            console.error(ex);
-        });
-        if (ex instanceof Exception_1.AuthException) {
-            return this.C.json({
-                message: "Authentication expired. Please login again."
-            }, 401);
-        }
-        else if (ex instanceof Exception_1.ForbiddenException) {
-            return this.C.json({
-                message: 'Forbidden error'
-            }, 403);
-        }
-        else if (ex instanceof Exception_1.InputErrorException) {
-            return this.C.json({
-                errorCode: `${this.apiCode}-${ex.ErrorId}`,
-                errorMessage: ex.message
-            }, 400);
-        }
-        else if (ex instanceof Exception_1.DbConflictException) {
-            return this.C.json({
-                errorCode: `${this.apiCode}-${ex.ErrorId}`,
-                errorMessage: ex.message
-            }, 409);
-        }
-        else if (ex instanceof Exception_1.UnprocessableException) {
-            return this.C.json({
-                errorCode: `${this.apiCode}-${ex.ErrorId}`,
-                errorMessage: ex.message
-            }, 422);
-        }
-        else if (ex instanceof Exception_1.MaintenanceException) {
-            return this.C.json({
-                errorMessage: ex.message
-            }, 503);
-        }
-        else if (ex instanceof Exception_1.NotFoundException) {
-            return this.C.json({
-                errorCode: `${this.apiCode}-${ex.ErrorId}`,
-                errorMessage: ex.message
-            }, 404);
-        }
-        else {
-            return this.C.json({
-                message: 'Internal server error'
-            }, 500);
-        }
-    }
     get Pool() {
         var _a;
         if (this.pool === undefined) {
@@ -364,53 +401,13 @@ class Service {
         return this.pool;
     }
     get Client() {
-        if (this.client === undefined) {
-            throw new Error("Please call this.PoolClient after using the startConnect method.");
+        if (this.isSetDbConnection) {
+            if (this.client === undefined) {
+                throw new Error("Please call this.PoolClient after using the startConnect method.");
+            }
+            return this.client;
         }
-        return this.client;
-    }
-    startConnect() {
-        return __awaiter(this, void 0, void 0, function* () {
-            this.client = yield this.Pool.connect();
-            yield this.Client.query('BEGIN');
-            this.isExecuteRollback = true;
-        });
-    }
-    commit() {
-        return __awaiter(this, void 0, void 0, function* () {
-            yield this.Client.query('COMMIT');
-            this.isExecuteRollback = false;
-        });
-    }
-    rollback() {
-        return __awaiter(this, void 0, void 0, function* () {
-            if (this.isExecuteRollback) {
-                yield this.Client.query('ROLLBACK');
-            }
-            this.isExecuteRollback = false;
-        });
-    }
-    release() {
-        return __awaiter(this, void 0, void 0, function* () {
-            yield this.rollback();
-            if (this.client !== undefined) {
-                yield this.client.release();
-            }
-            if (this.Module === 'hono' && this.pool !== undefined) {
-                yield this.pool.end();
-            }
-        });
-    }
-    get S3Client() {
-        if (this.s3Client === undefined) {
-            this.s3Client = new AwsS3Client_1.AwsS3Client({
-                bucketName: this.Env.S3_BUCKET_NAME,
-                region: this.Env.S3_REGION,
-                accessKeyId: this.Env.S3_ACCESS_KEY_ID,
-                secretAccessKey: this.Env.S3_SECRET_ACCESS_KEY
-            });
-        }
-        return this.s3Client;
+        return this.Pool;
     }
     get StringClient() {
         if (this.stringClient === undefined) {
@@ -471,4 +468,4 @@ class Service {
         });
     }
 }
-exports.Service = Service;
+exports.Controller = Controller;

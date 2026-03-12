@@ -1,4 +1,4 @@
-import { Service } from '../Service';
+import { Controller } from '../Controller';
 export interface IParams {
     in: 'header' | 'path';
     name: string;
@@ -6,5 +6,5 @@ export interface IParams {
     description?: string;
     example?: string;
 }
-export declare const createSwagger: (services: Service[], name: string, pathOrUrl: string, params?: Array<IParams>) => string;
+export declare const createSwagger: (controllers: Controller[], name: string, pathOrUrl: string, params?: Array<IParams>) => string;
 //# sourceMappingURL=Swagger.d.ts.map

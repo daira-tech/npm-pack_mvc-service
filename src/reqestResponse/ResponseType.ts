@@ -1,7 +1,7 @@
 import { ValidateStringUtil } from "type-utils-n-daira";
 import StringUtil from "../Utils/StringUtil";
 import ReqResType, { PropertyType } from "./ReqResType";
-import { IError } from "../Service";
+import { IError } from "../Controller";
 
 
 

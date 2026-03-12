@@ -413,6 +413,9 @@ class TableModel {
         }
         this.throwUnprocessableException(code, message);
     }
+    throwInputErrorException(code, message) {
+        throw new Exception_1.InputErrorException(`${this.id}-${code}`, message);
+    }
     throwDbCoflictException(code, message) {
         throw new Exception_1.DbConflictException(`${this.id}-${code}`, message);
     }

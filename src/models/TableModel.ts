@@ -4,7 +4,7 @@ import ValidateValueUtil from './SqlUtils/ValidateValueUtil';
 import { SelectExpression } from './SqlUtils/SelectExpression';
 import { WhereExpression } from './SqlUtils/WhereExpression';
 import ValidateClient from './ValidateClient';
-import { DbConflictException, NotFoundException, UnprocessableException } from '../exceptions/Exception';
+import { DbConflictException, InputErrorException, NotFoundException, UnprocessableException } from '../exceptions/Exception';
 import ExpressionClient from './ExpressionClient';
 import UpdateExpression from './SqlUtils/UpdateExpression';
 import MessageUtil, { TOptionErrorMessage } from './Utils/MessageUtil';
@@ -484,6 +484,10 @@ export class TableModel {
         }
 
         this.throwUnprocessableException(code, message);
+    }
+
+    protected throwInputErrorException(code: string, message: string): never {
+        throw new InputErrorException(`${this.id}-${code}`, message);
     }
 
     protected throwDbCoflictException(code: string, message: string): never {

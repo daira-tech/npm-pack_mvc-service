@@ -6,7 +6,6 @@ import { Pool, type PoolClient } from 'pg';
 import { MaintenanceException, AuthException, InputErrorException, ForbiddenException, DbConflictException, UnprocessableException, NotFoundException } from './exceptions/Exception';
 import { RequestType } from './reqestResponse/RequestType';
 import { ResponseType } from './reqestResponse/ResponseType';
-import { AwsS3Client } from './clients/AwsS3Client';
 import { StringClient } from './clients/StringClient';
 import { EncryptClient } from './clients/EncryptClient';
 import PoolManager from './PoolManager';
@@ -20,7 +19,7 @@ export interface IError {
     description: string; 
 }
 
-interface IServiceEnv {
+interface IBaseEnv {
     DB_USER?: string;
     DB_HOST?: string;
     DB_DATABASE?: string;
@@ -28,15 +27,11 @@ interface IServiceEnv {
     DB_PORT?: string | number;
     DB_IS_SSL?: string;
     TZ?: string;
-    S3_BUCKET_NAME?: string;
-    S3_REGION?: string;
-    S3_ACCESS_KEY_ID?: string;
-    S3_SECRET_ACCESS_KEY?: string;
     SECRET_KEY_HEX?: string;
     HMAC_KEY_BASE64?: string;
 }
 
-export class Service<IEnv extends IServiceEnv = IServiceEnv> {
+export class Controller<IEnv extends IBaseEnv = IBaseEnv> {
     protected readonly method: MethodType = 'GET';
     get Method(): MethodType { return this.method; }
     protected readonly endpoint: string = '';
@@ -60,6 +55,178 @@ export class Service<IEnv extends IServiceEnv = IServiceEnv> {
             code: '',
             description: 'サーバー内部エラー（予期せぬエラー）'
         }];
+    }
+    protected readonly isSetDbConnection: boolean = true;
+
+    protected async main(): Promise<void> {}
+    protected async middleware(): Promise<void>{ }
+    protected async outputSuccessLog(): Promise<void>{ }
+    protected async outputErrorLog(ex: any): Promise<void>{ }
+
+    public async runHono() {
+        try {
+            await this.request.setRequest(this.Module, this.C);
+
+            if (this.isSetDbConnection) {
+                this.client = await this.Pool.connect();
+                await this.Client.query('BEGIN');
+                this.isExecuteRollback = true;    
+            }
+    
+            await this.middleware();
+
+            await this.main();
+    
+            if (this.isSetDbConnection) {
+                await this.Client.query('COMMIT');
+                this.isExecuteRollback = false;    
+            }
+    
+            this.outputSuccessLog().catch((ex) => {
+                console.error(ex);
+            });
+
+            return this.C.json(this.response.ResponseData, 200);
+        } catch (ex) {
+            this.outputErrorLog(ex).catch((ex) => {
+                console.error(ex);
+            });
+
+            if (ex instanceof AuthException) {
+                return this.C.json({ 
+                    message: "Authentication expired. Please login again." 
+                }, 401);
+            } else if (ex instanceof ForbiddenException) {
+                return this.C.json({ 
+                    message: 'Forbidden error' 
+                }, 403);
+            } else if (ex instanceof InputErrorException) {
+                return this.C.json({ 
+                    errorCode: `${this.apiCode}-${ex.ErrorId}`, 
+                    errorMessage: ex.message 
+                }, 400);
+            } else if (ex instanceof DbConflictException) {
+                return this.C.json({ 
+                    errorCode: `${this.apiCode}-${ex.ErrorId}`, 
+                    errorMessage: ex.message 
+                }, 409);
+            } else if (ex instanceof UnprocessableException) {
+                return this.C.json({ 
+                    errorCode: `${this.apiCode}-${ex.ErrorId}`, 
+                    errorMessage: ex.message 
+                },422);
+            } else if (ex instanceof MaintenanceException) {
+                return this.C.json({ 
+                    errorMessage: ex.message 
+                }, 503);
+            } else if (ex instanceof NotFoundException) {
+                return this.C.json({ 
+                    errorCode: `${this.apiCode}-${ex.ErrorId}`, 
+                    errorMessage: ex.message 
+                }, 404);
+            } else {
+                return this.C.json({ 
+                    message: 'Internal server error' 
+                }, 500);
+            }
+        } finally {
+            if (this.isExecuteRollback) {
+                await this.Client.query('ROLLBACK');
+            }
+            this.isExecuteRollback = false;
+
+            if (this.client !== undefined) {
+                await this.client.release();
+            }
+    
+            if (this.pool !== undefined) {
+                await this.pool.end();
+            }
+        }
+    }
+
+    public async runExpress() {
+        try {
+            await this.request.setRequest(this.Module, this.Req);
+
+            if (this.isSetDbConnection) {
+                this.client = await this.Pool.connect();
+                await this.Client.query('BEGIN');
+                this.isExecuteRollback = true;    
+            }
+    
+            await this.middleware();
+
+            await this.main();
+    
+            if (this.isSetDbConnection) {
+                await this.Client.query('COMMIT');
+                this.isExecuteRollback = false;    
+            }
+    
+            this.outputSuccessLog().catch((ex) => {
+                console.error(ex);
+            });
+
+            return this.Res.status(200).json(this.response.ResponseData);
+        } catch (ex) {
+            this.outputErrorLog(ex).catch((ex) => {
+                console.error(ex);
+            });
+
+            if (ex instanceof AuthException) {
+                this.Res.status(401).json({
+                    message : "Authentication expired. Please login again."
+                });
+            } else if (ex instanceof ForbiddenException) {
+                this.Res.status(403).json({
+                    message : 'Forbidden error'
+                });
+            } else if (ex instanceof InputErrorException) {
+                this.Res.status(400).json({
+                    errorCode : `${this.apiCode}-${ex.ErrorId}`,
+                    errorMessage : ex.message
+                });
+                return;
+            } else if (ex instanceof DbConflictException) {
+                this.Res.status(409).json({
+                    errorCode : `${this.apiCode}-${ex.ErrorId}`,
+                    errorMessage : ex.message
+                })
+            } else if (ex instanceof UnprocessableException) {
+                this.Res.status(422).json({
+                    errorCode : `${this.apiCode}-${ex.ErrorId}`,
+                    errorMessage : ex.message
+                });
+            } else if (ex instanceof MaintenanceException) {
+                this.Res.status(503).json({
+                    errorMessage : ex.message
+                });
+            } else if (ex instanceof NotFoundException) {
+                this.Res.status(404).json({
+                    errorCode : `${this.apiCode}-${ex.ErrorId}`,
+                    errorMessage : ex.message
+                });
+            } else {
+                this.Res.status(500).json({
+                    message : 'Internal server error'
+                });
+            }
+            return;
+        } finally {
+            if (this.isExecuteRollback) {
+                await this.Client.query('ROLLBACK');
+            }
+            this.isExecuteRollback = false;
+
+            if (this.client !== undefined) {
+                await this.client.release();
+            }
+    
+            if (this.Module === 'hono' && this.pool !== undefined) {
+                await this.pool.end();
+            }
+        }
     }
 
     private readonly req?: Request;
@@ -106,11 +273,9 @@ export class Service<IEnv extends IServiceEnv = IServiceEnv> {
 
     protected getHeader(key: string): string | undefined {
         if (this.Module === 'express') {
-            // Expressの場合
             const value = this.Req.header(key);
             return Array.isArray(value) ? value[0] : value;
         } else {
-            // Honoの場合
             return this.C.req.header(key);
         }
     }
@@ -129,10 +294,8 @@ export class Service<IEnv extends IServiceEnv = IServiceEnv> {
         }
 
         if (this.Module === 'express') {
-            // Expressの場合
             this.Res.setHeader(key, formattedValue);
         } else {
-            // Honoの場合
             this.C.header(key, formattedValue);
         }
     }
@@ -182,10 +345,8 @@ export class Service<IEnv extends IServiceEnv = IServiceEnv> {
 
     protected removeCookie(key: string, options?: { path?: string, domain?: string }) {
         if (this.Module === 'express') {
-            // Expressの場合
             this.Res.clearCookie(key, options);
         } else if (this.Module === 'hono') {
-            // Honoの場合
             deleteCookie(this.C, key, options);
         }
     }
@@ -209,17 +370,6 @@ export class Service<IEnv extends IServiceEnv = IServiceEnv> {
             // Hono の場合: (c)
             this.c = param1 as Context;
         }
-    }
-
-    public async inintialize(): Promise<void> {
-        if (this.Module === "express") {
-            await this.request.setRequest(this.Module, this.Req);
-        } else {
-            await this.request.setRequest(this.Module, this.C);
-        }
-
-        await this.checkMaintenance();
-        await this.middleware();
     }
 
     protected get DbUser(): string | undefined { return this.Env.DB_USER; }
@@ -266,117 +416,9 @@ export class Service<IEnv extends IServiceEnv = IServiceEnv> {
             throw new Error("Failed to connect to the database. Please check the connection settings.");
         }
     }
-    protected async checkMaintenance(): Promise<void> { }
-    protected async middleware(): Promise<void>{ }
-
-    protected async outputSuccessLog(): Promise<void>{ }
-    public resSuccessExpress(): void {
-        this.outputSuccessLog().catch((ex) => {
-            console.error(ex);
-        });
-        this.Res.status(200).json(this.response.ResponseData);
-    }
-    public resSuccessHono(): TypedResponse<any> {
-        this.outputSuccessLog().catch((ex) => {
-            console.error(ex);
-        });
-        return this.C.json(this.response.ResponseData, 200);
-    }
-
-    protected async outputErrorLog(ex: any): Promise<void>{ }
-    public handleExceptionExpress(ex: any): void {
-        // To avoid slowing down the response, make this asynchronous
-        this.outputErrorLog(ex).catch((ex) => {
-            console.error(ex);
-        });
-
-        if (ex instanceof AuthException) {
-            this.Res.status(401).json({
-                message : "Authentication expired. Please login again."
-            });
-        } else if (ex instanceof ForbiddenException) {
-            this.Res.status(403).json({
-                message : 'Forbidden error'
-            });
-        } else if (ex instanceof InputErrorException) {
-            this.Res.status(400).json({
-                errorCode : `${this.apiCode}-${ex.ErrorId}`,
-                errorMessage : ex.message
-            });
-            return;
-        } else if (ex instanceof DbConflictException) {
-            this.Res.status(409).json({
-                errorCode : `${this.apiCode}-${ex.ErrorId}`,
-                errorMessage : ex.message
-            })
-        } else if (ex instanceof UnprocessableException) {
-            this.Res.status(422).json({
-                errorCode : `${this.apiCode}-${ex.ErrorId}`,
-                errorMessage : ex.message
-            });
-        } else if (ex instanceof MaintenanceException) {
-            this.Res.status(503).json({
-                errorMessage : ex.message
-            });
-        } else if (ex instanceof NotFoundException) {
-            this.Res.status(404).json({
-                errorCode : `${this.apiCode}-${ex.ErrorId}`,
-                errorMessage : ex.message
-            });
-        } else {
-            this.Res.status(500).json({
-                message : 'Internal server error'
-            });
-        }
-    }
-
-    public handleExceptionHono(ex: any): TypedResponse<any> {
-        // To avoid slowing down the response, make this asynchronous
-        this.outputErrorLog(ex).catch((ex) => {
-            console.error(ex);
-        });
-
-        if (ex instanceof AuthException) {
-            return this.C.json({ 
-                message: "Authentication expired. Please login again." 
-            }, 401);
-        } else if (ex instanceof ForbiddenException) {
-            return this.C.json({ 
-                message: 'Forbidden error' 
-            }, 403);
-        } else if (ex instanceof InputErrorException) {
-            return this.C.json({ 
-                errorCode: `${this.apiCode}-${ex.ErrorId}`, 
-                errorMessage: ex.message 
-            }, 400);
-        } else if (ex instanceof DbConflictException) {
-            return this.C.json({ 
-                errorCode: `${this.apiCode}-${ex.ErrorId}`, 
-                errorMessage: ex.message 
-            }, 409);
-        } else if (ex instanceof UnprocessableException) {
-            return this.C.json({ 
-                errorCode: `${this.apiCode}-${ex.ErrorId}`, 
-                errorMessage: ex.message 
-            },422);
-        } else if (ex instanceof MaintenanceException) {
-            return this.C.json({ 
-                errorMessage: ex.message 
-            }, 503);
-        } else if (ex instanceof NotFoundException) {
-            return this.C.json({ 
-                errorCode: `${this.apiCode}-${ex.ErrorId}`, 
-                errorMessage: ex.message 
-            }, 404);
-        } else {
-            return this.C.json({ 
-                message: 'Internal server error' 
-            }, 500);
-        }
-    }
 
     private pool?: Pool;
-    protected get Pool(): Pool {
+    private get Pool(): Pool {
         if (this.pool === undefined) {
             this.pool = this.setPool();
             this.pool.query(`SET TIME ZONE '${this.Env.TZ ?? 'Asia/Tokyo'}';`);
@@ -385,53 +427,14 @@ export class Service<IEnv extends IServiceEnv = IServiceEnv> {
     }
     private client?: PoolClient;
     private isExecuteRollback: boolean = false;
-    protected get Client(): PoolClient { 
-        if (this.client === undefined) {
-            throw new Error("Please call this.PoolClient after using the startConnect method.");
+    protected get Client(): Pool | PoolClient { 
+        if (this.isSetDbConnection) {
+            if (this.client === undefined) {
+                throw new Error("Please call this.PoolClient after using the startConnect method.");
+            }
+            return this.client;
         }
-        return this.client;
-    }
-
-    public async startConnect(): Promise<void> {
-        this.client = await this.Pool.connect();
-        await this.Client.query('BEGIN');
-        this.isExecuteRollback = true;
-    }
-
-    public async commit(): Promise<void> {
-        await this.Client.query('COMMIT');
-        this.isExecuteRollback = false;
-    }
-
-    public async rollback(): Promise<void> {
-        if (this.isExecuteRollback) {
-            await this.Client.query('ROLLBACK');
-        }
-        this.isExecuteRollback = false;
-    }
-
-    public async release(): Promise<void> {
-        await this.rollback();
-        if (this.client !== undefined) {
-            await this.client.release();
-        }
-
-        if (this.Module === 'hono' && this.pool !== undefined) {
-            await this.pool.end();
-        }
-    }
-
-    private s3Client?: AwsS3Client;
-    get S3Client(): AwsS3Client {
-        if (this.s3Client === undefined) {
-            this.s3Client = new AwsS3Client({
-                bucketName: this.Env.S3_BUCKET_NAME,
-                region: this.Env.S3_REGION,
-                accessKeyId: this.Env.S3_ACCESS_KEY_ID,
-                secretAccessKey: this.Env.S3_SECRET_ACCESS_KEY
-            });
-        }
-        return this.s3Client;
+        return this.Pool;
     }
 
     private stringClient? : StringClient;

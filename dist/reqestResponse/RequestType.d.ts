@@ -1,6 +1,6 @@
 import { Request } from 'express';
 import ReqResType, { EnumType, NumberType, PrimitiveType, StringType } from "./ReqResType";
-import { IError } from '../Service';
+import { IError } from '../Controller';
 import { Context } from 'hono';
 export interface ErrorMessageType {
     REQUIRED: string;
@@ -25,12 +25,15 @@ export interface ErrorMessageType {
     INVALID_MAP_NUMBER: string;
     INVALID_MAP_STRING: string;
     INVALID_MAP_BOOL: string;
+    INVALID_FILE: string;
 }
 export declare class RequestType extends ReqResType {
+    protected readonly isFormRequest: boolean;
+    get IsFormRequest(): boolean;
     protected readonly language: "ja" | "en";
     private readonly ERROR_MESSAGE_ENGLISH;
     private readonly ERROR_MESSAGE_JAPAN;
-    protected readonly ERROR_MESSAGE: ErrorMessageType;
+    protected get ERROR_MESSAGE(): ErrorMessageType;
     protected paramProperties: Array<(PrimitiveType | StringType | NumberType | EnumType) & {
         key: string;
     }>;

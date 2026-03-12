@@ -1,9 +1,8 @@
-export { Service } from './Service';
-export type { MethodType } from './Service';
+export { Controller } from './Controller';
+export type { MethodType, IError } from './Controller';
 export { MaintenanceException, AuthException, InputErrorException, ForbiddenException, DbConflictException, UnprocessableException, NotFoundException } from './exceptions/Exception';
 export { createSwagger } from './documents/Swagger';
 export type { IParams } from './documents/Swagger';
-export { AwsS3Client } from './clients/AwsS3Client';
 export { StringClient } from './clients/StringClient';
 export { EncryptClient } from './clients/EncryptClient';
 

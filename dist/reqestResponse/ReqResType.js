@@ -125,7 +125,7 @@ class ReqResType {
         if (typeof value !== 'string') {
             return false;
         }
-        const pattern = new RegExp('^(?:[01]\\d|2[0-3]):[0-5]\\d$');
+        const pattern = new RegExp('^(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d)?$');
         return pattern.test(value);
     }
     /**
@@ -176,7 +176,7 @@ class ReqResType {
         }
         propertyType = propertyType.replace('?', '');
         propertyType = propertyType.replace('number', 'integer');
-        propertyType = propertyType.replace(/datetime|date|time|uuid|mail|https|base64/g, 'string');
+        propertyType = propertyType.replace(/datetime|date|time|uuid|mail|https|base64|file/g, 'string');
         return propertyType;
     }
 }

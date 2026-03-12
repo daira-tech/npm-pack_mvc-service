@@ -1,5 +1,5 @@
 import ReqResType from "./ReqResType";
-import { IError } from "../Service";
+import { IError } from "../Controller";
 export declare class ResponseType extends ReqResType {
     /**
      * Property to store response data

@@ -1,7 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.createSwagger = void 0;
-const createSwagger = (services, name, pathOrUrl, params = []) => {
+const createSwagger = (controllers, name, pathOrUrl, params = []) => {
     // *****************************************
     // Internal method definitions
     // *****************************************
@@ -16,12 +16,12 @@ const createSwagger = (services, name, pathOrUrl, params = []) => {
     // *****************************************
     const endpontSwaggerYml = {};
     let tags = [];
-    for (const service of services) {
-        if (service.Endpoint in endpontSwaggerYml === false) {
-            endpontSwaggerYml[service.Endpoint] = {};
+    for (const controller of controllers) {
+        if (controller.Endpoint in endpontSwaggerYml === false) {
+            endpontSwaggerYml[controller.Endpoint] = {};
         }
         let yml = "";
-        const apiTags = service.Tags;
+        const apiTags = controller.Tags;
         if (apiTags.length > 0) {
             tags = [...tags, ...apiTags];
             yml += `      tags:\n`;
@@ -29,9 +29,9 @@ const createSwagger = (services, name, pathOrUrl, params = []) => {
                 yml += `        - ${tag}\n`;
             }
         }
-        yml += `      summary: "${service.Summary}"\n`;
+        yml += `      summary: "${controller.Summary}"\n`;
         const croneParams = [...params];
-        for (const path of service.Endpoint.split('/')) {
+        for (const path of controller.Endpoint.split('/')) {
             if (path.startsWith('{') && path.endsWith('}')) {
                 const key = path.replace('{', '').replace('}', '');
                 croneParams.push({
@@ -58,10 +58,10 @@ const createSwagger = (services, name, pathOrUrl, params = []) => {
                 yml += `            type: string\n`;
             }
         }
-        yml += service.Request.createSwagger(service.Method);
-        const errorList = [...service.ErrorList, ...service.Request.getInputErrorList(service.Method)];
-        yml += service.Response.createSwagger(errorList, service.ApiCode);
-        endpontSwaggerYml[service.Endpoint][service.Method] = yml;
+        yml += controller.Request.createSwagger(controller.Method);
+        const errorList = [...controller.ErrorList, ...controller.Request.getInputErrorList(controller.Method)];
+        yml += controller.Response.createSwagger(errorList, controller.ApiCode);
+        endpontSwaggerYml[controller.Endpoint][controller.Method] = yml;
     }
     let swaggerInfo = `openapi: 3.0.0
 info:

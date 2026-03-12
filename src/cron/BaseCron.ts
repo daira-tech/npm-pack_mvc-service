@@ -1,7 +1,6 @@
 import { Pool, PoolClient } from "pg";
 import { DateType, DayType, HourType, MinuteSecondType, MonthType } from "./CronType";
 import PoolManager from "../PoolManager";
-import { AwsS3Client } from "../clients/AwsS3Client";
 
 export class BaseCron {
 
@@ -96,18 +95,5 @@ export class BaseCron {
                 this.client = undefined;
             }
         }
-    }
-
-    private s3Client?: AwsS3Client;
-    get S3Client(): AwsS3Client {
-        if (this.s3Client === undefined) {
-            this.s3Client = new AwsS3Client({
-                bucketName: process.env.S3_BUCKET_NAME,
-                region: process.env.S3_REGION,
-                accessKeyId: process.env.S3_ACCESS_KEY_ID,
-                secretAccessKey: process.env.S3_SECRET_ACCESS_KEY
-            });
-        }
-        return this.s3Client;
     }
 }

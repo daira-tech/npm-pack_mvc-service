@@ -14,7 +14,6 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.BaseCron = void 0;
 const PoolManager_1 = __importDefault(require("../PoolManager"));
-const AwsS3Client_1 = require("../clients/AwsS3Client");
 class BaseCron {
     constructor() {
         this.isTest = process.env.NODE_ENV === 'test';
@@ -111,17 +110,6 @@ class BaseCron {
                 }
             }
         });
-    }
-    get S3Client() {
-        if (this.s3Client === undefined) {
-            this.s3Client = new AwsS3Client_1.AwsS3Client({
-                bucketName: process.env.S3_BUCKET_NAME,
-                region: process.env.S3_REGION,
-                accessKeyId: process.env.S3_ACCESS_KEY_ID,
-                secretAccessKey: process.env.S3_SECRET_ACCESS_KEY
-            });
-        }
-        return this.s3Client;
     }
 }
 exports.BaseCron = BaseCron;

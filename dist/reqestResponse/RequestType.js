@@ -20,6 +20,7 @@ const type_utils_n_daira_1 = require("type-utils-n-daira");
 class RequestType extends ReqResType_1.default {
     constructor() {
         super(...arguments);
+        this.isFormRequest = false;
         this.language = "en";
         // *****************************************
         // Input Error Message
@@ -50,6 +51,7 @@ class RequestType extends ReqResType_1.default {
             INVALID_MAP_NUMBER: '{property} must be a valid number for a map key. ({value})',
             INVALID_MAP_STRING: '{property} must be a valid string for a map key. ({value})',
             INVALID_MAP_BOOL: '{property} must be a valid boolean for a map key. ({value})',
+            INVALID_FILE: '{property} must be of type File. ({value})',
         };
         this.ERROR_MESSAGE_JAPAN = {
             REQUIRED: '{property}は必須項目です。',
@@ -74,9 +76,13 @@ class RequestType extends ReqResType_1.default {
             INVALID_MAP_NUMBER: '{property} は有効な数値のマップキーでなければなりません。({value})',
             INVALID_MAP_STRING: '{property} は有効な文字列のマップキーでなければなりません。({value})',
             INVALID_MAP_BOOL: '{property} は有効なboolのマップキーでなければなりません。({value})',
+            INVALID_FILE: '{property} はファイル形式（File型）で入力してください。（{value}）',
         };
-        this.ERROR_MESSAGE = this.language === 'ja' ? this.ERROR_MESSAGE_JAPAN : this.ERROR_MESSAGE_ENGLISH;
         this.paramProperties = [];
+    }
+    get IsFormRequest() { return this.isFormRequest; }
+    get ERROR_MESSAGE() {
+        return this.language === 'ja' ? this.ERROR_MESSAGE_JAPAN : this.ERROR_MESSAGE_ENGLISH;
     }
     get paramPath() {
         return this.paramProperties.map(property => `/{${property.key}}`).join("");
@@ -194,6 +200,8 @@ class RequestType extends ReqResType_1.default {
             "DATETIME_92": this.ERROR_MESSAGE.INVALID_DATETIME,
             "HTTPS_91": this.ERROR_MESSAGE.INVALID_HTTPS,
             "BASE64_91": this.ERROR_MESSAGE.INVALID_BASE64,
+            "FILE_21": this.ERROR_MESSAGE.INVALID_FILE,
+            "FILE_91": this.ERROR_MESSAGE.INVALID_FILE,
         };
         let errorMessage = list[code];
         const property = this.getProperty(keys);
@@ -270,8 +278,24 @@ class RequestType extends ReqResType_1.default {
                     }
                 }
                 else {
-                    // JSON を想定（form 等なら parseBody() を使う）
-                    this.data = yield c.req.json();
+                    if (this.isFormRequest) {
+                        const data = {}; // ループ内でthis.dataに直接入れたかったが、型エラーになるため、
+                        (yield c.req.formData()).forEach((formValue, formKey) => {
+                            if (formKey in data === false) {
+                                data[formKey] = formValue;
+                            }
+                            else if (Array.isArray(data[formKey])) {
+                                data[formKey].push(formValue);
+                            }
+                            else {
+                                data[formKey] = [data[formKey], formValue];
+                            }
+                        });
+                        this.data = data;
+                    }
+                    else {
+                        this.data = yield c.req.json();
+                    }
                 }
             }
             if (this.data === undefined) {
@@ -329,9 +353,10 @@ class RequestType extends ReqResType_1.default {
                             this.setArray([key], value);
                         }
                         else {
-                            if (method === 'GET' || method === 'DELETE') {
+                            if (method === 'GET' || method === 'DELETE' || this.isFormRequest) {
                                 // GET,DELETEメソッドの場合、?array=1&array=2で配列となるが、
                                 // ?array=1のみで終わる場合は配列にならないため、直接配列にしている
+                                // formDataで送信されたときも同様
                                 const type = this.properties[key].item.type;
                                 if (type === 'object' || type === 'object?' || type === 'array' || type === 'array?' || type === 'map' || type === 'map?') {
                                     throw new Error("GETまたはDELETEメソッドでは配列型にobject, array, mapを使用することはできません。");
@@ -845,6 +870,13 @@ class RequestType extends ReqResType_1.default {
                     return value;
                 }
                 this.throwInputError(isRequestBody ? "BASE64_21" : "BASE64_91", keys, value);
+            case 'file':
+            case 'file?':
+                if (value instanceof File ||
+                    (value && typeof value === 'object' && typeof value.name === 'string' && typeof value.size === 'number')) {
+                    return value;
+                }
+                this.throwInputError(isRequestBody ? "FILE_21" : "FILE_91", keys, value);
         }
         return value;
     }
@@ -953,7 +985,7 @@ class RequestType extends ReqResType_1.default {
             }
             let ymlString = `      requestBody:\n`;
             ymlString += `        content:\n`;
-            ymlString += `          application/json:\n`;
+            ymlString += `          ${this.isFormRequest ? 'multipart/form-data' : 'application/json'}:\n`;
             ymlString += `            schema:\n`;
             ymlString += `              type: object\n`;
             ymlString += `              properties:${componentYml}`;
@@ -1416,6 +1448,14 @@ class RequestType extends ReqResType_1.default {
                     status: 400,
                     code: isRequestBody ? "BASE64_21" : "BASE64_91",
                     description: this.createErrorMessage(isRequestBody ? "BASE64_21" : "BASE64_91", keys)
+                });
+                break;
+            case 'file':
+            case 'file?':
+                errorList.push({
+                    status: 400,
+                    code: isRequestBody ? "FILE_21" : "FILE_91",
+                    description: this.createErrorMessage(isRequestBody ? "FILE_21" : "FILE_91", keys)
                 });
                 break;
         }
