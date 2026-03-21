@@ -1,5 +1,7 @@
 export { Controller } from './Controller';
-export type { MethodType, IError } from './Controller';
+export type { MethodType, IError, IBaseEnv } from './Controller';
+export { HonoController } from './HonoController';
+export { ExpressController } from './ExpressController';
 export { MaintenanceException, AuthException, InputErrorException, ForbiddenException, DbConflictException, UnprocessableException, NotFoundException, TooManyRequestsException } from './exceptions/Exception';
 export { createSwagger } from './documents/Swagger';
 export type { IParams } from './documents/Swagger';

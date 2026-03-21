@@ -14,7 +14,6 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Controller = void 0;
 const axios_1 = __importDefault(require("axios"));
-const cookie_1 = require("hono/cookie");
 const pg_1 = require("pg");
 const Exception_1 = require("./exceptions/Exception");
 const RequestType_1 = require("./reqestResponse/RequestType");
@@ -24,6 +23,19 @@ const EncryptClient_1 = require("./clients/EncryptClient");
 const PoolManager_1 = __importDefault(require("./PoolManager"));
 const DateTimeUtil_1 = __importDefault(require("./Utils/DateTimeUtil"));
 class Controller {
+    constructor() {
+        this.method = 'GET';
+        this.endpoint = '';
+        this.apiCode = '';
+        this.summary = '';
+        this.apiUserAvailable = '';
+        this.request = new RequestType_1.RequestType();
+        this.response = new ResponseType_1.ResponseType();
+        this.tags = [];
+        this.errorList = [];
+        this.isSetDbConnection = true;
+        this.isExecuteRollback = false;
+    }
     get Method() { return this.method; }
     get Endpoint() { return this.endpoint + this.request.paramPath; }
     get ApiCode() { return this.apiCode; }
@@ -53,10 +65,11 @@ class Controller {
     outputErrorLog(ex) {
         return __awaiter(this, void 0, void 0, function* () { });
     }
-    runHono() {
+    get usePoolManager() { return true; }
+    run() {
         return __awaiter(this, void 0, void 0, function* () {
             try {
-                yield this.request.setRequest(this.Module, this.C);
+                yield this.initializeRequest();
                 if (this.isSetDbConnection) {
                     this.client = yield this.Pool.connect();
                     yield this.Client.query('BEGIN');
@@ -71,62 +84,13 @@ class Controller {
                 this.outputSuccessLog().catch((ex) => {
                     console.error(ex);
                 });
-                return this.C.json(this.response.ResponseData, 200);
+                return this.returnSuccessResponse();
             }
             catch (ex) {
                 this.outputErrorLog(ex).catch((ex) => {
                     console.error(ex);
                 });
-                if (ex instanceof Exception_1.AuthException) {
-                    return this.C.json({
-                        message: "Authentication expired. Please login again."
-                    }, 401);
-                }
-                else if (ex instanceof Exception_1.ForbiddenException) {
-                    return this.C.json({
-                        message: 'Forbidden error'
-                    }, 403);
-                }
-                else if (ex instanceof Exception_1.InputErrorException) {
-                    return this.C.json({
-                        errorCode: `${this.apiCode}-${ex.ErrorId}`,
-                        errorMessage: ex.message
-                    }, 400);
-                }
-                else if (ex instanceof Exception_1.DbConflictException) {
-                    return this.C.json({
-                        errorCode: `${this.apiCode}-${ex.ErrorId}`,
-                        errorMessage: ex.message
-                    }, 409);
-                }
-                else if (ex instanceof Exception_1.UnprocessableException) {
-                    return this.C.json({
-                        errorCode: `${this.apiCode}-${ex.ErrorId}`,
-                        errorMessage: ex.message
-                    }, 422);
-                }
-                else if (ex instanceof Exception_1.TooManyRequestsException) {
-                    return this.C.json({
-                        errorCode: `${this.apiCode}-${ex.ErrorId}`,
-                        errorMessage: ex.message
-                    }, 429);
-                }
-                else if (ex instanceof Exception_1.MaintenanceException) {
-                    return this.C.json({
-                        errorMessage: ex.message
-                    }, 503);
-                }
-                else if (ex instanceof Exception_1.NotFoundException) {
-                    return this.C.json({
-                        errorCode: `${this.apiCode}-${ex.ErrorId}`,
-                        errorMessage: ex.message
-                    }, 404);
-                }
-                else {
-                    return this.C.json({
-                        message: 'Internal server error'
-                    }, 500);
-                }
+                return this.returnErrorResponse(ex);
             }
             finally {
                 if (this.isExecuteRollback) {
@@ -136,102 +100,38 @@ class Controller {
                 if (this.client !== undefined) {
                     yield this.client.release();
                 }
-                if (this.pool !== undefined) {
+                if (!this.usePoolManager && this.pool !== undefined) {
                     yield this.pool.end();
                 }
             }
         });
     }
-    runExpress() {
-        return __awaiter(this, void 0, void 0, function* () {
-            try {
-                yield this.request.setRequest(this.Module, this.Req);
-                if (this.isSetDbConnection) {
-                    this.client = yield this.Pool.connect();
-                    yield this.Client.query('BEGIN');
-                    this.isExecuteRollback = true;
-                }
-                yield this.middleware();
-                yield this.main();
-                if (this.isSetDbConnection) {
-                    yield this.Client.query('COMMIT');
-                    this.isExecuteRollback = false;
-                }
-                this.outputSuccessLog().catch((ex) => {
-                    console.error(ex);
-                });
-                return this.Res.status(200).json(this.response.ResponseData);
-            }
-            catch (ex) {
-                this.outputErrorLog(ex).catch((ex) => {
-                    console.error(ex);
-                });
-                if (ex instanceof Exception_1.AuthException) {
-                    this.Res.status(401).json({
-                        message: "Authentication expired. Please login again."
-                    });
-                }
-                else if (ex instanceof Exception_1.ForbiddenException) {
-                    this.Res.status(403).json({
-                        message: 'Forbidden error'
-                    });
-                }
-                else if (ex instanceof Exception_1.InputErrorException) {
-                    this.Res.status(400).json({
-                        errorCode: `${this.apiCode}-${ex.ErrorId}`,
-                        errorMessage: ex.message
-                    });
-                    return;
-                }
-                else if (ex instanceof Exception_1.DbConflictException) {
-                    this.Res.status(409).json({
-                        errorCode: `${this.apiCode}-${ex.ErrorId}`,
-                        errorMessage: ex.message
-                    });
-                }
-                else if (ex instanceof Exception_1.UnprocessableException) {
-                    this.Res.status(422).json({
-                        errorCode: `${this.apiCode}-${ex.ErrorId}`,
-                        errorMessage: ex.message
-                    });
-                }
-                else if (ex instanceof Exception_1.TooManyRequestsException) {
-                    this.Res.status(429).json({
-                        errorCode: `${this.apiCode}-${ex.ErrorId}`,
-                        errorMessage: ex.message
-                    });
-                }
-                else if (ex instanceof Exception_1.MaintenanceException) {
-                    this.Res.status(503).json({
-                        errorMessage: ex.message
-                    });
-                }
-                else if (ex instanceof Exception_1.NotFoundException) {
-                    this.Res.status(404).json({
-                        errorCode: `${this.apiCode}-${ex.ErrorId}`,
-                        errorMessage: ex.message
-                    });
-                }
-                else {
-                    this.Res.status(500).json({
-                        message: 'Internal server error'
-                    });
-                }
-                return;
-            }
-            finally {
-                if (this.isExecuteRollback) {
-                    yield this.Client.query('ROLLBACK');
-                }
-                this.isExecuteRollback = false;
-                if (this.client !== undefined) {
-                    yield this.client.release();
-                }
-                if (this.Module === 'hono' && this.pool !== undefined) {
-                    yield this.pool.end();
-                }
-            }
-        });
+    getErrorResponse(ex) {
+        if (ex instanceof Exception_1.AuthException) {
+            return { status: 401, body: { message: "Authentication expired. Please login again." } };
+        }
+        else if (ex instanceof Exception_1.ForbiddenException) {
+            return { status: 403, body: { message: 'Forbidden error' } };
+        }
+        else if (ex instanceof Exception_1.InputErrorException) {
+            return { status: 400, body: { errorCode: `${this.apiCode}-${ex.ErrorId}`, errorMessage: ex.message } };
+        }
+        else if (ex instanceof Exception_1.DbConflictException) {
+            return { status: 409, body: { errorCode: `${this.apiCode}-${ex.ErrorId}`, errorMessage: ex.message } };
+        }
+        else if (ex instanceof Exception_1.UnprocessableException) {
+            return { status: 422, body: { errorCode: `${this.apiCode}-${ex.ErrorId}`, errorMessage: ex.message } };
+        }
+        else if (ex instanceof Exception_1.TooManyRequestsException) {
+            return { status: 429, body: { errorCode: `${this.apiCode}-${ex.ErrorId}`, errorMessage: ex.message } };
+        }
+        else if (ex instanceof Exception_1.MaintenanceException) {
+            return { status: 503, body: { errorMessage: ex.message } };
+        }
+        else if (ex instanceof Exception_1.NotFoundException) {
+            return { status: 404, body: { errorCode: `${this.apiCode}-${ex.ErrorId}`, errorMessage: ex.message } };
+        }
+        return { status: 500, body: { message: 'Internal server error' } };
     }
     static set Now(value) {
         this.now = value;
@@ -250,136 +150,7 @@ class Controller {
     static get TodayString() {
         return DateTimeUtil_1.default.toStringFromDate(this.Now, 'date');
     }
-    get Req() {
-        if (this.req === undefined) {
-            throw new Error('This method can only be used when module is "express".');
-        }
-        return this.req;
-    }
-    get Res() {
-        if (this.res === undefined) {
-            throw new Error('This method can only be used when module is "express".');
-        }
-        return this.res;
-    }
-    get C() {
-        if (this.c === undefined) {
-            throw new Error('This method can only be used when module is "hono".');
-        }
-        return this.c;
-    }
-    get Module() {
-        if (this.c !== undefined) {
-            return 'hono';
-        }
-        else if (this.req !== undefined && this.res !== undefined) {
-            return 'express';
-        }
-        throw new Error('Failed to determine whether the module is "express" or "hono".');
-    }
-    ;
-    get Headers() {
-        if (this.Module === 'express') {
-            return this.Req.headers;
-        }
-        else {
-            return this.C.req.header();
-        }
-    }
-    getHeader(key) {
-        if (this.Module === 'express') {
-            const value = this.Req.header(key);
-            return Array.isArray(value) ? value[0] : value;
-        }
-        else {
-            return this.C.req.header(key);
-        }
-    }
-    setResponseHeader(key, value) {
-        let formattedValue;
-        if (typeof value === 'string') {
-            formattedValue = value;
-        }
-        else {
-            // オブジェクトの場合（配列は Record<string, any> に合致しないよう、念のためチェック）
-            if (Array.isArray(value)) {
-                throw new Error('Arrays are not allowed in setResponseHeader. Please use string or object.');
-            }
-            formattedValue = JSON.stringify(value);
-        }
-        if (this.Module === 'express') {
-            this.Res.setHeader(key, formattedValue);
-        }
-        else {
-            this.C.header(key, formattedValue);
-        }
-    }
-    setCookie(key, value, options) {
-        var _a, _b, _c, _d;
-        const config = {
-            httpOnly: (_a = options === null || options === void 0 ? void 0 : options.httpOnly) !== null && _a !== void 0 ? _a : true,
-            secure: (_b = options === null || options === void 0 ? void 0 : options.secure) !== null && _b !== void 0 ? _b : true,
-            sameSite: (_c = options === null || options === void 0 ? void 0 : options.sameSite) !== null && _c !== void 0 ? _c : 'strict',
-            path: (_d = options === null || options === void 0 ? void 0 : options.path) !== null && _d !== void 0 ? _d : '/',
-            domain: options === null || options === void 0 ? void 0 : options.domain,
-            expires: options === null || options === void 0 ? void 0 : options.expires
-        };
-        if (this.Module === 'express') {
-            this.Res.cookie(key, value, Object.assign(Object.assign({}, config), { maxAge: (options === null || options === void 0 ? void 0 : options.maxAgeSec) !== undefined ? options.maxAgeSec * 1000 : undefined }));
-        }
-        else if (this.Module === 'hono') {
-            (0, cookie_1.setCookie)(this.C, key, value, Object.assign(Object.assign({}, config), { maxAge: options === null || options === void 0 ? void 0 : options.maxAgeSec, 
-                // HonoのsameSiteはPascalCase（Strict等）
-                sameSite: (config.sameSite.charAt(0).toUpperCase() + config.sameSite.slice(1)) }));
-        }
-    }
-    getCookie(key) {
-        if (this.Module === 'express') {
-            return this.Req.cookies[key];
-        }
-        else if (this.Module === 'hono') {
-            return (0, cookie_1.getCookie)(this.C, key);
-        }
-        return undefined;
-    }
-    removeCookie(key, options) {
-        if (this.Module === 'express') {
-            this.Res.clearCookie(key, options);
-        }
-        else if (this.Module === 'hono') {
-            (0, cookie_1.deleteCookie)(this.C, key, options);
-        }
-    }
-    get Env() {
-        if (this.Module === 'express') {
-            return process.env;
-        }
-        else {
-            return this.C.env;
-        }
-    }
-    constructor(param1, param2) {
-        this.method = 'GET';
-        this.endpoint = '';
-        this.apiCode = '';
-        this.summary = '';
-        this.apiUserAvailable = '';
-        this.request = new RequestType_1.RequestType();
-        this.response = new ResponseType_1.ResponseType();
-        this.tags = [];
-        this.errorList = [];
-        this.isSetDbConnection = true;
-        this.isExecuteRollback = false;
-        if (param2 !== undefined) {
-            // Express の場合: (request, response)
-            this.req = param1;
-            this.res = param2;
-        }
-        else {
-            // Hono の場合: (c)
-            this.c = param1;
-        }
-    }
+    // DB接続
     get DbUser() { return this.Env.DB_USER; }
     get DbHost() { return this.Env.DB_HOST; }
     get DbName() { return this.Env.DB_DATABASE; }
@@ -403,8 +174,7 @@ class Controller {
             throw new Error("Database port is not configured");
         }
         try {
-            // honoの場合、Poolは各リクエストで使い捨てのため、Poolマネージャーを使わず、リクエスト内で接続・破棄をする
-            if (this.Module === 'hono') {
+            if (!this.usePoolManager) {
                 return new pg_1.Pool({
                     user: this.DbUser,
                     host: this.DbHost,
@@ -456,7 +226,6 @@ class Controller {
     }
     requestApi(method, url, params, header) {
         return __awaiter(this, void 0, void 0, function* () {
-            // GET,DELETEのparamをURLクエリに
             if (method === 'GET' || method === 'DELETE') {
                 for (const [key, value] of Object.entries(params)) {
                     if (value === undefined || value === null) {
@@ -499,4 +268,5 @@ class Controller {
     }
 }
 exports.Controller = Controller;
+// 日時ユーティリティ（static）
 Controller.now = null;
