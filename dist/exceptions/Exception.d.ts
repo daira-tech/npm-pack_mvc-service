@@ -28,4 +28,9 @@ export declare class UnprocessableException extends Error {
     get ErrorId(): string;
     constructor(errorId: string, message?: string);
 }
+export declare class TooManyRequestsException extends Error {
+    private errorId;
+    get ErrorId(): string;
+    constructor(errorId: string, message?: string);
+}
 //# sourceMappingURL=Exception.d.ts.map

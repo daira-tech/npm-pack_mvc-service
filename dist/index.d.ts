@@ -1,6 +1,6 @@
 export { Controller } from './Controller';
 export type { MethodType, IError } from './Controller';
-export { MaintenanceException, AuthException, InputErrorException, ForbiddenException, DbConflictException, UnprocessableException, NotFoundException } from './exceptions/Exception';
+export { MaintenanceException, AuthException, InputErrorException, ForbiddenException, DbConflictException, UnprocessableException, NotFoundException, TooManyRequestsException } from './exceptions/Exception';
 export { createSwagger } from './documents/Swagger';
 export type { IParams } from './documents/Swagger';
 export { StringClient } from './clients/StringClient';

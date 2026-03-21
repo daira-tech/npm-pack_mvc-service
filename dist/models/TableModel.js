@@ -21,7 +21,12 @@ const Exception_1 = require("../exceptions/Exception");
 const ExpressionClient_1 = __importDefault(require("./ExpressionClient"));
 const UpdateExpression_1 = __importDefault(require("./SqlUtils/UpdateExpression"));
 const MessageUtil_1 = __importDefault(require("./Utils/MessageUtil"));
+const Controller_1 = require("../Controller");
 class TableModel {
+    get Now() { return Controller_1.Controller.Now; }
+    get NowString() { return Controller_1.Controller.NowString; }
+    get Today() { return Controller_1.Controller.Today; }
+    get TodayString() { return Controller_1.Controller.TodayString; }
     get Id() { return this.id; }
     get SchemaName() { return this.schemaName; }
     get TableName() {

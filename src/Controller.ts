@@ -3,12 +3,13 @@ import { Request, Response } from 'express';
 import { Context, TypedResponse } from 'hono'
 import { setCookie, getCookie, deleteCookie } from 'hono/cookie'
 import { Pool, type PoolClient } from 'pg';
-import { MaintenanceException, AuthException, InputErrorException, ForbiddenException, DbConflictException, UnprocessableException, NotFoundException } from './exceptions/Exception';
+import { MaintenanceException, AuthException, InputErrorException, ForbiddenException, DbConflictException, UnprocessableException, NotFoundException, TooManyRequestsException } from './exceptions/Exception';
 import { RequestType } from './reqestResponse/RequestType';
 import { ResponseType } from './reqestResponse/ResponseType';
 import { StringClient } from './clients/StringClient';
 import { EncryptClient } from './clients/EncryptClient';
 import PoolManager from './PoolManager';
+import DateTimeUtil from './Utils/DateTimeUtil';
 
 type TStatusCode = 200 | 201 | 400 | 401 | 403 | 404 | 409 | 422 | 500 | 503;
 
@@ -115,6 +116,11 @@ export class Controller<IEnv extends IBaseEnv = IBaseEnv> {
                     errorCode: `${this.apiCode}-${ex.ErrorId}`, 
                     errorMessage: ex.message 
                 },422);
+            } else if (ex instanceof TooManyRequestsException) {
+                return this.C.json({ 
+                    errorCode: `${this.apiCode}-${ex.ErrorId}`, 
+                    errorMessage: ex.message 
+                }, 429);
             } else if (ex instanceof MaintenanceException) {
                 return this.C.json({ 
                     errorMessage: ex.message 
@@ -198,6 +204,11 @@ export class Controller<IEnv extends IBaseEnv = IBaseEnv> {
                     errorCode : `${this.apiCode}-${ex.ErrorId}`,
                     errorMessage : ex.message
                 });
+            } else if (ex instanceof TooManyRequestsException) {
+                this.Res.status(429).json({
+                    errorCode : `${this.apiCode}-${ex.ErrorId}`,
+                    errorMessage : ex.message
+                });
             } else if (ex instanceof MaintenanceException) {
                 this.Res.status(503).json({
                     errorMessage : ex.message
@@ -227,6 +238,24 @@ export class Controller<IEnv extends IBaseEnv = IBaseEnv> {
                 await this.pool.end();
             }
         }
+    }
+
+    private static now: Date | null = null;
+    public static set Now(value: Date) {
+        this.now = value;
+    }
+    public static get Now(): Date {
+        return this.now ?? new Date();
+    }
+    public static get NowString(): string {
+        return DateTimeUtil.toStringFromDate(this.Now, 'datetime');
+    }
+    public static get Today(): Date {
+        const now = this.Now;
+        return new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    }
+    public static get TodayString(): string {
+        return DateTimeUtil.toStringFromDate(this.Now, 'date');
     }
 
     private readonly req?: Request;

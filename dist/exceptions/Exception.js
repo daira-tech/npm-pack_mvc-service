@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.UnprocessableException = exports.DbConflictException = exports.NotFoundException = exports.MaintenanceException = exports.InputErrorException = exports.ForbiddenException = exports.AuthException = void 0;
+exports.TooManyRequestsException = exports.UnprocessableException = exports.DbConflictException = exports.NotFoundException = exports.MaintenanceException = exports.InputErrorException = exports.ForbiddenException = exports.AuthException = void 0;
 class AuthException extends Error {
     get Id() {
         return this.id;
@@ -68,3 +68,15 @@ class UnprocessableException extends Error {
     }
 }
 exports.UnprocessableException = UnprocessableException;
+class TooManyRequestsException extends Error {
+    get ErrorId() {
+        return this.errorId;
+    }
+    constructor(errorId, message = "") {
+        super(message);
+        // for 429 Too Many Requests
+        this.errorId = "";
+        this.errorId = errorId;
+    }
+}
+exports.TooManyRequestsException = TooManyRequestsException;

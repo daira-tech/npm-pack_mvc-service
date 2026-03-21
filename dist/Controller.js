@@ -22,6 +22,7 @@ const ResponseType_1 = require("./reqestResponse/ResponseType");
 const StringClient_1 = require("./clients/StringClient");
 const EncryptClient_1 = require("./clients/EncryptClient");
 const PoolManager_1 = __importDefault(require("./PoolManager"));
+const DateTimeUtil_1 = __importDefault(require("./Utils/DateTimeUtil"));
 class Controller {
     get Method() { return this.method; }
     get Endpoint() { return this.endpoint + this.request.paramPath; }
@@ -103,6 +104,12 @@ class Controller {
                         errorCode: `${this.apiCode}-${ex.ErrorId}`,
                         errorMessage: ex.message
                     }, 422);
+                }
+                else if (ex instanceof Exception_1.TooManyRequestsException) {
+                    return this.C.json({
+                        errorCode: `${this.apiCode}-${ex.ErrorId}`,
+                        errorMessage: ex.message
+                    }, 429);
                 }
                 else if (ex instanceof Exception_1.MaintenanceException) {
                     return this.C.json({
@@ -188,6 +195,12 @@ class Controller {
                         errorMessage: ex.message
                     });
                 }
+                else if (ex instanceof Exception_1.TooManyRequestsException) {
+                    this.Res.status(429).json({
+                        errorCode: `${this.apiCode}-${ex.ErrorId}`,
+                        errorMessage: ex.message
+                    });
+                }
                 else if (ex instanceof Exception_1.MaintenanceException) {
                     this.Res.status(503).json({
                         errorMessage: ex.message
@@ -219,6 +232,23 @@ class Controller {
                 }
             }
         });
+    }
+    static set Now(value) {
+        this.now = value;
+    }
+    static get Now() {
+        var _a;
+        return (_a = this.now) !== null && _a !== void 0 ? _a : new Date();
+    }
+    static get NowString() {
+        return DateTimeUtil_1.default.toStringFromDate(this.Now, 'datetime');
+    }
+    static get Today() {
+        const now = this.Now;
+        return new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    }
+    static get TodayString() {
+        return DateTimeUtil_1.default.toStringFromDate(this.Now, 'date');
     }
     get Req() {
         if (this.req === undefined) {
@@ -469,3 +499,4 @@ class Controller {
     }
 }
 exports.Controller = Controller;
+Controller.now = null;

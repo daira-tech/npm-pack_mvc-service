@@ -8,8 +8,14 @@ import { DbConflictException, InputErrorException, NotFoundException, Unprocessa
 import ExpressionClient from './ExpressionClient';
 import UpdateExpression from './SqlUtils/UpdateExpression';
 import MessageUtil, { TOptionErrorMessage } from './Utils/MessageUtil';
+import { Controller } from '../Controller';
 
 export class TableModel {
+
+    protected get Now(): Date { return Controller.Now; }
+    protected get NowString(): string { return Controller.NowString; }
+    protected get Today(): Date { return Controller.Today; }
+    protected get TodayString(): string { return Controller.TodayString; }
 
     protected readonly id: string = "";
     get Id(): string { return this.id; }

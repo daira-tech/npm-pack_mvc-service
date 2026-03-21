@@ -4,6 +4,10 @@ import ValidateClient from './ValidateClient';
 import ExpressionClient from './ExpressionClient';
 import { TOptionErrorMessage } from './Utils/MessageUtil';
 export declare class TableModel {
+    protected get Now(): Date;
+    protected get NowString(): string;
+    protected get Today(): Date;
+    protected get TodayString(): string;
     protected readonly id: string;
     get Id(): string;
     protected readonly schemaName: string;

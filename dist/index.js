@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.runCron = exports.BaseCron = exports.rollback = exports.migrate = exports.MigrateDatabase = exports.MigrateTable = exports.createTableDoc = exports.SelectExpression = exports.WhereExpression = exports.TableModel = exports.ResponseType = exports.RequestType = exports.EncryptClient = exports.StringClient = exports.createSwagger = exports.NotFoundException = exports.UnprocessableException = exports.DbConflictException = exports.ForbiddenException = exports.InputErrorException = exports.AuthException = exports.MaintenanceException = exports.Controller = void 0;
+exports.runCron = exports.BaseCron = exports.rollback = exports.migrate = exports.MigrateDatabase = exports.MigrateTable = exports.createTableDoc = exports.SelectExpression = exports.WhereExpression = exports.TableModel = exports.ResponseType = exports.RequestType = exports.EncryptClient = exports.StringClient = exports.createSwagger = exports.TooManyRequestsException = exports.NotFoundException = exports.UnprocessableException = exports.DbConflictException = exports.ForbiddenException = exports.InputErrorException = exports.AuthException = exports.MaintenanceException = exports.Controller = void 0;
 var Controller_1 = require("./Controller");
 Object.defineProperty(exports, "Controller", { enumerable: true, get: function () { return Controller_1.Controller; } });
 var Exception_1 = require("./exceptions/Exception");
@@ -11,6 +11,7 @@ Object.defineProperty(exports, "ForbiddenException", { enumerable: true, get: fu
 Object.defineProperty(exports, "DbConflictException", { enumerable: true, get: function () { return Exception_1.DbConflictException; } });
 Object.defineProperty(exports, "UnprocessableException", { enumerable: true, get: function () { return Exception_1.UnprocessableException; } });
 Object.defineProperty(exports, "NotFoundException", { enumerable: true, get: function () { return Exception_1.NotFoundException; } });
+Object.defineProperty(exports, "TooManyRequestsException", { enumerable: true, get: function () { return Exception_1.TooManyRequestsException; } });
 var Swagger_1 = require("./documents/Swagger");
 Object.defineProperty(exports, "createSwagger", { enumerable: true, get: function () { return Swagger_1.createSwagger; } });
 var StringClient_1 = require("./clients/StringClient");

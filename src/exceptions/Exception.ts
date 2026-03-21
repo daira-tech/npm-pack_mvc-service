@@ -70,3 +70,16 @@ export class UnprocessableException extends Error {
         this.errorId = errorId;
     }
 }
+
+export class TooManyRequestsException extends Error {
+    // for 429 Too Many Requests
+    private errorId: string = "";
+    get ErrorId(): string {
+        return this.errorId;
+    }
+
+    constructor(errorId: string, message: string = "") {
+        super(message);
+        this.errorId = errorId;
+    }
+}

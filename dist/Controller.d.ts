@@ -64,6 +64,9 @@ export declare class Controller<IEnv extends IBaseEnv = IBaseEnv> {
         errorCode: string;
         errorMessage: string;
     }, 422, "json">) | (globalThis.Response & TypedResponse<{
+        errorCode: string;
+        errorMessage: string;
+    }, 429, "json">) | (globalThis.Response & TypedResponse<{
         errorMessage: string;
     }, 503, "json">) | (globalThis.Response & TypedResponse<{
         errorCode: string;
@@ -72,6 +75,12 @@ export declare class Controller<IEnv extends IBaseEnv = IBaseEnv> {
         message: string;
     }, 500, "json">)>;
     runExpress(): Promise<Response<any, Record<string, any>> | undefined>;
+    private static now;
+    static set Now(value: Date);
+    static get Now(): Date;
+    static get NowString(): string;
+    static get Today(): Date;
+    static get TodayString(): string;
     private readonly req?;
     protected get Req(): Request;
     private readonly res?;
