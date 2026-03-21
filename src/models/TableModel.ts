@@ -1,5 +1,5 @@
-import { Pool, PoolClient } from 'pg';
 import { TAggregateFuncType, TColumn, TColumnArrayType, TColumnDetail, TColumnInfo, TColumnType, TKeyFormat, TNestedCondition, TOperator, TQuery, TSelectExpression, TSortKeyword } from "./Type";
+import { IDbClient } from './IDbClient';
 import ValidateValueUtil from './SqlUtils/ValidateValueUtil';
 import { SelectExpression } from './SqlUtils/SelectExpression';
 import { WhereExpression } from './SqlUtils/WhereExpression';
@@ -142,12 +142,12 @@ export class TableModel {
         return sql;
     }
 
-    private client: PoolClient | Pool;
-    get Client(): PoolClient | Pool {
+    private client: IDbClient;
+    get Client(): IDbClient {
         return this.client;
     }
 
-    constructor(client: Pool | PoolClient, tableAlias?: string) {
+    constructor(client: IDbClient, tableAlias?: string) {
         this.client = client;
         if (tableAlias !== undefined && tableAlias.trim() !== '') {
             this.tableAlias = tableAlias;

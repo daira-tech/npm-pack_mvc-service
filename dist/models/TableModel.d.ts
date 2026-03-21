@@ -1,5 +1,5 @@
-import { Pool, PoolClient } from 'pg';
 import { TAggregateFuncType, TColumn, TColumnDetail, TColumnInfo, TKeyFormat, TNestedCondition, TOperator, TQuery, TSelectExpression, TSortKeyword } from "./Type";
+import { IDbClient } from './IDbClient';
 import ValidateClient from './ValidateClient';
 import ExpressionClient from './ExpressionClient';
 import { TOptionErrorMessage } from './Utils/MessageUtil';
@@ -62,8 +62,8 @@ export declare class TableModel {
     private get createSqlFromJoinWhere();
     private get createSqlFromJoinWhereSortLimit();
     private client;
-    get Client(): PoolClient | Pool;
-    constructor(client: Pool | PoolClient, tableAlias?: string);
+    get Client(): IDbClient;
+    constructor(client: IDbClient, tableAlias?: string);
     find<T = {
         [key: string]: any;
     }>(pk: {
