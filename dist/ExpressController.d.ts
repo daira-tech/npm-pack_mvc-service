@@ -1,10 +1,12 @@
 import { Request, Response } from 'express';
 import { Controller, IBaseEnv } from './Controller';
+import { IDbConnectionFactory } from './models/IDbClient';
 export declare class ExpressController<IEnv extends IBaseEnv = IBaseEnv> extends Controller<IEnv> {
     protected readonly Req: Request;
     protected readonly Res: Response;
     constructor(Req: Request, Res: Response);
     get Env(): IEnv;
+    protected createConnectionFactory(): IDbConnectionFactory;
     protected initializeRequest(): Promise<void>;
     protected returnSuccessResponse(): Response<any, Record<string, any>>;
     protected returnErrorResponse(ex: any): void;

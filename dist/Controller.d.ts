@@ -1,9 +1,9 @@
 import { AxiosResponse } from "axios";
-import { Pool, type PoolClient } from 'pg';
 import { RequestType } from './reqestResponse/RequestType';
 import { ResponseType } from './reqestResponse/ResponseType';
 import { StringClient } from './clients/StringClient';
 import { EncryptClient } from './clients/EncryptClient';
+import { IDbClient, IDbConnectionFactory } from './models/IDbClient';
 type TStatusCode = 200 | 201 | 400 | 401 | 403 | 404 | 409 | 422 | 429 | 500 | 503;
 export type MethodType = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
 export interface IError {
@@ -50,7 +50,10 @@ export declare abstract class Controller<IEnv extends IBaseEnv = IBaseEnv> {
     protected abstract initializeRequest(): Promise<void>;
     protected abstract returnSuccessResponse(): any;
     protected abstract returnErrorResponse(ex: any): any;
-    protected get usePoolManager(): boolean;
+    protected abstract createConnectionFactory(): IDbConnectionFactory;
+    private factory?;
+    private connection?;
+    protected get Client(): IDbClient;
     run(): Promise<any>;
     protected getErrorResponse(ex: any): {
         status: number;
@@ -68,12 +71,15 @@ export declare abstract class Controller<IEnv extends IBaseEnv = IBaseEnv> {
     protected get DbPassword(): string | undefined;
     protected get DbPort(): string | number | undefined;
     protected get DbIsSslConnect(): boolean;
-    private setPool;
-    private pool?;
-    private get Pool();
-    private client?;
-    private isExecuteRollback;
-    protected get Client(): Pool | PoolClient;
+    protected validateDbConfig(): {
+        user: string;
+        host: string;
+        database: string;
+        password: string;
+        port: number;
+        ssl: boolean;
+        timezone: string | undefined;
+    };
     private stringClient?;
     get StringClient(): StringClient;
     private encryptClient?;

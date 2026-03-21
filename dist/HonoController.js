@@ -12,14 +12,18 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.HonoController = void 0;
 const cookie_1 = require("hono/cookie");
 const Controller_1 = require("./Controller");
+const PgConnectionFactory_1 = require("./PgConnectionFactory");
 class HonoController extends Controller_1.Controller {
-    get usePoolManager() { return false; }
     constructor(C) {
         super();
         this.C = C;
     }
     get Env() {
         return this.C.env;
+    }
+    createConnectionFactory() {
+        const config = this.validateDbConfig();
+        return new PgConnectionFactory_1.PgConnectionFactory(Object.assign(Object.assign({}, config), { usePoolManager: false }));
     }
     initializeRequest() {
         return __awaiter(this, void 0, void 0, function* () {

@@ -1,12 +1,11 @@
 import axios, { AxiosResponse } from "axios";
-import { Pool, type PoolClient } from 'pg';
 import { MaintenanceException, AuthException, InputErrorException, ForbiddenException, DbConflictException, UnprocessableException, NotFoundException, TooManyRequestsException } from './exceptions/Exception';
 import { RequestType } from './reqestResponse/RequestType';
 import { ResponseType } from './reqestResponse/ResponseType';
 import { StringClient } from './clients/StringClient';
 import { EncryptClient } from './clients/EncryptClient';
-import PoolManager from './PoolManager';
 import DateTimeUtil from './Utils/DateTimeUtil';
+import { IDbClient, IDbConnection, IDbConnectionFactory } from './models/IDbClient';
 
 type TStatusCode = 200 | 201 | 400 | 401 | 403 | 404 | 409 | 422 | 429 | 500 | 503;
 
@@ -67,24 +66,40 @@ export abstract class Controller<IEnv extends IBaseEnv = IBaseEnv> {
     protected abstract returnSuccessResponse(): any;
     protected abstract returnErrorResponse(ex: any): any;
 
-    protected get usePoolManager(): boolean { return true; }
+    // DB接続ファクトリ
+    protected abstract createConnectionFactory(): IDbConnectionFactory;
+
+    private factory?: IDbConnectionFactory;
+    private connection?: IDbConnection;
+
+    protected get Client(): IDbClient { 
+        if (this.isSetDbConnection) {
+            if (this.connection === undefined) {
+                throw new Error("Please call this.Client after the connection is established in run().");
+            }
+            return this.connection;
+        }
+        if (this.factory === undefined) {
+            this.factory = this.createConnectionFactory();
+        }
+        return this.factory;
+    }
 
     public async run(): Promise<any> {
         try {
             await this.initializeRequest();
 
             if (this.isSetDbConnection) {
-                this.client = await this.Pool.connect();
-                await this.Client.query('BEGIN');
-                this.isExecuteRollback = true;    
+                this.factory = this.createConnectionFactory();
+                this.connection = await this.factory.connect();
+                await this.connection.begin();
             }
     
             await this.middleware();
             await this.main();
     
-            if (this.isSetDbConnection) {
-                await this.Client.query('COMMIT');
-                this.isExecuteRollback = false;    
+            if (this.connection) {
+                await this.connection.commit();
             }
     
             this.outputSuccessLog().catch((ex) => {
@@ -99,17 +114,12 @@ export abstract class Controller<IEnv extends IBaseEnv = IBaseEnv> {
 
             return this.returnErrorResponse(ex);
         } finally {
-            if (this.isExecuteRollback) {
-                await this.Client.query('ROLLBACK');
+            if (this.connection) {
+                await this.connection.rollback();
+                await this.connection.release();
             }
-            this.isExecuteRollback = false;
-
-            if (this.client !== undefined) {
-                await this.client.release();
-            }
-    
-            if (!this.usePoolManager && this.pool !== undefined) {
-                await this.pool.end();
+            if (this.factory) {
+                await this.factory.close();
             }
         }
     }
@@ -154,69 +164,28 @@ export abstract class Controller<IEnv extends IBaseEnv = IBaseEnv> {
         return DateTimeUtil.toStringFromDate(this.Now, 'date');
     }
 
-    // DB接続
+    // DB接続設定
     protected get DbUser(): string | undefined { return this.Env.DB_USER; }
     protected get DbHost(): string | undefined { return this.Env.DB_HOST; }
     protected get DbName(): string | undefined { return this.Env.DB_DATABASE; }
     protected get DbPassword(): string | undefined { return this.Env.DB_PASSWORD; }
     protected get DbPort(): string | number | undefined { return this.Env.DB_PORT; }
     protected get DbIsSslConnect(): boolean { return this.Env.DB_IS_SSL === 'true'; }
-    
-    private setPool(): Pool {
-        if (this.DbUser === undefined) {
-            throw new Error("Database user is not configured");
-        }
-        if (this.DbHost === undefined) {
-            throw new Error("Database host is not configured");
-        }
-        if (this.DbName === undefined) {
-            throw new Error("Database name is not configured");
-        }
-        if (this.DbPassword === undefined) {
-            throw new Error("Database password is not configured");
-        }
-        if (this.DbPort === undefined) {
-            throw new Error("Database port is not configured");
-        }
 
-        try {
-            if (!this.usePoolManager) {
-                return new Pool({
-                    user: this.DbUser,
-                    host: this.DbHost,
-                    database: this.DbName,
-                    password: this.DbPassword,
-                    port: Number(this.DbPort),
-                    ssl: this.DbIsSslConnect ? {
-                        rejectUnauthorized: false
-                        } : false
-                })
-            }
+    protected validateDbConfig() {
+        const user = this.DbUser;
+        const host = this.DbHost;
+        const database = this.DbName;
+        const password = this.DbPassword;
+        const port = this.DbPort;
 
-            return PoolManager.getPool(this.DbUser, this.DbHost, this.DbName, this.DbPassword, this.DbPort, this.DbIsSslConnect);
-        } catch (ex) {
-            throw new Error("Failed to connect to the database. Please check the connection settings.");
-        }
-    }
+        if (user === undefined) throw new Error("Database user is not configured");
+        if (host === undefined) throw new Error("Database host is not configured");
+        if (database === undefined) throw new Error("Database name is not configured");
+        if (password === undefined) throw new Error("Database password is not configured");
+        if (port === undefined) throw new Error("Database port is not configured");
 
-    private pool?: Pool;
-    private get Pool(): Pool {
-        if (this.pool === undefined) {
-            this.pool = this.setPool();
-            this.pool.query(`SET TIME ZONE '${this.Env.TZ ?? 'Asia/Tokyo'}';`);
-        }
-        return this.pool; 
-    }
-    private client?: PoolClient;
-    private isExecuteRollback: boolean = false;
-    protected get Client(): Pool | PoolClient { 
-        if (this.isSetDbConnection) {
-            if (this.client === undefined) {
-                throw new Error("Please call this.PoolClient after using the startConnect method.");
-            }
-            return this.client;
-        }
-        return this.Pool;
+        return { user, host, database, password, port: Number(port), ssl: this.DbIsSslConnect, timezone: this.Env.TZ };
     }
 
     private stringClient? : StringClient;

@@ -1,12 +1,14 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.runCron = exports.BaseCron = exports.rollback = exports.migrate = exports.MigrateDatabase = exports.MigrateTable = exports.createTableDoc = exports.SelectExpression = exports.WhereExpression = exports.TableModel = exports.ResponseType = exports.RequestType = exports.EncryptClient = exports.StringClient = exports.createSwagger = exports.TooManyRequestsException = exports.NotFoundException = exports.UnprocessableException = exports.DbConflictException = exports.ForbiddenException = exports.InputErrorException = exports.AuthException = exports.MaintenanceException = exports.ExpressController = exports.HonoController = exports.Controller = void 0;
+exports.runCron = exports.BaseCron = exports.rollback = exports.migrate = exports.MigrateDatabase = exports.MigrateTable = exports.createTableDoc = exports.SelectExpression = exports.WhereExpression = exports.TableModel = exports.ResponseType = exports.RequestType = exports.EncryptClient = exports.StringClient = exports.createSwagger = exports.TooManyRequestsException = exports.NotFoundException = exports.UnprocessableException = exports.DbConflictException = exports.ForbiddenException = exports.InputErrorException = exports.AuthException = exports.MaintenanceException = exports.PgConnectionFactory = exports.ExpressController = exports.HonoController = exports.Controller = void 0;
 var Controller_1 = require("./Controller");
 Object.defineProperty(exports, "Controller", { enumerable: true, get: function () { return Controller_1.Controller; } });
 var HonoController_1 = require("./HonoController");
 Object.defineProperty(exports, "HonoController", { enumerable: true, get: function () { return HonoController_1.HonoController; } });
 var ExpressController_1 = require("./ExpressController");
 Object.defineProperty(exports, "ExpressController", { enumerable: true, get: function () { return ExpressController_1.ExpressController; } });
+var PgConnectionFactory_1 = require("./PgConnectionFactory");
+Object.defineProperty(exports, "PgConnectionFactory", { enumerable: true, get: function () { return PgConnectionFactory_1.PgConnectionFactory; } });
 var Exception_1 = require("./exceptions/Exception");
 Object.defineProperty(exports, "MaintenanceException", { enumerable: true, get: function () { return Exception_1.MaintenanceException; } });
 Object.defineProperty(exports, "AuthException", { enumerable: true, get: function () { return Exception_1.AuthException; } });
