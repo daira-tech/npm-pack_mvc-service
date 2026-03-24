@@ -1,4 +1,3 @@
-import { Controller } from '../Controller';
 export interface IParams {
     in: 'header' | 'path';
     name: string;
@@ -6,5 +5,11 @@ export interface IParams {
     description?: string;
     example?: string;
 }
-export declare const createSwagger: (controllers: Controller[], name: string, pathOrUrl: string, params?: Array<IParams>) => string;
+export interface SwaggerFromSourceConfig {
+    sourceDir: string;
+    name: string;
+    serverUrl: string;
+    params?: Array<IParams>;
+}
+export declare function createSwagger(config: SwaggerFromSourceConfig): string;
 //# sourceMappingURL=Swagger.d.ts.map

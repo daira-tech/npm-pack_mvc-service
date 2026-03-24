@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.runCron = exports.BaseCron = exports.rollback = exports.migrate = exports.MigrateDatabase = exports.MigrateTable = exports.createTableDoc = exports.SelectExpression = exports.WhereExpression = exports.TableModel = exports.ResponseType = exports.RequestType = exports.EncryptClient = exports.StringClient = exports.createSwagger = exports.TooManyRequestsException = exports.NotFoundException = exports.UnprocessableException = exports.DbConflictException = exports.ForbiddenException = exports.InputErrorException = exports.AuthException = exports.MaintenanceException = exports.PgConnectionFactory = exports.ExpressController = exports.HonoController = exports.Controller = void 0;
+exports.runCron = exports.BaseCron = exports.rollback = exports.migrate = exports.MigrateDatabase = exports.MigrateTable = exports.SelectExpression = exports.WhereExpression = exports.TableModel = exports.ResponseType = exports.RequestType = exports.EncryptClient = exports.StringClient = exports.parseSourceFile = exports.createDesignDoc = exports.createSwagger = exports.TooManyRequestsException = exports.NotFoundException = exports.UnprocessableException = exports.DbConflictException = exports.ForbiddenException = exports.InputErrorException = exports.AuthException = exports.MaintenanceException = exports.PgConnectionFactory = exports.ExpressController = exports.HonoController = exports.Controller = void 0;
 var Controller_1 = require("./Controller");
 Object.defineProperty(exports, "Controller", { enumerable: true, get: function () { return Controller_1.Controller; } });
 var HonoController_1 = require("./HonoController");
@@ -20,6 +20,9 @@ Object.defineProperty(exports, "NotFoundException", { enumerable: true, get: fun
 Object.defineProperty(exports, "TooManyRequestsException", { enumerable: true, get: function () { return Exception_1.TooManyRequestsException; } });
 var Swagger_1 = require("./documents/Swagger");
 Object.defineProperty(exports, "createSwagger", { enumerable: true, get: function () { return Swagger_1.createSwagger; } });
+var DesignDoc_1 = require("./documents/DesignDoc");
+Object.defineProperty(exports, "createDesignDoc", { enumerable: true, get: function () { return DesignDoc_1.createDesignDoc; } });
+Object.defineProperty(exports, "parseSourceFile", { enumerable: true, get: function () { return DesignDoc_1.parseSourceFile; } });
 var StringClient_1 = require("./clients/StringClient");
 Object.defineProperty(exports, "StringClient", { enumerable: true, get: function () { return StringClient_1.StringClient; } });
 var EncryptClient_1 = require("./clients/EncryptClient");
@@ -35,8 +38,6 @@ var WhereExpression_1 = require("./models/SqlUtils/WhereExpression");
 Object.defineProperty(exports, "WhereExpression", { enumerable: true, get: function () { return WhereExpression_1.WhereExpression; } });
 var SelectExpression_1 = require("./models/SqlUtils/SelectExpression");
 Object.defineProperty(exports, "SelectExpression", { enumerable: true, get: function () { return SelectExpression_1.SelectExpression; } });
-var TableDoc_1 = require("./models/TableDoc");
-Object.defineProperty(exports, "createTableDoc", { enumerable: true, get: function () { return TableDoc_1.createTableDoc; } });
 var MigrateTable_1 = require("./models/MigrateTable");
 Object.defineProperty(exports, "MigrateTable", { enumerable: true, get: function () { return MigrateTable_1.MigrateTable; } });
 var MigrateDatabase_1 = require("./models/MigrateDatabase");

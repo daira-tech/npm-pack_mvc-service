@@ -7,7 +7,9 @@ export type { PgConnectionConfig } from './PgConnectionFactory';
 export type { IDbClient, IDbConnection, IDbConnectionFactory } from './models/IDbClient';
 export { MaintenanceException, AuthException, InputErrorException, ForbiddenException, DbConflictException, UnprocessableException, NotFoundException, TooManyRequestsException } from './exceptions/Exception';
 export { createSwagger } from './documents/Swagger';
-export type { IParams } from './documents/Swagger';
+export type { IParams, SwaggerFromSourceConfig } from './documents/Swagger';
+export { createDesignDoc, parseSourceFile } from './documents/DesignDoc';
+export type { DesignDocConfig, ParsedClass, MethodInfo, ErrorItem, RequestPropertyInfo } from './documents/DesignDoc';
 export { StringClient } from './clients/StringClient';
 export { EncryptClient } from './clients/EncryptClient';
 
@@ -35,7 +37,7 @@ export type {
     TSortKeyword,
     TKeyFormat
 } from './models/Type';
-export { createTableDoc } from './models/TableDoc';
+
 export { MigrateTable } from './models/MigrateTable';
 export { MigrateDatabase } from './models/MigrateDatabase';
 export { migrate, rollback } from './models/MigrateRollback';
