@@ -1112,7 +1112,7 @@ function generateControllerBody(
             <table>
                 <tr><th style="width:60px">Status</th><th style="width:100px">Code</th><th>説明</th></tr>`;
     for (const err of allErrors) {
-        const codeDisplay = err.code ?? '';
+        const codeDisplay = err.code ? (apiCode ? `${apiCode}-${err.code}` : err.code) : '';
         html += `
                 <tr>
                     <td style="text-align:center">${err.status}</td>

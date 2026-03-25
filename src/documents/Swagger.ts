@@ -179,7 +179,8 @@ export function createSwagger(config: SwaggerFromSourceConfig): string {
         const allErrors = [...cls.errorList, { status: 500, code: '', description: 'サーバー内部エラー（予期せぬエラー）' }];
         for (const err of allErrors) {
             if (!grouped[err.status]) grouped[err.status] = [];
-            grouped[err.status].push(err);
+            const fullCode = err.code ? (apiCode ? `${apiCode}-${err.code}` : err.code) : '';
+            grouped[err.status].push({ code: fullCode, description: err.description });
         }
         for (const status of [400, 401, 403, 404, 409, 422, 429, 500, 503]) {
             const list = grouped[status];

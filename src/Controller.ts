@@ -85,6 +85,13 @@ export abstract class Controller<IEnv extends IBaseEnv = IBaseEnv> {
         return this.factory;
     }
 
+    protected async commit(): Promise<void> {
+        if (!this.connection) {
+            throw new Error("Cannot commit: no active database connection.");
+        }
+        await this.connection.commit();
+    }
+
     public async run(): Promise<any> {
         try {
             await this.initializeRequest();
@@ -98,8 +105,8 @@ export abstract class Controller<IEnv extends IBaseEnv = IBaseEnv> {
             await this.middleware();
             await this.main();
     
-            if (this.connection) {
-                await this.connection.commit();
+            if (this.isSetDbConnection) {
+                await this.commit();
             }
     
             this.outputSuccessLog().catch((ex) => {

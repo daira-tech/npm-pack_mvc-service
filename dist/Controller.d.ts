@@ -54,6 +54,7 @@ export declare abstract class Controller<IEnv extends IBaseEnv = IBaseEnv> {
     private factory?;
     private connection?;
     protected get Client(): IDbClient;
+    protected commit(): Promise<void>;
     run(): Promise<any>;
     protected getErrorResponse(ex: any): {
         status: number;

@@ -74,6 +74,14 @@ class Controller {
         }
         return this.factory;
     }
+    commit() {
+        return __awaiter(this, void 0, void 0, function* () {
+            if (!this.connection) {
+                throw new Error("Cannot commit: no active database connection.");
+            }
+            yield this.connection.commit();
+        });
+    }
     run() {
         return __awaiter(this, void 0, void 0, function* () {
             try {
@@ -85,8 +93,8 @@ class Controller {
                 }
                 yield this.middleware();
                 yield this.main();
-                if (this.connection) {
-                    yield this.connection.commit();
+                if (this.isSetDbConnection) {
+                    yield this.commit();
                 }
                 this.outputSuccessLog().catch((ex) => {
                     console.error(ex);

@@ -890,7 +890,6 @@ function renderPropertyRows(props, depth, counter, showLocation) {
     return html;
 }
 function generateControllerBody(cls, classMap, modelClassNames, reqProps, resProps) {
-    var _a;
     const chain = getAncestorChain(cls, classMap);
     const apiCode = cls.properties['apiCode'] || '';
     const summary = cls.properties['summary'] || '';
@@ -1017,7 +1016,7 @@ function generateControllerBody(cls, classMap, modelClassNames, reqProps, resPro
             <table>
                 <tr><th style="width:60px">Status</th><th style="width:100px">Code</th><th>説明</th></tr>`;
     for (const err of allErrors) {
-        const codeDisplay = (_a = err.code) !== null && _a !== void 0 ? _a : '';
+        const codeDisplay = err.code ? (apiCode ? `${apiCode}-${err.code}` : err.code) : '';
         html += `
                 <tr>
                     <td style="text-align:center">${err.status}</td>
