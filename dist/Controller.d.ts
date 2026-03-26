@@ -1,7 +1,6 @@
 import { AxiosResponse } from "axios";
 import { RequestType } from './reqestResponse/RequestType';
 import { ResponseType } from './reqestResponse/ResponseType';
-import { StringClient } from './clients/StringClient';
 import { EncryptClient } from './clients/EncryptClient';
 import { IDbClient, IDbConnectionFactory } from './models/IDbClient';
 type TStatusCode = 200 | 201 | 400 | 401 | 403 | 404 | 409 | 422 | 429 | 500 | 503;
@@ -81,8 +80,6 @@ export declare abstract class Controller<IEnv extends IBaseEnv = IBaseEnv> {
         ssl: boolean;
         timezone: string | undefined;
     };
-    private stringClient?;
-    get StringClient(): StringClient;
     private encryptClient?;
     get EncryptClient(): EncryptClient;
     requestApi<TRequest = Record<string, any>, TResponse = {

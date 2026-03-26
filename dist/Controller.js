@@ -17,7 +17,6 @@ const axios_1 = __importDefault(require("axios"));
 const Exception_1 = require("./exceptions/Exception");
 const RequestType_1 = require("./reqestResponse/RequestType");
 const ResponseType_1 = require("./reqestResponse/ResponseType");
-const StringClient_1 = require("./clients/StringClient");
 const EncryptClient_1 = require("./clients/EncryptClient");
 const DateTimeUtil_1 = __importDefault(require("./Utils/DateTimeUtil"));
 class Controller {
@@ -186,12 +185,6 @@ class Controller {
         if (port === undefined)
             throw new Error("Database port is not configured");
         return { user, host, database, password, port: Number(port), ssl: this.DbIsSslConnect, timezone: this.Env.TZ };
-    }
-    get StringClient() {
-        if (this.stringClient === undefined) {
-            this.stringClient = new StringClient_1.StringClient();
-        }
-        return this.stringClient;
     }
     get EncryptClient() {
         if (this.encryptClient === undefined) {

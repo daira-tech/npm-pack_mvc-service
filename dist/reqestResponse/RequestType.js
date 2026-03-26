@@ -304,7 +304,7 @@ class RequestType extends ReqResType_1.default {
             for (const key of Object.keys(this.properties)) {
                 // NULLチェック
                 if (key in this.data === false || this.data[key] === null || this.data[key] === "") {
-                    if (this.properties[key].type === 'array' && ['GET', 'DELETE'].includes(method)) {
+                    if (this.properties[key].type === 'array' && (['GET', 'DELETE'].includes(method) || this.isFormRequest)) {
                         // GET,DELETEメソッドの場合、?array=1&array=2で配列となるが、
                         // ?array=1のみで終わる場合は配列にならないため、直接配列にしている
                         // この処理で空文字やnullが入った場合の対処をここで行う

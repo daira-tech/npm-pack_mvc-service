@@ -931,7 +931,6 @@ function renderPropertyRows(
     props: RequestPropertyInfo[],
     depth: number,
     counter: { counter: number },
-    showLocation: boolean
 ): string {
     let html = '';
     const indent = depth > 0 ? `${'&nbsp;&nbsp;'.repeat(depth)}└ ` : '';
@@ -939,28 +938,16 @@ function renderPropertyRows(
         counter.counter++;
         const hasChildren = p.children && p.children.length > 0;
         const typeLabel = hasChildren && p.type === 'array' ? 'array(object)' : p.type;
-        if (showLocation) {
-            const loc = p.location === 'path' ? 'path' : p.location === 'query' ? 'query' : 'body';
-            html += `
+        html += `
                 <tr>
                     <td style="text-align:center">${counter.counter}</td>
                     <td><code>${indent}${escapeHtml(p.key)}</code></td>
-                    <td style="text-align:center"><span class="badge badge-${loc === 'path' ? 'put' : loc === 'query' ? 'get' : 'post'}" style="font-size:11px">${loc}</span></td>
                     <td>${escapeHtml(typeDisplayName(typeLabel))}</td>
                     <td style="text-align:center">${p.required ? '○' : '―'}</td>
                     <td>${escapeHtml(p.description)}</td>
                 </tr>`;
-        } else {
-            html += `
-                <tr>
-                    <td style="text-align:center">${counter.counter}</td>
-                    <td><code>${indent}${escapeHtml(p.key)}</code></td>
-                    <td>${escapeHtml(typeDisplayName(typeLabel))}</td>
-                    <td>${escapeHtml(p.description)}</td>
-                </tr>`;
-        }
         if (hasChildren) {
-            html += renderPropertyRows(p.children!, depth + 1, counter, showLocation);
+            html += renderPropertyRows(p.children!, depth + 1, counter);
         }
     }
     return html;
@@ -1008,14 +995,26 @@ function generateControllerBody(
     const reqLabel = cls.requestClassName ? `入力パラメータ（${escapeHtml(cls.requestClassName)}）` : '入力パラメータ';
     const resLabel = cls.responseClassName ? `出力パラメータ（${escapeHtml(cls.responseClassName)}）` : '出力パラメータ';
 
+    let sendMethodNote = '';
+    const reqFile = findRequestTypeFile(cls.filePath);
+    const isForm = reqFile ? fs.readFileSync(reqFile, 'utf-8').includes('isFormRequest') && fs.readFileSync(reqFile, 'utf-8').match(/isFormRequest\s*=\s*true/) : false;
+    if (isForm) {
+        sendMethodNote = 'フォームデータにて送信';
+    } else if (method === 'GET' || method === 'DELETE') {
+        sendMethodNote = 'URLクエリパラメータにて送信';
+    } else {
+        sendMethodNote = 'リクエストボディにて送信';
+    }
+
     html += `<div style="display:flex;gap:16px;flex-wrap:wrap">`;
 
     html += `<div style="flex:1;min-width:300px">
-            <h3>${reqLabel}</h3>`;
+            <h3>${reqLabel}</h3>
+            <p style="color:var(--text-light);font-size:13px;margin:0 0 8px 0">${sendMethodNote}</p>`;
     if (reqProps && reqProps.length > 0) {
         html += `<table>
-                <tr><th style="width:30px">No</th><th>パラメータ名</th><th style="width:60px">場所</th><th style="width:100px">型</th><th style="width:30px">必須</th><th>説明</th></tr>`;
-        html += renderPropertyRows(reqProps, 0, { counter: 0 }, true);
+                <tr><th style="width:30px">No</th><th>パラメータ名</th><th style="width:100px">型</th><th style="width:30px">必須</th><th>説明</th></tr>`;
+        html += renderPropertyRows(reqProps, 0, { counter: 0 });
         html += `</table>`;
     } else {
         html += `<p style="color:var(--text-light);font-size:14px">なし</p>`;
@@ -1027,7 +1026,7 @@ function generateControllerBody(
     if (resProps && resProps.length > 0) {
         html += `<table>
                 <tr><th style="width:30px">No</th><th>パラメータ名</th><th style="width:100px">型</th><th>説明</th></tr>`;
-        html += renderPropertyRows(resProps, 0, { counter: 0 }, false);
+        html += renderPropertyRows(resProps, 0, { counter: 0 });
         html += `</table>`;
     } else {
         html += `<p style="color:var(--text-light);font-size:14px">なし</p>`;
@@ -1049,10 +1048,10 @@ function generateControllerBody(
         html += `
             <h3>処理フロー（main）</h3>
             <table>
-                <tr><th style="width:40px">No</th><th style="width:180px">メソッド名</th><th style="width:120px">定義元</th><th>説明</th><th style="width:100px">参照</th></tr>`;
+                <tr><th style="width:40px">No</th><th style="width:180px">メソッド名</th><th>説明</th><th style="width:100px">参照</th></tr>`;
         cls.mainCallOrder.forEach((call, idx) => {
             let displayCall = call;
-            let resolved: { jsDoc: string; source: string };
+            let jsDoc = '';
             let modelLink = '';
 
             if (call.includes('.')) {
@@ -1062,17 +1061,16 @@ function generateControllerBody(
                     modelLink = `<a href="../models/${modelClassName}.html" style="color:var(--primary-dark);font-size:12px">${escapeHtml(modelClassName)}</a>`;
                 }
                 displayCall = `${fieldName}.${methodName}`;
-                resolved = { jsDoc: '', source: modelClassName || fieldName };
             } else {
-                resolved = resolveMethodDoc(call, cls, classMap);
+                const resolved = resolveMethodDoc(call, cls, classMap);
+                jsDoc = resolved.jsDoc;
             }
 
             html += `
                 <tr>
                     <td style="text-align:center">${idx + 1}</td>
                     <td><span class="method-name">${escapeHtml(displayCall)}</span></td>
-                    <td><span class="source-tag">${escapeHtml(resolved.source)}</span></td>
-                    <td>${jsDocToHtml(resolved.jsDoc)}</td>
+                    <td>${jsDocToHtml(jsDoc)}</td>
                     <td style="text-align:center">${modelLink}</td>
                 </tr>`;
         });
@@ -1110,7 +1108,7 @@ function generateControllerBody(
     html += `
             <h3>エラー一覧</h3>
             <table>
-                <tr><th style="width:60px">Status</th><th style="width:100px">Code</th><th>説明</th></tr>`;
+                <tr><th style="width:60px">Status</th><th style="width:250px">Code</th><th>説明</th></tr>`;
     for (const err of allErrors) {
         const codeDisplay = err.code ? (apiCode ? `${apiCode}-${err.code}` : err.code) : '';
         html += `

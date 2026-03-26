@@ -2,7 +2,6 @@ import axios, { AxiosResponse } from "axios";
 import { MaintenanceException, AuthException, InputErrorException, ForbiddenException, DbConflictException, UnprocessableException, NotFoundException, TooManyRequestsException } from './exceptions/Exception';
 import { RequestType } from './reqestResponse/RequestType';
 import { ResponseType } from './reqestResponse/ResponseType';
-import { StringClient } from './clients/StringClient';
 import { EncryptClient } from './clients/EncryptClient';
 import DateTimeUtil from './Utils/DateTimeUtil';
 import { IDbClient, IDbConnection, IDbConnectionFactory } from './models/IDbClient';
@@ -122,11 +121,11 @@ export abstract class Controller<IEnv extends IBaseEnv = IBaseEnv> {
             return this.returnErrorResponse(ex);
         } finally {
             if (this.connection) {
-                await this.connection.rollback();
-                await this.connection.release();
+                try { await this.connection.rollback(); } catch (_) {}
+                try { await this.connection.release(); } catch (_) {}
             }
             if (this.factory) {
-                await this.factory.close();
+                try { await this.factory.close(); } catch (_) {}
             }
         }
     }
@@ -178,7 +177,7 @@ export abstract class Controller<IEnv extends IBaseEnv = IBaseEnv> {
     protected get DbPassword(): string | undefined { return this.Env.DB_PASSWORD; }
     protected get DbPort(): string | number | undefined { return this.Env.DB_PORT; }
     protected get DbIsSslConnect(): boolean { return this.Env.DB_IS_SSL === 'true'; }
-
+    
     protected validateDbConfig() {
         const user = this.DbUser;
         const host = this.DbHost;
@@ -195,13 +194,6 @@ export abstract class Controller<IEnv extends IBaseEnv = IBaseEnv> {
         return { user, host, database, password, port: Number(port), ssl: this.DbIsSslConnect, timezone: this.Env.TZ };
     }
 
-    private stringClient? : StringClient;
-    get StringClient(): StringClient {
-        if (this.stringClient === undefined) {
-            this.stringClient = new StringClient();
-        }
-        return this.stringClient;
-    }
 
     private encryptClient?: EncryptClient;
     get EncryptClient(): EncryptClient {
