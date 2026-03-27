@@ -25,6 +25,9 @@ class PoolManager {
                     rejectUnauthorized: false
                 } : false
             });
+            this.poolMap[key].on('error', (err) => {
+                console.error(`Idle client error on pool [${key}]:`, err.message);
+            });
         }
         return this.poolMap[key];
     }

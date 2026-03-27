@@ -548,6 +548,28 @@ function parseSourceFile(filePath) {
     const requestClassName = reqMatch ? reqMatch[1] : '';
     const resMatch = classBody.match(/response\s*(?::\s*\w+)?\s*=\s*new\s+(\w+)\s*\(/);
     const responseClassName = resMatch ? resMatch[1] : '';
+    // 各メソッド本体から new XxxModel(...) を検出
+    const methodModelUsage = {};
+    for (const m of methods) {
+        const methodRegex = new RegExp(`(?:public|protected|private)?\\s*(?:async\\s+)?${m.name}\\s*(?:<[^(]*?>)?\\s*\\([^)]*\\)(?:[^{]*)\\{`);
+        const mm = classBody.match(methodRegex);
+        if (mm && mm.index !== undefined) {
+            const bracePos = classBody.indexOf('{', mm.index);
+            const closePos = findClosingBrace(classBody, bracePos);
+            if (closePos !== -1) {
+                const methodBody = classBody.substring(bracePos + 1, closePos);
+                const models = [];
+                const newModelRegex = /new\s+(\w+Model)\s*\(/g;
+                let nm;
+                while ((nm = newModelRegex.exec(methodBody)) !== null) {
+                    if (!models.includes(nm[1]))
+                        models.push(nm[1]);
+                }
+                if (models.length > 0)
+                    methodModelUsage[m.name] = models;
+            }
+        }
+    }
     return {
         name: className,
         extendsName,
@@ -561,6 +583,7 @@ function parseSourceFile(filePath) {
         requestClassName,
         responseClassName,
         fieldTypes,
+        methodModelUsage,
     };
 }
 // =============================================
@@ -973,6 +996,13 @@ function generateControllerBody(cls, classMap, modelClassNames, reqProps, resPro
             else {
                 const resolved = resolveMethodDoc(call, cls, classMap);
                 jsDoc = resolved.jsDoc;
+                const models = cls.methodModelUsage[call];
+                if (models && models.length > 0) {
+                    modelLink = models
+                        .filter(m => modelClassNames.has(m))
+                        .map(m => `<a href="../models/${m}.html" style="color:var(--primary-dark);font-size:12px">${escapeHtml(m)}</a>`)
+                        .join('<br>');
+                }
             }
             html += `
                 <tr>

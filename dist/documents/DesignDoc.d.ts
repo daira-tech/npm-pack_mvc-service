@@ -30,6 +30,7 @@ export interface ParsedClass {
     requestClassName: string;
     responseClassName: string;
     fieldTypes: Record<string, string>;
+    methodModelUsage: Record<string, string[]>;
 }
 export interface DesignDocConfig {
     /** ソースディレクトリを指定すると、Controller/Model を自動検出する */

@@ -108,11 +108,20 @@ class Controller {
             }
             finally {
                 if (this.connection) {
-                    yield this.connection.rollback();
-                    yield this.connection.release();
+                    try {
+                        yield this.connection.rollback();
+                    }
+                    catch (_) { }
+                    try {
+                        yield this.connection.release();
+                    }
+                    catch (_) { }
                 }
                 if (this.factory) {
-                    yield this.factory.close();
+                    try {
+                        yield this.factory.close();
+                    }
+                    catch (_) { }
                 }
             }
         });
