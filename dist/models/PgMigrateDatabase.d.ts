@@ -1,5 +1,5 @@
 import { Pool } from "pg";
-export declare class MigrateDatabase {
+export declare class PgMigrateDatabase {
     private dbName;
     get DbName(): string;
     private userName;
@@ -16,4 +16,4 @@ export declare class MigrateDatabase {
     RollbackUserSql(otherUserName: string): string;
     private trimSpaceLineSql;
 }
-//# sourceMappingURL=MigrateDatabase.d.ts.map
+//# sourceMappingURL=PgMigrateDatabase.d.ts.map

@@ -1,36 +1,40 @@
-import { Pool } from "pg";
-import { MigrateTable } from "./MigrateTable";
-
-export const migrate = async (migrates: Array<MigrateTable>, poolParam: {
-    host: string, user: string, dbName: string, password: string, port?: number, isSsl?: boolean
-}): Promise<void> => {
-
-    const migratesBySchema: {[key: string]: Array<MigrateTable>} = {};
+"use strict";
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.pgRollback = exports.pgMigrate = void 0;
+const pg_1 = require("pg");
+const pgMigrate = (migrates, poolParam) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a;
+    const migratesBySchema = {};
     for (const migrate of migrates) {
         if (migrate.Schema in migratesBySchema === false) {
             migratesBySchema[migrate.Schema] = [];
         }
-
         migratesBySchema[migrate.Schema].push(migrate);
     }
-
-    const pool = new Pool({
+    const pool = new pg_1.Pool({
         user: poolParam.user,
         password: poolParam.password,
         host: poolParam.host,
         database: poolParam.dbName,
-        port: poolParam.port ?? 5432,
+        port: (_a = poolParam.port) !== null && _a !== void 0 ? _a : 5432,
         ssl: poolParam.isSsl === true ? {
             rejectUnauthorized: false
         } : false
     });
-
-    const client = await pool.connect();
+    const client = yield pool.connect();
     try {
         client.query('BEGIN');
-
         for (const [keySchema, migrates] of Object.entries(migratesBySchema)) {
-            if (await isExistMigrationTable(pool, keySchema) == false) {
+            if ((yield isExistMigrationTable(pool, keySchema)) == false) {
                 const tableName = keySchema === '' ? 'migrations' : `"${keySchema}".migrations`;
                 const sql = `
                     CREATE TABLE ${tableName} (
@@ -39,10 +43,9 @@ export const migrate = async (migrates: Array<MigrateTable>, poolParam: {
                         rollback_script VARCHAR(5000),
                         create_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
                     );`;
-                await pool.query(sql);
+                yield pool.query(sql);
             }
-
-            const datas = await getMigrations(pool, keySchema);
+            const datas = yield getMigrations(pool, keySchema);
             let maxNumber = datas.maxNumber;
             for (const migrate of migrates) {
                 const className = migrate.constructor.name;
@@ -50,14 +53,11 @@ export const migrate = async (migrates: Array<MigrateTable>, poolParam: {
                     console.log(`Already executed: ${className}`);
                     continue;
                 }
-    
-                await client.query(migrate.MigrateSql);
-    
+                yield client.query(migrate.MigrateSql);
                 const grantSql = migrate.AddGrantSql;
                 if (grantSql !== null) {
-                    await client.query(grantSql);
+                    yield client.query(grantSql);
                 }
-        
                 const tableName = keySchema === '' ? 'migrations' : `"${keySchema}".migrations`;
                 const migrateInsertSql = `
                     INSERT INTO ${tableName}
@@ -65,101 +65,91 @@ export const migrate = async (migrates: Array<MigrateTable>, poolParam: {
                     VALUES (${maxNumber + 1}, '${className}', '${migrate.RollbackSql}');
                 `;
                 maxNumber++;
-        
-                await client.query(migrateInsertSql);
-                await client.query('COMMIT');
-
+                yield client.query(migrateInsertSql);
+                yield client.query('COMMIT');
                 console.log(`Execution completed: ${className}`);
             }
         }
-        
         console.log('Migration completed');
-    } catch (ex) {
-        await client.query('ROLLBACK');
-        console.log('Migration failed.', ex);
-    } finally {
-        client.release();
-        await pool.end();
     }
-}
-
-export const rollback = async (toNumber: number, schemaName: string, poolParam: {
-    host: string, user: string, dbName: string, password: string, port?: number, isSsl?: boolean
-}): Promise<void> => {
-
-    const pool = new Pool({
+    catch (ex) {
+        yield client.query('ROLLBACK');
+        console.log('Migration failed.', ex);
+    }
+    finally {
+        client.release();
+        yield pool.end();
+    }
+});
+exports.pgMigrate = pgMigrate;
+const pgRollback = (toNumber, schemaName, poolParam) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a;
+    const pool = new pg_1.Pool({
         user: poolParam.user,
         password: poolParam.password,
         host: poolParam.host,
         database: poolParam.dbName,
-        port: poolParam.port ?? 5432,
+        port: (_a = poolParam.port) !== null && _a !== void 0 ? _a : 5432,
         ssl: poolParam.isSsl === true ? {
             rejectUnauthorized: false
         } : false
     });
-
     try {
         // If the migration table does not exist, there is no target for rollback, so do not perform it
-        if (await isExistMigrationTable(pool, schemaName) == false) {
-          return;
+        if ((yield isExistMigrationTable(pool, schemaName)) == false) {
+            return;
         }
-    } catch (ex) {
+    }
+    catch (ex) {
         console.error('An error occurred related to the Migrate table:', ex);
-        await pool.end();
+        yield pool.end();
         return;
     }
-
-    const client = await pool.connect();
+    const client = yield pool.connect();
     try {
-        await client.query('BEGIN');
-
-        const datas = await getMigrations(pool, schemaName);
+        yield client.query('BEGIN');
+        const datas = yield getMigrations(pool, schemaName);
         for (const data of datas.datas) {
             if (data.migration_number < toNumber) {
                 break;
             }
-            await client.query(data.rollback_script);
-
+            yield client.query(data.rollback_script);
             const tableName = schemaName === '' ? 'migrations' : `"${schemaName}".migrations`;
-            await client.query(`DELETE FROM ${tableName} WHERE migration_number = ${data.migration_number}`);
-  
+            yield client.query(`DELETE FROM ${tableName} WHERE migration_number = ${data.migration_number}`);
             console.log(`Execution completed: ${data.script_file}`);
         }
-  
-        await client.query('COMMIT');
-
+        yield client.query('COMMIT');
         console.log('Rollback completed');
-    } catch (ex) {
-        await client.query('ROLLBACK');
-        console.error('Rollback failed', ex);
-    } finally {
-        client.release();
-        await pool.end();
     }
-}
-
-const isExistMigrationTable = async (pool: Pool, schemaName: string) => {
+    catch (ex) {
+        yield client.query('ROLLBACK');
+        console.error('Rollback failed', ex);
+    }
+    finally {
+        client.release();
+        yield pool.end();
+    }
+});
+exports.pgRollback = pgRollback;
+const isExistMigrationTable = (pool, schemaName) => __awaiter(void 0, void 0, void 0, function* () {
     const values = ['migrations'];
     let sql = `
         SELECT EXISTS (
             SELECT FROM information_schema.tables 
             WHERE table_name = $1
     `;
-
     if (schemaName !== "") {
         sql += ` AND table_schema = $2`;
         values.push(schemaName);
     }
-
     sql += `);`;
-
-    const res = await pool.query(sql, values);
+    const res = yield pool.query(sql, values);
     return res.rows[0].exists;
-}
-
-const getMigrations = async (pool: Pool, schemaName: string): Promise<{datas: Array<{migration_number: number, script_file: string, rollback_script: string}>, maxNumber: number}> => {
+});
+const getMigrations = (pool, schemaName) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a;
     const tableName = schemaName === '' ? 'migrations' : `"${schemaName}".migrations`;
-    const datas = await pool.query(`
+    const datas = yield pool.query(`
         SELECT 
             * 
         FROM 
@@ -167,10 +157,9 @@ const getMigrations = async (pool: Pool, schemaName: string): Promise<{datas: Ar
         ORDER BY 
             migration_number DESC;
     `);
-
     return {
         // すでに降順ソートされているので、最初の1件が最大値
-        maxNumber: datas.rows[0]?.migration_number || 0,
+        maxNumber: ((_a = datas.rows[0]) === null || _a === void 0 ? void 0 : _a.migration_number) || 0,
         datas: datas.rows
     };
-}
+});

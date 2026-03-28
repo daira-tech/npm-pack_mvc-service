@@ -44,12 +44,14 @@ export interface ParsedClass {
 }
 
 export interface DesignDocConfig {
-    /** ソースディレクトリを指定すると、Controller/Model を自動検出する */
+    /** ソースディレクトリを指定すると、Controller/Model/Cron を自動検出する */
     sourceDir?: string;
     /** 自動検出を使わない場合、Controller のソースファイルパスを個別に指定 */
     controllerFiles?: string[];
     /** 自動検出を使わない場合、Model のソースファイルパスを個別に指定 */
     modelFiles?: string[];
+    /** 自動検出を使わない場合、Cron のソースファイルパスを個別に指定 */
+    cronFiles?: string[];
     name: string;
     /** 出力先ディレクトリ（個別HTMLファイルを生成） */
     outDir: string;
@@ -656,6 +658,7 @@ export function parseSourceFile(filePath: string): ParsedClass | null {
 
 const CONTROLLER_BASES = new Set(['Controller', 'HonoController', 'ExpressController']);
 const MODEL_BASES = new Set(['BaseTableModel', 'PgTableModel', 'D1TableModel']);
+const CRON_BASES = new Set(['BaseCron']);
 
 export function findTsFiles(dir: string): string[] {
     const results: string[] = [];
@@ -686,7 +689,14 @@ function isModelClass(cls: ParsedClass, classMap: Map<string, ParsedClass>): boo
     return parent ? isModelClass(parent, classMap) : false;
 }
 
-export function discoverClasses(sourceDir: string): { controllerClasses: ParsedClass[]; modelClasses: ParsedClass[]; allParsed: ParsedClass[] } {
+function isCronClass(cls: ParsedClass, classMap: Map<string, ParsedClass>): boolean {
+    if (CRON_BASES.has(cls.name)) return false;
+    if (CRON_BASES.has(cls.extendsName)) return true;
+    const parent = classMap.get(cls.extendsName);
+    return parent ? isCronClass(parent, classMap) : false;
+}
+
+export function discoverClasses(sourceDir: string): { controllerClasses: ParsedClass[]; modelClasses: ParsedClass[]; cronClasses: ParsedClass[]; allParsed: ParsedClass[] } {
     const files = findTsFiles(sourceDir);
     const allParsed: ParsedClass[] = [];
     for (const file of files) {
@@ -698,6 +708,7 @@ export function discoverClasses(sourceDir: string): { controllerClasses: ParsedC
     return {
         controllerClasses: allParsed.filter(c => isControllerClass(c, classMap)),
         modelClasses: allParsed.filter(c => isModelClass(c, classMap)),
+        cronClasses: allParsed.filter(c => isCronClass(c, classMap)),
         allParsed,
     };
 }
@@ -1288,6 +1299,132 @@ function generateModelBody(
     return html;
 }
 
+function generateCronBody(
+    cls: ParsedClass,
+    classMap: Map<string, ParsedClass>,
+): string {
+    const chain = getAncestorChain(cls, classMap);
+    const cronCode = cls.properties['cronCode'] || '';
+    const db = cls.properties['db'] || '';
+    const minute = cls.properties['minute'] || '*';
+    const hour = cls.properties['hour'] || '*';
+    const date = cls.properties['date'] || '*';
+    const month = cls.properties['month'] || '*';
+    const day = cls.properties['day'] || '*';
+    const schedule = `${minute} ${hour} ${date} ${month} ${day}`;
+    const hasSchedule = [minute, hour, date, month, day].some(v => v !== '*');
+
+    const titleParts: string[] = [];
+    if (cronCode) titleParts.push(`[${cronCode}]`);
+    titleParts.push(cls.name);
+
+    let html = `
+    <div class="section-wrapper">
+        <h2>${escapeHtml(titleParts.join(' '))}</h2>
+        <div class="section-body">`;
+
+    if (cls.classJsDoc) {
+        html += `<div class="class-doc">${escapeHtml(cls.classJsDoc)}</div>`;
+    }
+
+    html += `
+            <h3>基本情報</h3>
+            <table class="info-table">
+                <tr><th>クラス名</th><td>${escapeHtml(cls.name)}</td></tr>`;
+    if (cronCode) {
+        html += `<tr><th>Cron Code</th><td>${escapeHtml(cronCode)}</td></tr>`;
+    }
+    if (db) {
+        html += `<tr><th>DB</th><td>${escapeHtml(db)}</td></tr>`;
+    }
+    if (hasSchedule) {
+        html += `<tr><th>スケジュール</th><td><code>${escapeHtml(schedule)}</code></td></tr>`;
+    }
+    html += `</table>`;
+
+    const runMethod = cls.methods.find(m => m.name === 'run');
+    if (runMethod && runMethod.jsDoc) {
+        html += `
+            <h3>処理概要</h3>
+            <div class="class-doc">${jsDocToHtml(runMethod.jsDoc)}</div>`;
+    }
+
+    const runCallOrder: string[] = [];
+    const runRegex = /(?:protected\s+)?(?:async\s+)?run\s*\(\s*\)(?:[^{]*)\{/;
+    const content = fs.readFileSync(cls.filePath, 'utf-8');
+    const classRegex = /(?:export\s+)?(?:default\s+)?(?:abstract\s+)?class\s+\w+(?:<[^{]*?>)?\s*(?:extends\s+\w+(?:<[^{]*?>)?)?\s*(?:implements\s+[^{]*)?\s*\{/;
+    const classMatch = content.match(classRegex);
+    if (classMatch && classMatch.index !== undefined) {
+        const openBrace = content.indexOf('{', classMatch.index);
+        const closeBrace = findClosingBrace(content, openBrace);
+        if (closeBrace !== -1) {
+            const classBody = content.substring(openBrace + 1, closeBrace);
+            const runMatch = classBody.match(runRegex);
+            if (runMatch && runMatch.index !== undefined) {
+                const bracePos = classBody.indexOf('{', runMatch.index);
+                const closePos = findClosingBrace(classBody, bracePos);
+                if (closePos !== -1) {
+                    const runBody = classBody.substring(bracePos + 1, closePos);
+                    const callRegex = /(?:await\s+)?this\.(\w+(?:\.\w+)?)\s*\(/g;
+                    let cm;
+                    while ((cm = callRegex.exec(runBody)) !== null) {
+                        const call = cm[1];
+                        const firstPart = call.split('.')[0];
+                        if (!RESERVED_WORDS.has(firstPart)) {
+                            runCallOrder.push(call);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    if (runCallOrder.length > 0) {
+        html += `
+            <h3>処理フロー（run）</h3>
+            <table>
+                <tr><th style="width:40px">No</th><th style="width:180px">メソッド名</th><th>説明</th></tr>`;
+        runCallOrder.forEach((call, idx) => {
+            let jsDoc = '';
+            if (!call.includes('.')) {
+                const resolved = resolveMethodDoc(call, cls, classMap);
+                jsDoc = resolved.jsDoc;
+            }
+            html += `
+                <tr>
+                    <td style="text-align:center">${idx + 1}</td>
+                    <td><span class="method-name">${escapeHtml(call)}</span></td>
+                    <td>${jsDocToHtml(jsDoc)}</td>
+                </tr>`;
+        });
+        html += `</table>`;
+    }
+
+    const runCallSet = new Set(runCallOrder);
+    const ownMethods = cls.methods.filter(m => m.name !== 'run' && !runCallSet.has(m.name));
+    if (ownMethods.length > 0) {
+        html += `
+            <h3>固有メソッド（${escapeHtml(cls.name)}）</h3>
+            <table>
+                <tr><th style="width:40px">No</th><th style="width:180px">メソッド名</th><th>説明</th></tr>`;
+        ownMethods.forEach((m, idx) => {
+            html += `
+                <tr>
+                    <td style="text-align:center">${idx + 1}</td>
+                    <td><span class="method-name">${escapeHtml(m.name)}</span></td>
+                    <td>${jsDocToHtml(m.jsDoc)}</td>
+                </tr>`;
+        });
+        html += `</table>`;
+    }
+
+    html += `
+        </div>
+    </div>`;
+
+    return html;
+}
+
 // =============================================
 // Main Export
 // =============================================
@@ -1295,12 +1432,14 @@ function generateModelBody(
 export function createDesignDoc(config: DesignDocConfig): void {
     let controllerClasses: ParsedClass[];
     let modelClasses: ParsedClass[];
+    let cronClasses: ParsedClass[];
     let allParsed: ParsedClass[] = [];
 
     if (config.sourceDir) {
         const discovered = discoverClasses(config.sourceDir);
         controllerClasses = discovered.controllerClasses;
         modelClasses = discovered.modelClasses;
+        cronClasses = discovered.cronClasses;
         allParsed = discovered.allParsed;
     } else {
         controllerClasses = [];
@@ -1313,16 +1452,21 @@ export function createDesignDoc(config: DesignDocConfig): void {
             const parsed = parseSourceFile(file);
             if (parsed) modelClasses.push(parsed);
         }
-        allParsed = [...controllerClasses, ...modelClasses];
+        cronClasses = [];
+        for (const file of config.cronFiles ?? []) {
+            const parsed = parseSourceFile(file);
+            if (parsed) cronClasses.push(parsed);
+        }
+        allParsed = [...controllerClasses, ...modelClasses, ...cronClasses];
     }
 
-    const allClasses = [...controllerClasses, ...modelClasses];
+    const allClasses = [...controllerClasses, ...modelClasses, ...cronClasses];
     const classMap = buildClassMap(allClasses);
 
     const fileMap = new Map<string, ParsedClass>();
     for (const cls of allParsed) fileMap.set(cls.name, cls);
 
-    const allTsFiles = config.sourceDir ? findTsFiles(config.sourceDir) : [...(config.controllerFiles ?? []), ...(config.modelFiles ?? [])];
+    const allTsFiles = config.sourceDir ? findTsFiles(config.sourceDir) : [...(config.controllerFiles ?? []), ...(config.modelFiles ?? []), ...(config.cronFiles ?? [])];
     const classFileMap = new Map<string, string>();
     for (const cls of allParsed) classFileMap.set(cls.name, cls.filePath);
     for (const file of allTsFiles) {
@@ -1352,16 +1496,21 @@ export function createDesignDoc(config: DesignDocConfig): void {
     const baseControllers = controllerClasses.filter(c => isBaseClass(c, controllerClasses));
     const leafModels = modelClasses.filter(c => !isBaseClass(c, modelClasses));
     const baseModels = modelClasses.filter(c => isBaseClass(c, modelClasses));
+    const leafCrons = cronClasses.filter(c => !isBaseClass(c, cronClasses));
+    const baseCrons = cronClasses.filter(c => isBaseClass(c, cronClasses));
 
     const outDir = config.outDir;
     const ctrlDir = path.join(outDir, 'controllers');
     const modelDir = path.join(outDir, 'models');
+    const cronDir = path.join(outDir, 'crons');
     mkdirSafe(outDir);
     mkdirSafe(ctrlDir);
     mkdirSafe(modelDir);
+    mkdirSafe(cronDir);
 
     const allControllersSorted = [...baseControllers, ...leafControllers];
     const allModelsSorted = [...baseModels, ...leafModels];
+    const allCronsSorted = [...baseCrons, ...leafCrons];
 
     const modelClassNameSet = new Set(modelClasses.map(c => c.name));
 
@@ -1391,6 +1540,15 @@ export function createDesignDoc(config: DesignDocConfig): void {
         const pageTitle = desc ? `${cls.name} : ${desc}` : cls.name;
         const html = wrapHtmlPage(`${pageTitle} - ${config.name}`, body, '../index.html');
         fs.writeFileSync(path.join(modelDir, `${cls.name}.html`), html);
+    }
+
+    // --- Write individual Cron files ---
+    for (const cls of allCronsSorted) {
+        const cronCode = cls.properties['cronCode'] || '';
+        const body = generateCronBody(cls, classMap);
+        const pageTitle = cronCode ? `[${cronCode}] ${cls.name}` : cls.name;
+        const html = wrapHtmlPage(`${pageTitle} - ${config.name}`, body, '../index.html');
+        fs.writeFileSync(path.join(cronDir, `${cls.name}.html`), html);
     }
 
     // --- Write index.html ---
@@ -1467,10 +1625,51 @@ export function createDesignDoc(config: DesignDocConfig): void {
         });
         indexBody += `</table>`;
     }
+
+    if (allCronsSorted.length > 0) {
+        if (baseCrons.length > 0) {
+            indexBody += `<h3>共通 Cron</h3>
+            <div class="toc"><ul>`;
+            for (const cls of baseCrons) {
+                indexBody += `<li>├ <a href="crons/${cls.name}.html">${escapeHtml(cls.name)}</a></li>`;
+            }
+            indexBody += `</ul></div>`;
+        }
+
+        indexBody += `<h3>Cron 一覧</h3>
+        <table>
+            <tr>
+                <th style="width:40px">No</th>
+                <th style="width:160px">Cron Code</th>
+                <th>クラス名</th>
+                <th style="width:60px">DB</th>
+                <th style="width:200px">スケジュール</th>
+            </tr>`;
+        leafCrons.forEach((cls, idx) => {
+            const cronCode = cls.properties['cronCode'] || '';
+            const db = cls.properties['db'] || '';
+            const minute = cls.properties['minute'] || '*';
+            const hour = cls.properties['hour'] || '*';
+            const date = cls.properties['date'] || '*';
+            const month = cls.properties['month'] || '*';
+            const day = cls.properties['day'] || '*';
+            const schedule = `${minute} ${hour} ${date} ${month} ${day}`;
+            indexBody += `
+            <tr>
+                <td style="text-align:center">${idx + 1}</td>
+                <td><a href="crons/${cls.name}.html" style="color:var(--primary-dark);text-decoration:none">${escapeHtml(cronCode)}</a></td>
+                <td><a href="crons/${cls.name}.html" style="color:var(--text);text-decoration:none">${escapeHtml(cls.name)}</a></td>
+                <td style="text-align:center">${escapeHtml(db)}</td>
+                <td><code>${escapeHtml(schedule)}</code></td>
+            </tr>`;
+        });
+        indexBody += `</table>`;
+    }
     const indexHtml = wrapHtmlPage(`${config.name} - 設計書`, indexBody);
     fs.writeFileSync(path.join(outDir, 'index.html'), indexHtml);
 
     console.log(`Generated: ${outDir}/index.html`);
     console.log(`  Controllers: ${allControllersSorted.length} files -> ${ctrlDir}/`);
     console.log(`  Models: ${allModelsSorted.length} files -> ${modelDir}/`);
+    console.log(`  Crons: ${allCronsSorted.length} files -> ${cronDir}/`);
 }

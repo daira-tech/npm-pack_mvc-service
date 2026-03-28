@@ -1,5 +1,5 @@
-import { MigrateTable } from "./MigrateTable";
-export declare const migrate: (migrates: Array<MigrateTable>, poolParam: {
+import { PgMigrateTable } from "./PgMigrateTable";
+export declare const pgMigrate: (migrates: Array<PgMigrateTable>, poolParam: {
     host: string;
     user: string;
     dbName: string;
@@ -7,7 +7,7 @@ export declare const migrate: (migrates: Array<MigrateTable>, poolParam: {
     port?: number;
     isSsl?: boolean;
 }) => Promise<void>;
-export declare const rollback: (toNumber: number, schemaName: string, poolParam: {
+export declare const pgRollback: (toNumber: number, schemaName: string, poolParam: {
     host: string;
     user: string;
     dbName: string;
@@ -15,4 +15,4 @@ export declare const rollback: (toNumber: number, schemaName: string, poolParam:
     port?: number;
     isSsl?: boolean;
 }) => Promise<void>;
-//# sourceMappingURL=MigrateRollback.d.ts.map
+//# sourceMappingURL=PgMigrateRollback.d.ts.map

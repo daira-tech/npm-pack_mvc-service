@@ -3,6 +3,8 @@ import { RequestType } from './reqestResponse/RequestType';
 import { ResponseType } from './reqestResponse/ResponseType';
 import { EncryptClient } from './clients/EncryptClient';
 import { IDbClient } from './models/IDbClient';
+import { PgConnectionConfig } from './PgConnectionFactory';
+import { ID1Database } from './D1ConnectionFactory';
 export type TDbType = 'none' | 'pg' | 'd1';
 type TStatusCode = 200 | 201 | 400 | 401 | 403 | 404 | 409 | 422 | 429 | 500 | 503;
 export type MethodType = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
@@ -12,12 +14,6 @@ export interface IError {
     description: string;
 }
 export interface IBaseEnv {
-    DB_USER?: string;
-    DB_HOST?: string;
-    DB_DATABASE?: string;
-    DB_PASSWORD?: string;
-    DB_PORT?: string | number;
-    DB_IS_SSL?: string;
     TZ?: string;
     SECRET_KEY_HEX?: string;
     HMAC_KEY_BASE64?: string;
@@ -52,6 +48,10 @@ export declare abstract class Controller<IEnv extends IBaseEnv = IBaseEnv> {
     protected abstract returnErrorResponse(ex: any): any;
     /** DB種別。'pg' で PostgreSQL、'd1' で Cloudflare D1 に自動接続。'none' は DB 未使用 */
     protected readonly db: TDbType;
+    /** db = 'pg' の場合に設定する PostgreSQL 接続設定 */
+    protected get pgConfig(): PgConnectionConfig | undefined;
+    /** db = 'd1' の場合に設定する D1 データベースバインディング */
+    protected get d1Database(): ID1Database | undefined;
     private createConnectionFactory;
     private factory?;
     private connection?;
@@ -68,21 +68,6 @@ export declare abstract class Controller<IEnv extends IBaseEnv = IBaseEnv> {
     static get NowString(): string;
     static get Today(): Date;
     static get TodayString(): string;
-    protected get DbUser(): string | undefined;
-    protected get DbHost(): string | undefined;
-    protected get DbName(): string | undefined;
-    protected get DbPassword(): string | undefined;
-    protected get DbPort(): string | number | undefined;
-    protected get DbIsSslConnect(): boolean;
-    protected validateDbConfig(): {
-        user: string;
-        host: string;
-        database: string;
-        password: string;
-        port: number;
-        ssl: boolean;
-        timezone: string | undefined;
-    };
     private encryptClient?;
     get EncryptClient(): EncryptClient;
     requestApi<TRequest = Record<string, any>, TResponse = {

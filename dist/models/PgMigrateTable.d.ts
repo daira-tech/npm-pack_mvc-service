@@ -1,4 +1,4 @@
-export declare class MigrateTable {
+export declare class PgMigrateTable {
     protected readonly migrateSql: string;
     protected readonly rollbackSql: string;
     protected readonly addGrantTables: Array<string>;
@@ -12,4 +12,4 @@ export declare class MigrateTable {
     constructor(user: string);
     private trimSpaceLineSql;
 }
-//# sourceMappingURL=MigrateTable.d.ts.map
+//# sourceMappingURL=PgMigrateTable.d.ts.map

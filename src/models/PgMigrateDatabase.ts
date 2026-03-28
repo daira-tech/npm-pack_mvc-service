@@ -1,6 +1,6 @@
 import { Pool } from "pg";
 
-export class MigrateDatabase {
+export class PgMigrateDatabase {
 
     private dbName: string;
     get DbName(): string { return this.dbName; }

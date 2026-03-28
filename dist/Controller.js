@@ -65,18 +65,24 @@ class Controller {
     outputErrorLog(ex) {
         return __awaiter(this, void 0, void 0, function* () { });
     }
+    /** db = 'pg' の場合に設定する PostgreSQL 接続設定 */
+    get pgConfig() { return undefined; }
+    /** db = 'd1' の場合に設定する D1 データベースバインディング */
+    get d1Database() { return undefined; }
     createConnectionFactory() {
         switch (this.db) {
             case 'pg':
-                return new PgConnectionFactory_1.PgConnectionFactory(Object.assign(Object.assign({}, this.validateDbConfig()), { usePoolManager: false }));
-            case 'd1':
-                const d1 = this.Env.DB;
-                if (!d1) {
-                    throw new Error("D1 binding 'DB' not found in Env. Set Env.DB or override createConnectionFactory().");
+                if (!this.pgConfig) {
+                    throw new Error("pgConfig is required when db = 'pg'.");
                 }
-                return new D1ConnectionFactory_1.D1ConnectionFactory(d1);
+                return new PgConnectionFactory_1.PgConnectionFactory(this.pgConfig);
+            case 'd1':
+                if (!this.d1Database) {
+                    throw new Error("d1Database is required when db = 'd1'.");
+                }
+                return new D1ConnectionFactory_1.D1ConnectionFactory(this.d1Database);
             case 'none':
-                throw new Error("Controller.db is 'none'. Set db = 'pg' or 'd1', or override createConnectionFactory().");
+                throw new Error("Controller.db is 'none'. Set db = 'pg' or 'd1'.");
         }
     }
     get Client() {
@@ -187,31 +193,6 @@ class Controller {
     }
     static get TodayString() {
         return DateTimeUtil_1.default.toStringFromDate(this.Now, 'date');
-    }
-    // DB接続設定
-    get DbUser() { return this.Env.DB_USER; }
-    get DbHost() { return this.Env.DB_HOST; }
-    get DbName() { return this.Env.DB_DATABASE; }
-    get DbPassword() { return this.Env.DB_PASSWORD; }
-    get DbPort() { return this.Env.DB_PORT; }
-    get DbIsSslConnect() { return this.Env.DB_IS_SSL === 'true'; }
-    validateDbConfig() {
-        const user = this.DbUser;
-        const host = this.DbHost;
-        const database = this.DbName;
-        const password = this.DbPassword;
-        const port = this.DbPort;
-        if (user === undefined)
-            throw new Error("Database user is not configured");
-        if (host === undefined)
-            throw new Error("Database host is not configured");
-        if (database === undefined)
-            throw new Error("Database name is not configured");
-        if (password === undefined)
-            throw new Error("Database password is not configured");
-        if (port === undefined)
-            throw new Error("Database port is not configured");
-        return { user, host, database, password, port: Number(port), ssl: this.DbIsSslConnect, timezone: this.Env.TZ };
     }
     get EncryptClient() {
         if (this.encryptClient === undefined) {

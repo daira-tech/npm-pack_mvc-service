@@ -1,7 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.MigrateTable = void 0;
-class MigrateTable {
+exports.PgMigrateTable = void 0;
+class PgMigrateTable {
     get Schema() { return this.schema; }
     get MigrateSql() { return this.trimSpaceLineSql(this.migrateSql); }
     get RollbackSql() { return this.trimSpaceLineSql(this.rollbackSql); }
@@ -50,4 +50,4 @@ class MigrateTable {
         return sql;
     }
 }
-exports.MigrateTable = MigrateTable;
+exports.PgMigrateTable = PgMigrateTable;

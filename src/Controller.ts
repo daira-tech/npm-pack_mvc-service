@@ -5,8 +5,8 @@ import { ResponseType } from './reqestResponse/ResponseType';
 import { EncryptClient } from './clients/EncryptClient';
 import DateTimeUtil from './Utils/DateTimeUtil';
 import { IDbClient, IDbConnection, IDbConnectionFactory } from './models/IDbClient';
-import { PgConnectionFactory } from './PgConnectionFactory';
-import { D1ConnectionFactory } from './D1ConnectionFactory';
+import { PgConnectionFactory, PgConnectionConfig } from './PgConnectionFactory';
+import { D1ConnectionFactory, ID1Database } from './D1ConnectionFactory';
 
 export type TDbType = 'none' | 'pg' | 'd1';
 type TStatusCode = 200 | 201 | 400 | 401 | 403 | 404 | 409 | 422 | 429 | 500 | 503;
@@ -19,12 +19,6 @@ export interface IError {
 }
 
 export interface IBaseEnv {
-    DB_USER?: string;
-    DB_HOST?: string;
-    DB_DATABASE?: string;
-    DB_PASSWORD?: string;
-    DB_PORT?: string | number;
-    DB_IS_SSL?: string;
     TZ?: string;
     SECRET_KEY_HEX?: string;
     HMAC_KEY_BASE64?: string;
@@ -70,19 +64,25 @@ export abstract class Controller<IEnv extends IBaseEnv = IBaseEnv> {
 
     /** DB種別。'pg' で PostgreSQL、'd1' で Cloudflare D1 に自動接続。'none' は DB 未使用 */
     protected readonly db: TDbType = 'none';
+    /** db = 'pg' の場合に設定する PostgreSQL 接続設定 */
+    protected get pgConfig(): PgConnectionConfig | undefined { return undefined; }
+    /** db = 'd1' の場合に設定する D1 データベースバインディング */
+    protected get d1Database(): ID1Database | undefined { return undefined; }
 
     private createConnectionFactory(): IDbConnectionFactory {
         switch (this.db) {
             case 'pg':
-                return new PgConnectionFactory({ ...this.validateDbConfig(), usePoolManager: false });
-            case 'd1':
-                const d1 = (this.Env as any).DB;
-                if (!d1) {
-                    throw new Error("D1 binding 'DB' not found in Env. Set Env.DB or override createConnectionFactory().");
+                if (!this.pgConfig) {
+                    throw new Error("pgConfig is required when db = 'pg'.");
                 }
-                return new D1ConnectionFactory(d1);
+                return new PgConnectionFactory(this.pgConfig);
+            case 'd1':
+                if (!this.d1Database) {
+                    throw new Error("d1Database is required when db = 'd1'.");
+                }
+                return new D1ConnectionFactory(this.d1Database);
             case 'none':
-                throw new Error("Controller.db is 'none'. Set db = 'pg' or 'd1', or override createConnectionFactory().");
+                throw new Error("Controller.db is 'none'. Set db = 'pg' or 'd1'.");
         }
     }
 
@@ -187,31 +187,6 @@ export abstract class Controller<IEnv extends IBaseEnv = IBaseEnv> {
     public static get TodayString(): string {
         return DateTimeUtil.toStringFromDate(this.Now, 'date');
     }
-
-    // DB接続設定
-    protected get DbUser(): string | undefined { return this.Env.DB_USER; }
-    protected get DbHost(): string | undefined { return this.Env.DB_HOST; }
-    protected get DbName(): string | undefined { return this.Env.DB_DATABASE; }
-    protected get DbPassword(): string | undefined { return this.Env.DB_PASSWORD; }
-    protected get DbPort(): string | number | undefined { return this.Env.DB_PORT; }
-    protected get DbIsSslConnect(): boolean { return this.Env.DB_IS_SSL === 'true'; }
-    
-    protected validateDbConfig() {
-        const user = this.DbUser;
-        const host = this.DbHost;
-        const database = this.DbName;
-        const password = this.DbPassword;
-        const port = this.DbPort;
-
-        if (user === undefined) throw new Error("Database user is not configured");
-        if (host === undefined) throw new Error("Database host is not configured");
-        if (database === undefined) throw new Error("Database name is not configured");
-        if (password === undefined) throw new Error("Database password is not configured");
-        if (port === undefined) throw new Error("Database port is not configured");
-
-        return { user, host, database, password, port: Number(port), ssl: this.DbIsSslConnect, timezone: this.Env.TZ };
-    }
-
 
     private encryptClient?: EncryptClient;
     get EncryptClient(): EncryptClient {

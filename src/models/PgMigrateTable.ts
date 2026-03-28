@@ -1,4 +1,4 @@
-export class MigrateTable {
+export class PgMigrateTable {
 
     protected readonly migrateSql: string = '';
     protected readonly rollbackSql: string = '';

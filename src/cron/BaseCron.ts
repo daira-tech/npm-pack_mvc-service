@@ -1,37 +1,40 @@
-import { Pool, PoolClient } from "pg";
 import { DateType, DayType, HourType, MinuteSecondType, MonthType } from "./CronType";
-import PoolManager from "../PoolManager";
+import { IDbClient, IDbConnection, IDbConnectionFactory } from '../models/IDbClient';
+import { PgConnectionFactory, PgConnectionConfig } from '../PgConnectionFactory';
+import { D1ConnectionFactory, ID1Database } from '../D1ConnectionFactory';
+import { TDbType } from '../Controller';
 
 export class BaseCron {
 
-    protected readonly isTest: boolean = process.env.NODE_ENV === 'test';
-    protected dbUser?: string = this.isTest ? process.env.TEST_DB_USER : process.env.DB_USER;
-    protected dbHost?: string = this.isTest ? process.env.TEST_DB_HOST : process.env.DB_HOST;
-    protected dbName?: string = this.isTest ? process.env.TEST_DB_DATABASE : process.env.DB_DATABASE;
-    protected dbPassword?: string = this.isTest ? process.env.TEST_DB_PASSWORD : process.env.DB_PASSWORD;
-    protected dbPort?: string | number = this.isTest ? process.env.TEST_DB_PORT : process.env.DB_PORT;
-    protected dbIsSslConnect: boolean = (this.isTest ? process.env.TEST_DB_IS_SSL : process.env.DB_IS_SSL) === 'true';
+    /** DB種別。'pg' で PostgreSQL、'd1' で Cloudflare D1。'none' は DB 未使用 */
+    protected readonly db: TDbType = 'none';
+    /** db = 'pg' の場合に設定する PostgreSQL 接続設定 */
+    protected get pgConfig(): PgConnectionConfig | undefined { return undefined; }
+    /** db = 'd1' の場合に設定する D1 データベースバインディング */
+    protected get d1Database(): ID1Database | undefined { return undefined; }
 
-    private isExecuteRollback: boolean = false;
-    private pool?: Pool;
-    private client?: PoolClient;
-    protected get Client(): PoolClient { 
-        if (this.client === undefined) {
-            throw new Error("Please call this.PoolClient after using the setClient method.");
+    private factory?: IDbConnectionFactory;
+    private connection?: IDbConnection;
+    protected get Client(): IDbClient {
+        if (this.connection) {
+            return this.connection;
         }
-        return this.client;
+        if (this.factory) {
+            return this.factory;
+        }
+        throw new Error("Please call setUp() before accessing Client.");
     }
 
     protected async commit(): Promise<void> {
-        await this.Client.query('COMMIT');
-        this.isExecuteRollback = false;
+        if (this.connection) {
+            await this.connection.commit();
+        }
     }
 
     protected async rollback(): Promise<void> {
-        if (this.isExecuteRollback) {
-            await this.Client.query('ROLLBACK');
+        if (this.connection) {
+            await this.connection.rollback();
         }
-        this.isExecuteRollback = false;
     }
 
     // **********************************************************************
@@ -59,40 +62,40 @@ export class BaseCron {
     }
     get CronCode(): string { return this.cronCode; }
 
-    public async setUp() {
-        if (this.dbUser === undefined) {
-            throw new Error("Database user is not configured");
+    private createConnectionFactory(): IDbConnectionFactory {
+        switch (this.db) {
+            case 'pg':
+                if (!this.pgConfig) {
+                    throw new Error("pgConfig is required when db = 'pg'.");
+                }
+                return new PgConnectionFactory(this.pgConfig);
+            case 'd1':
+                if (!this.d1Database) {
+                    throw new Error("d1Database is required when db = 'd1'.");
+                }
+                return new D1ConnectionFactory(this.d1Database);
+            case 'none':
+                throw new Error("BaseCron.db is 'none'. Set db = 'pg' or 'd1'.");
         }
-        if (this.dbHost === undefined) {
-            throw new Error("Database host is not configured");
-        }
-        if (this.dbName === undefined) {
-            throw new Error("Database name is not configured");
-        }
-        if (this.dbPassword === undefined) {
-            throw new Error("Database password is not configured");
-        }
-        if (this.dbPort === undefined) {
-            throw new Error("Database port is not configured");
-        }
+    }
 
-        this.pool = PoolManager.getPool(this.dbUser, this.dbHost, this.dbName, this.dbPassword, this.dbPort, this.dbIsSslConnect);
-        this.pool.query(`SET TIME ZONE '${process.env.TZ ?? 'Asia/Tokyo'}';`);
-        this.client = await this.pool.connect();
-        await this.Client.query('BEGIN');
-        this.isExecuteRollback = true;
+    public async setUp() {
+        this.factory = this.createConnectionFactory();
+        this.connection = await this.factory.connect();
+        await this.connection.begin();
     }
 
     public async tearDown() {
         try {
-            if (this.isExecuteRollback === false) {
-                await this.rollback();
-            }
+            await this.rollback();
         } finally {
-            // クライアント接続をリリース
-            if (this.client) {
-                this.client.release();
-                this.client = undefined;
+            if (this.connection) {
+                try { await this.connection.release(); } catch (_) {}
+                this.connection = undefined;
+            }
+            if (this.factory) {
+                try { await this.factory.close(); } catch (_) {}
+                this.factory = undefined;
             }
         }
     }

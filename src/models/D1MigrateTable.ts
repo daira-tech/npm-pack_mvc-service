@@ -1,6 +1,6 @@
 /**
  * D1（SQLite）用マイグレーション定義の基底クラス。
- * PG版（MigrateTable）との違い:
+ * PG版（PgMigrateTable）との違い:
  * - スキーマなし（D1にスキーマ概念がない）
  * - GRANT文なし（D1に権限管理がない）
  */

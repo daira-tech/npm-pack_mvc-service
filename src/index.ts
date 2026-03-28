@@ -48,9 +48,9 @@ export type {
     TD1NestedCondition
 } from './models/Type';
 
-export { MigrateTable } from './models/MigrateTable';
-export { MigrateDatabase } from './models/MigrateDatabase';
-export { migrate, rollback } from './models/MigrateRollback';
+export { PgMigrateTable } from './models/PgMigrateTable';
+export { PgMigrateDatabase } from './models/PgMigrateDatabase';
+export { pgMigrate, pgRollback } from './models/PgMigrateRollback';
 export { D1MigrateTable } from './models/D1MigrateTable';
 export { d1Migrate, d1Rollback } from './models/D1MigrateRollback';
 

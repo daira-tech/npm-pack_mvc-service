@@ -33,12 +33,14 @@ export interface ParsedClass {
     methodModelUsage: Record<string, string[]>;
 }
 export interface DesignDocConfig {
-    /** ソースディレクトリを指定すると、Controller/Model を自動検出する */
+    /** ソースディレクトリを指定すると、Controller/Model/Cron を自動検出する */
     sourceDir?: string;
     /** 自動検出を使わない場合、Controller のソースファイルパスを個別に指定 */
     controllerFiles?: string[];
     /** 自動検出を使わない場合、Model のソースファイルパスを個別に指定 */
     modelFiles?: string[];
+    /** 自動検出を使わない場合、Cron のソースファイルパスを個別に指定 */
+    cronFiles?: string[];
     name: string;
     /** 出力先ディレクトリ（個別HTMLファイルを生成） */
     outDir: string;
@@ -49,6 +51,7 @@ export declare function findTsFiles(dir: string): string[];
 export declare function discoverClasses(sourceDir: string): {
     controllerClasses: ParsedClass[];
     modelClasses: ParsedClass[];
+    cronClasses: ParsedClass[];
     allParsed: ParsedClass[];
 };
 export declare function buildClassMap(classes: ParsedClass[]): Map<string, ParsedClass>;

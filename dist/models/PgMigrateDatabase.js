@@ -9,8 +9,8 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.MigrateDatabase = void 0;
-class MigrateDatabase {
+exports.PgMigrateDatabase = void 0;
+class PgMigrateDatabase {
     get DbName() { return this.dbName; }
     get UserName() { return this.userName; }
     get Password() {
@@ -135,4 +135,4 @@ class MigrateDatabase {
         return sql;
     }
 }
-exports.MigrateDatabase = MigrateDatabase;
+exports.PgMigrateDatabase = PgMigrateDatabase;
