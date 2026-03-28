@@ -1,11 +1,9 @@
 import { Context } from 'hono';
 import { Controller, IBaseEnv } from './Controller';
-import { IDbConnectionFactory } from './models/IDbClient';
 export declare class HonoController<IEnv extends IBaseEnv = IBaseEnv> extends Controller<IEnv> {
     protected readonly C: Context;
     constructor(C: Context);
     get Env(): IEnv;
-    protected createConnectionFactory(): IDbConnectionFactory;
     protected initializeRequest(): Promise<void>;
     protected returnSuccessResponse(): Response & import("hono").TypedResponse<{
         [x: string]: any;

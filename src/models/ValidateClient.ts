@@ -1,11 +1,11 @@
 import { UnprocessableException } from "../exceptions/Exception";
-import { TableModel } from "./TableModel";
+import { BaseTableModel } from "./BaseTableModel";
 
 type TError = {code?: string; message?: string;};
 
 export default class ValidateClient {
-    private model: TableModel;
-    constructor(model: TableModel) {
+    private model: BaseTableModel;
+    constructor(model: BaseTableModel) {
         this.model = model;
     }
     

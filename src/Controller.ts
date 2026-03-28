@@ -5,7 +5,10 @@ import { ResponseType } from './reqestResponse/ResponseType';
 import { EncryptClient } from './clients/EncryptClient';
 import DateTimeUtil from './Utils/DateTimeUtil';
 import { IDbClient, IDbConnection, IDbConnectionFactory } from './models/IDbClient';
+import { PgConnectionFactory } from './PgConnectionFactory';
+import { D1ConnectionFactory } from './D1ConnectionFactory';
 
+export type TDbType = 'none' | 'pg' | 'd1';
 type TStatusCode = 200 | 201 | 400 | 401 | 403 | 404 | 409 | 422 | 429 | 500 | 503;
 
 export type MethodType = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
@@ -65,8 +68,23 @@ export abstract class Controller<IEnv extends IBaseEnv = IBaseEnv> {
     protected abstract returnSuccessResponse(): any;
     protected abstract returnErrorResponse(ex: any): any;
 
-    // DB接続ファクトリ
-    protected abstract createConnectionFactory(): IDbConnectionFactory;
+    /** DB種別。'pg' で PostgreSQL、'd1' で Cloudflare D1 に自動接続。'none' は DB 未使用 */
+    protected readonly db: TDbType = 'none';
+
+    private createConnectionFactory(): IDbConnectionFactory {
+        switch (this.db) {
+            case 'pg':
+                return new PgConnectionFactory({ ...this.validateDbConfig(), usePoolManager: false });
+            case 'd1':
+                const d1 = (this.Env as any).DB;
+                if (!d1) {
+                    throw new Error("D1 binding 'DB' not found in Env. Set Env.DB or override createConnectionFactory().");
+                }
+                return new D1ConnectionFactory(d1);
+            case 'none':
+                throw new Error("Controller.db is 'none'. Set db = 'pg' or 'd1', or override createConnectionFactory().");
+        }
+    }
 
     private factory?: IDbConnectionFactory;
     private connection?: IDbConnection;

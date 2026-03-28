@@ -1,9 +1,11 @@
 export { Controller } from './Controller';
-export type { MethodType, IError, IBaseEnv } from './Controller';
+export type { MethodType, IError, IBaseEnv, TDbType } from './Controller';
 export { HonoController } from './HonoController';
 export { ExpressController } from './ExpressController';
 export { PgConnectionFactory } from './PgConnectionFactory';
 export type { PgConnectionConfig } from './PgConnectionFactory';
+export { D1ConnectionFactory } from './D1ConnectionFactory';
+export type { ID1Database, ID1PreparedStatement } from './D1ConnectionFactory';
 export type { IDbClient, IDbConnection, IDbConnectionFactory } from './models/IDbClient';
 export { MaintenanceException, AuthException, InputErrorException, ForbiddenException, DbConflictException, UnprocessableException, NotFoundException, TooManyRequestsException } from './exceptions/Exception';
 export { createSwagger } from './documents/Swagger';
@@ -18,9 +20,13 @@ export { ResponseType } from './reqestResponse/ResponseType';
 export { PropertyType } from './reqestResponse/ReqResType';
 
 // models
-export { TableModel } from './models/TableModel';
-export { WhereExpression } from './models/SqlUtils/WhereExpression';
-export { SelectExpression } from './models/SqlUtils/SelectExpression';
+export { BaseTableModel } from './models/BaseTableModel';
+export { PgTableModel } from './models/PgTableModel';
+export { D1TableModel } from './models/D1TableModel';
+export { PgWhereExpression } from './models/PgSqlUtils/PgWhereExpression';
+export { PgSelectExpression } from './models/PgSqlUtils/PgSelectExpression';
+export { D1WhereExpression } from './models/D1SqlUtils/D1WhereExpression';
+export { D1SelectExpression } from './models/D1SqlUtils/D1SelectExpression';
 export type { 
     TColumnAttribute,
     TColumnType,
@@ -35,12 +41,18 @@ export type {
     TCondition,
     TNestedCondition,
     TSortKeyword,
-    TKeyFormat
+    TKeyFormat,
+    TD1Operator,
+    TD1Column,
+    TD1Condition,
+    TD1NestedCondition
 } from './models/Type';
 
 export { MigrateTable } from './models/MigrateTable';
 export { MigrateDatabase } from './models/MigrateDatabase';
 export { migrate, rollback } from './models/MigrateRollback';
+export { D1MigrateTable } from './models/D1MigrateTable';
+export { d1Migrate, d1Rollback } from './models/D1MigrateRollback';
 
 // cron
 export { DayType, MonthType, DateType, HourType, MinuteSecondType } from './cron/CronType';

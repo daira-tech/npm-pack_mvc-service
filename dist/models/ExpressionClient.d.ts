@@ -1,8 +1,8 @@
-import { TableModel } from "./TableModel";
+import { BaseTableModel } from "./BaseTableModel";
 import { TColumnInfo } from "./Type";
 export default class ExpressionClient {
     private model;
-    constructor(model: TableModel);
+    constructor(model: BaseTableModel);
     toSqlStringValue(value: any): string;
     toSqlNumberValue(value: any): string;
     createCaseFromObject(column: string | TColumnInfo, obj: {

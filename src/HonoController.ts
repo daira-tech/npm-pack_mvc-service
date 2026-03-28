@@ -1,8 +1,6 @@
 import { Context } from 'hono';
 import { setCookie, getCookie, deleteCookie } from 'hono/cookie';
 import { Controller, IBaseEnv } from './Controller';
-import { IDbConnectionFactory } from './models/IDbClient';
-import { PgConnectionFactory } from './PgConnectionFactory';
 
 export class HonoController<IEnv extends IBaseEnv = IBaseEnv> extends Controller<IEnv> {
 
@@ -12,11 +10,6 @@ export class HonoController<IEnv extends IBaseEnv = IBaseEnv> extends Controller
 
     get Env(): IEnv {
         return this.C.env;
-    }
-
-    protected createConnectionFactory(): IDbConnectionFactory {
-        const config = this.validateDbConfig();
-        return new PgConnectionFactory({ ...config, usePoolManager: false });
     }
 
     protected async initializeRequest(): Promise<void> {

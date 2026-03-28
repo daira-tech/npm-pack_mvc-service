@@ -1,11 +1,11 @@
-import { TableModel } from "./TableModel";
+import { BaseTableModel } from "./BaseTableModel";
 type TError = {
     code?: string;
     message?: string;
 };
 export default class ValidateClient {
     private model;
-    constructor(model: TableModel);
+    constructor(model: BaseTableModel);
     tryDate(value: any, isExcludeTime?: boolean): Date | false;
     validateInList(options: {
         [key: string]: any;

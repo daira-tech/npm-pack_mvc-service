@@ -1,0 +1,1 @@
+{"version":3,"file":"D1MigrateTable.d.ts","sourceRoot":"","sources":["../../src/models/D1MigrateTable.ts"],"names":[],"mappings":"AAAA;;;;;GAKG;AACH,qBAAa,cAAc;IAEvB,SAAS,CAAC,QAAQ,CAAC,UAAU,EAAE,MAAM,CAAM;IAC3C,SAAS,CAAC,QAAQ,CAAC,WAAW,EAAE,MAAM,CAAM;IAE5C,IAAI,UAAU,IAAI,MAAM,CAAmD;IAC3E,IAAI,WAAW,IAAI,MAAM,CAAoD;IAE7E,OAAO,CAAC,gBAAgB;CAqB3B"}

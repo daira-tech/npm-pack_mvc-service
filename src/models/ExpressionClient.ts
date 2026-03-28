@@ -1,9 +1,9 @@
-import { TableModel } from "./TableModel";
+import { BaseTableModel } from "./BaseTableModel";
 import { TColumnInfo } from "./Type";
 
 export default class ExpressionClient {
-    private model: TableModel;
-    constructor(model: TableModel) {
+    private model: BaseTableModel;
+    constructor(model: BaseTableModel) {
         this.model = model;
     }
 

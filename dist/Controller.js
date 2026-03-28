@@ -19,6 +19,8 @@ const RequestType_1 = require("./reqestResponse/RequestType");
 const ResponseType_1 = require("./reqestResponse/ResponseType");
 const EncryptClient_1 = require("./clients/EncryptClient");
 const DateTimeUtil_1 = __importDefault(require("./Utils/DateTimeUtil"));
+const PgConnectionFactory_1 = require("./PgConnectionFactory");
+const D1ConnectionFactory_1 = require("./D1ConnectionFactory");
 class Controller {
     constructor() {
         this.method = 'GET';
@@ -31,6 +33,8 @@ class Controller {
         this.tags = [];
         this.errorList = [];
         this.isSetDbConnection = true;
+        /** DB種別。'pg' で PostgreSQL、'd1' で Cloudflare D1 に自動接続。'none' は DB 未使用 */
+        this.db = 'none';
     }
     get Method() { return this.method; }
     get Endpoint() { return this.endpoint + this.request.paramPath; }
@@ -60,6 +64,20 @@ class Controller {
     }
     outputErrorLog(ex) {
         return __awaiter(this, void 0, void 0, function* () { });
+    }
+    createConnectionFactory() {
+        switch (this.db) {
+            case 'pg':
+                return new PgConnectionFactory_1.PgConnectionFactory(Object.assign(Object.assign({}, this.validateDbConfig()), { usePoolManager: false }));
+            case 'd1':
+                const d1 = this.Env.DB;
+                if (!d1) {
+                    throw new Error("D1 binding 'DB' not found in Env. Set Env.DB or override createConnectionFactory().");
+                }
+                return new D1ConnectionFactory_1.D1ConnectionFactory(d1);
+            case 'none':
+                throw new Error("Controller.db is 'none'. Set db = 'pg' or 'd1', or override createConnectionFactory().");
+        }
     }
     get Client() {
         if (this.isSetDbConnection) {

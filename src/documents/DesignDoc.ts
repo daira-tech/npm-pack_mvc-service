@@ -655,7 +655,7 @@ export function parseSourceFile(filePath: string): ParsedClass | null {
 // =============================================
 
 const CONTROLLER_BASES = new Set(['Controller', 'HonoController', 'ExpressController']);
-const MODEL_BASES = new Set(['TableModel']);
+const MODEL_BASES = new Set(['BaseTableModel', 'PgTableModel', 'D1TableModel']);
 
 export function findTsFiles(dir: string): string[] {
     const results: string[] = [];

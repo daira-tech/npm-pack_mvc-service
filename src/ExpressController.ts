@@ -1,7 +1,5 @@
 import { Request, Response } from 'express';
 import { Controller, IBaseEnv } from './Controller';
-import { IDbConnectionFactory } from './models/IDbClient';
-import { PgConnectionFactory } from './PgConnectionFactory';
 
 export class ExpressController<IEnv extends IBaseEnv = IBaseEnv> extends Controller<IEnv> {
 
@@ -11,11 +9,6 @@ export class ExpressController<IEnv extends IBaseEnv = IBaseEnv> extends Control
 
     get Env(): IEnv {
         return process.env as unknown as IEnv;
-    }
-
-    protected createConnectionFactory(): IDbConnectionFactory {
-        const config = this.validateDbConfig();
-        return new PgConnectionFactory({ ...config, usePoolManager: true });
     }
 
     protected async initializeRequest(): Promise<void> {

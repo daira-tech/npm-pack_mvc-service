@@ -1,4 +1,4 @@
-import { TableModel } from "./TableModel";
+import { BaseTableModel } from "./BaseTableModel";
 export type TColumnAttribute = "primary" | "nullable" | "hasDefault" | "noDefault";
 export type TColumnType = "integer" | "real" | "string" | "uuid" | "date" | "time" | "timestamp" | "bool" | "json" | "jsonb";
 export type TColumnArrayType = "integer[]" | "real[]" | "string[]" | "uuid[]" | "date[]" | "time[]" | "timestamp[]" | "bool[]" | "json[]" | "jsonb[]";
@@ -53,7 +53,7 @@ export type TColumnDetail = TColumn & {
 };
 export type TOperator = "=" | "!=" | ">" | ">=" | "<" | "<=" | "like" | "ilike" | "h2f_like" | "h2f_ilike" | "in" | "not in" | "any" | "@>" | "&&";
 export type TColumnInfo = {
-    model: TableModel;
+    model: BaseTableModel;
     name: string;
 };
 export type TQuery = {
@@ -73,5 +73,15 @@ export type TCondition = string | {
 export type TNestedCondition = TCondition | ['AND' | 'OR', ...TNestedCondition[]] | TNestedCondition[];
 export type TSortKeyword = 'desc' | 'asc';
 export type TKeyFormat = 'snake' | 'lowerCamel';
+/** D1で使用可能な演算子。配列演算子(any, @>, &&)とh2f_like/h2f_ilikeを除外 */
+export type TD1Operator = "=" | "!=" | ">" | ">=" | "<" | "<=" | "like" | "ilike" | "in" | "not in";
+/** D1で使用可能なカラム型。配列型(string[], integer[]等)を除外 */
+export type TD1Column = TStringColumn | TIntegerColumn | TJsonColumn | TBasicColumn;
+export type TD1Condition = string | {
+    l: string | TColumnInfo;
+    o: TD1Operator;
+    r: any | TColumnInfo;
+};
+export type TD1NestedCondition = TD1Condition | ['AND' | 'OR', ...TD1NestedCondition[]] | TD1NestedCondition[];
 export {};
 //# sourceMappingURL=Type.d.ts.map

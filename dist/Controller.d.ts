@@ -2,7 +2,8 @@ import { AxiosResponse } from "axios";
 import { RequestType } from './reqestResponse/RequestType';
 import { ResponseType } from './reqestResponse/ResponseType';
 import { EncryptClient } from './clients/EncryptClient';
-import { IDbClient, IDbConnectionFactory } from './models/IDbClient';
+import { IDbClient } from './models/IDbClient';
+export type TDbType = 'none' | 'pg' | 'd1';
 type TStatusCode = 200 | 201 | 400 | 401 | 403 | 404 | 409 | 422 | 429 | 500 | 503;
 export type MethodType = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
 export interface IError {
@@ -49,7 +50,9 @@ export declare abstract class Controller<IEnv extends IBaseEnv = IBaseEnv> {
     protected abstract initializeRequest(): Promise<void>;
     protected abstract returnSuccessResponse(): any;
     protected abstract returnErrorResponse(ex: any): any;
-    protected abstract createConnectionFactory(): IDbConnectionFactory;
+    /** DB種別。'pg' で PostgreSQL、'd1' で Cloudflare D1 に自動接続。'none' は DB 未使用 */
+    protected readonly db: TDbType;
+    private createConnectionFactory;
     private factory?;
     private connection?;
     protected get Client(): IDbClient;

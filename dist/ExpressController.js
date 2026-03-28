@@ -11,7 +11,6 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ExpressController = void 0;
 const Controller_1 = require("./Controller");
-const PgConnectionFactory_1 = require("./PgConnectionFactory");
 class ExpressController extends Controller_1.Controller {
     constructor(Req, Res) {
         super();
@@ -20,10 +19,6 @@ class ExpressController extends Controller_1.Controller {
     }
     get Env() {
         return process.env;
-    }
-    createConnectionFactory() {
-        const config = this.validateDbConfig();
-        return new PgConnectionFactory_1.PgConnectionFactory(Object.assign(Object.assign({}, config), { usePoolManager: true }));
     }
     initializeRequest() {
         return __awaiter(this, void 0, void 0, function* () {

@@ -590,7 +590,7 @@ function parseSourceFile(filePath) {
 // Auto-Discovery
 // =============================================
 const CONTROLLER_BASES = new Set(['Controller', 'HonoController', 'ExpressController']);
-const MODEL_BASES = new Set(['TableModel']);
+const MODEL_BASES = new Set(['BaseTableModel', 'PgTableModel', 'D1TableModel']);
 function findTsFiles(dir) {
     const results = [];
     const entries = fs.readdirSync(dir, { withFileTypes: true });
